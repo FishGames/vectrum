@@ -140,3 +140,12 @@ fabric.properties
 .idea/**/azureSettings.xml
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij
+
+# --- Gradle / Minecraft-Modding ---
+.gradle/
+build/
+run/
+# Der Wrapper muss eingecheckt werden, obwohl *.jar oben ignoriert wird
+!gradle/wrapper/gradle-wrapper.jar
+# Cache des Datagens
+generated/**/.cache/

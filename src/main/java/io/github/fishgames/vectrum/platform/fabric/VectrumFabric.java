@@ -13,10 +13,9 @@ public final class VectrumFabric implements ModInitializer {
         ItemPorts.setFinder(FabricItemPorts::find);
         Vectrum.init();
 
-        // Reihenfolge: erst Bloecke, dann Items (Block-Items), Blockentities, zuletzt Creative-Tabs.
+        // Reihenfolge: erst Bloecke, dann Items (Block-Items), zuletzt Creative-Tabs.
         Registration.applyTo(Registries.BLOCK, BuiltInRegistries.BLOCK);
         Registration.applyTo(Registries.ITEM, BuiltInRegistries.ITEM);
-        Registration.applyTo(Registries.BLOCK_ENTITY_TYPE, BuiltInRegistries.BLOCK_ENTITY_TYPE);
         Registration.applyTo(Registries.CREATIVE_MODE_TAB, BuiltInRegistries.CREATIVE_MODE_TAB);
     }
 }

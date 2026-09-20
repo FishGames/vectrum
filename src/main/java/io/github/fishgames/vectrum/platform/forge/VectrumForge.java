@@ -36,7 +36,6 @@ public final class VectrumForge {
     private static void onRegister(RegisterEvent event) {
         bind(event, Registries.BLOCK);
         bind(event, Registries.ITEM);
-        bind(event, Registries.BLOCK_ENTITY_TYPE);
         bind(event, Registries.CREATIVE_MODE_TAB);
     }
 

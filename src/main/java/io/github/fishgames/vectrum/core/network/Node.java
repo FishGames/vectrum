@@ -6,7 +6,7 @@ package io.github.fishgames.vectrum.core.network;
  */
 final class Node {
     final BlockCoord pos;
-    final NodeKind kind;
+    NodeKind kind;
     /** Bit pro {@link Direction}: Seite ist für Verbindungen freigegeben. */
     int sideMask;
     final Node[] links = new Node[Direction.VALUES.length];

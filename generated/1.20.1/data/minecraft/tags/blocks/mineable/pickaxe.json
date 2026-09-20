@@ -1,4 +1,5 @@
 {
+  "replace": false,
   "values": [
     "vectrum:example_block",
     "vectrum:item_cable",

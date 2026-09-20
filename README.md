@@ -22,12 +22,11 @@ src/main/java/.../datagen/              loaderunabhängige Datengenerierung (nur
 src/main/java/.../core/                 Netzwerk-Kern OHNE Minecraft-Klassen (Graph, Transportarten, Hilfsmathe)
 src/test/java/.../core/                 automatische Tests für den Kern
 docs/                                   Konzept, Implementierungs-Prompt, Entscheidungsliste
-src/main/java/.../block/                Kabel, Endpunkt, Verbindungszustände, Formen
-src/main/java/.../block/entity/         Blockentity des Endpunkts (Rollen je Seite, Takt)
+src/main/java/.../block/                Kabel, Endpunkt (gemeinsame Basis ConduitBlock), Verbindungszustände, Formen
 src/main/java/.../world/                Netzwerke einer Dimension (Speicherung, Verbindung zum Kern)
 src/main/java/.../logistics/            Transportlogik (wer liefert wohin)
 src/main/java/.../transfer/             Zugang zu Inventaren, gemeinsame Schnittstelle (Umsetzung je Loader)
-src/main/java/.../item/                 Werkzeuge (Wrench)
+src/main/java/.../item/                 Werkzeuge (Wrench, Diagnosewerkzeug)
 src/main/resources/assets/vectrum/      Handgeschriebene Modelle und Blockstates von Kabel und Endpunkt, Texturen
 src/main/java/.../platform/fabric/      Fabric-Einstieg + Fabric-Datagen-Einstieg + Inventarzugriff (Transfer API)
 src/main/java/.../platform/forge/       Forge-Einstieg + Inventarzugriff (Item-Handler), nutzt auch NeoForge 1.20.1

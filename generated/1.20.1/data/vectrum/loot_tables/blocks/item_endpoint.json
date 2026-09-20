@@ -1,4 +1,5 @@
 {
+  "type": "minecraft:block",
   "pools": [
     {
       "bonus_rolls": 0.0,
@@ -9,12 +10,12 @@
       ],
       "entries": [
         {
-          "name": "vectrum:item_endpoint",
-          "type": "minecraft:item"
+          "type": "minecraft:item",
+          "name": "vectrum:item_endpoint"
         }
       ],
       "rolls": 1.0
     }
   ],
-  "type": "minecraft:block"
+  "random_sequence": "vectrum:blocks/item_endpoint"
 }

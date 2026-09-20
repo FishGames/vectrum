@@ -174,6 +174,31 @@ public final class NetworkGraph {
     }
 
     /**
+     * Ändert die Art eines Knotens, ohne ihn zu entfernen. Ein Kabel, das an ein Inventar grenzt, wird so zum
+     * Endpunkt (und wieder zum Kabel, wenn das Inventar wegfällt). Netze verschmelzen oder teilen sich dabei nicht;
+     * nur der Endpunkt-Zähler des Netzes wird angepasst.
+     *
+     * @throws IllegalArgumentException wenn an der Position kein Knoten steht
+     */
+    public void setKind(BlockCoord pos, NodeKind kind) {
+        Objects.requireNonNull(kind, "kind");
+        Node node = nodes.get(pos);
+        if (node == null) {
+            throw new IllegalArgumentException("Kein Knoten an Position " + pos);
+        }
+        if (node.kind == kind) {
+            return;
+        }
+        if (node.kind == NodeKind.ENDPOINT) {
+            node.network.endpointCount--;
+        }
+        node.kind = kind;
+        if (kind == NodeKind.ENDPOINT) {
+            node.network.endpointCount++;
+        }
+    }
+
+    /**
      * Ändert, welche Seiten eines Knotens verbunden sein dürfen (z. B. per Wrench). Kann Netze auftrennen oder
      * verschmelzen.
      *

@@ -44,6 +44,8 @@ public final class ModLanguageProvider implements DataProvider {
                 german ? "Item-Endpunkt" : "Item Endpoint");
         out.accept(Util.makeDescriptionId("item", ModItems.WRENCH.id()),
                 german ? "Schraubenschl\u00fcssel" : "Wrench");
+        out.accept(Util.makeDescriptionId("item", ModItems.DIAGNOSTIC_TOOL.id()),
+                german ? "Diagnosewerkzeug" : "Diagnostic Tool");
 
         // Meldungen in der Aktionsleiste
         out.accept("message." + Vectrum.MOD_ID + ".endpoint_mode",
@@ -51,7 +53,10 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("message." + Vectrum.MOD_ID + ".endpoint_link",
                 german ? "Seite %s ist mit einem Kabel verbunden." : "Side %s is connected to a cable.");
         out.accept("message." + Vectrum.MOD_ID + ".network",
-                german ? "Netz #%s: %s Bausteine, %s Endpunkte" : "Network #%s: %s blocks, %s endpoints");
+                german ? "Netz #%s: %s Bausteine, %s Eing\u00e4nge, %s Ausg\u00e4nge"
+                        : "Network #%s: %s blocks, %s inputs, %s outputs");
+        out.accept("message." + Vectrum.MOD_ID + ".no_inventory",
+                german ? "Hier ist kein Inventar angeschlossen." : "No inventory attached here.");
         out.accept("message." + Vectrum.MOD_ID + ".network_none",
                 german ? "Dieser Baustein geh\u00f6rt zu keinem Netz." : "This block is not part of a network.");
 

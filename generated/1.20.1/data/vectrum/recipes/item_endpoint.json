@@ -1,4 +1,5 @@
 {
+  "type": "minecraft:crafting_shapeless",
   "category": "redstone",
   "ingredients": [
     {
@@ -13,6 +14,5 @@
   ],
   "result": {
     "item": "vectrum:item_endpoint"
-  },
-  "type": "minecraft:crafting_shapeless"
+  }
 }

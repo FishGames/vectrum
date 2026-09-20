@@ -1,5 +1,6 @@
 package io.github.fishgames.vectrum.registry;
 
+import io.github.fishgames.vectrum.item.DiagnosticItem;
 import io.github.fishgames.vectrum.item.WrenchItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.BlockItem;
@@ -19,6 +20,8 @@ public final class ModItems {
     public static final Registered<Item> ITEM_CABLE = blockItem(ModBlocks.ITEM_CABLE);
     public static final Registered<Item> ITEM_ENDPOINT = blockItem(ModBlocks.ITEM_ENDPOINT);
     public static final Registered<Item> WRENCH = plainItem("wrench", () -> new WrenchItem(new Item.Properties().stacksTo(1)));
+    public static final Registered<Item> DIAGNOSTIC_TOOL = plainItem("diagnostic_tool",
+            () -> new DiagnosticItem(new Item.Properties().stacksTo(1)));
 
     private ModItems() {
     }

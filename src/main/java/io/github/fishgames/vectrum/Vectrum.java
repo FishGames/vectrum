@@ -1,7 +1,6 @@
 package io.github.fishgames.vectrum;
 
 import com.mojang.logging.LogUtils;
-import io.github.fishgames.vectrum.registry.ModBlockEntities;
 import io.github.fishgames.vectrum.registry.ModBlocks;
 import io.github.fishgames.vectrum.registry.ModCreativeTabs;
 import io.github.fishgames.vectrum.registry.ModItems;
@@ -25,7 +24,6 @@ public final class Vectrum {
         // Laedt die Klassen und legt damit alle Registrierungen in die Warteschlange.
         ModBlocks.init();
         ModItems.init();
-        ModBlockEntities.init();
         ModCreativeTabs.init();
 
         LOGGER.info("{} initialisiert (Loader: {})", MOD_NAME, platform());

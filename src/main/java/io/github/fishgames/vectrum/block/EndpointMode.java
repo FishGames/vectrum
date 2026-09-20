@@ -1,6 +1,6 @@
 package io.github.fishgames.vectrum.block;
 
-/** Rolle einer Endpunkt-Seite, die an ein Inventar grenzt. Wird im Blockentity gespeichert. */
+/** Rolle einer Endpunkt-Seite, die an ein Inventar grenzt. Wird in LevelNetworks gespeichert. */
 public enum EndpointMode {
     /** Seite ist abgeschaltet: der Endpunkt fasst das Inventar nicht an. */
     OFF("off"),

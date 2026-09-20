@@ -2,7 +2,8 @@ package io.github.fishgames.vectrum.world;
 
 import io.github.fishgames.vectrum.Vectrum;
 import io.github.fishgames.vectrum.block.Connection;
-import io.github.fishgames.vectrum.block.EndpointBlock;
+import io.github.fishgames.vectrum.block.ConduitBlock;
+import io.github.fishgames.vectrum.block.EndpointMode;
 import io.github.fishgames.vectrum.core.network.BlockCoord;
 import io.github.fishgames.vectrum.core.network.Network;
 import io.github.fishgames.vectrum.core.network.NetworkGraph;
@@ -41,6 +42,8 @@ public final class LevelNetworks extends SavedData {
     private static final String TAG_ID = "id";
     private static final String TAG_POS = "pos";
     private static final String TAG_DATA = "data";
+    private static final String TAG_PORTS = "ports";
+    private static final String TAG_MODES = "modes";
     private static final int ENDPOINT_FLAG = 0x40;
     private static final int MASK_BITS = 0x3F;
 
@@ -53,6 +56,8 @@ public final class LevelNetworks extends SavedData {
 
     private final String dimension;
     private final NetworkRegistry registry = new NetworkRegistry();
+    /** Gewählte Rollen der Anschlussseiten, nur für Bausteine, die vom Standard abweichen. Schlüssel: BlockPos.asLong(). */
+    private final Map<Long, EndpointMode[]> modes = new HashMap<>();
 
     /** Zwischengespeicherte Zielliste. Unvollstaendige Listen (Endpunkte in nicht geladenen Chunks) laufen ab. */
     private record CachedTargets(List<ItemTarget> targets, long validUntil) {
@@ -61,8 +66,11 @@ public final class LevelNetworks extends SavedData {
     /** So lange (in Ticks) gilt eine unvollstaendige Zielliste, bevor sie neu berechnet wird. */
     private static final long INCOMPLETE_LIFETIME = 20;
 
+    /** Netznummern gelten nur innerhalb einer Ebene; der Praefix trennt die Ebenen (bisher gibt es nur Items). */
+    private static final String ITEM_KEY_PREFIX = "item:";
+
     private long cacheEpoch = -1;
-    private final Map<Long, CachedTargets> itemTargets = new HashMap<>();
+    private final Map<String, CachedTargets> itemTargets = new HashMap<>();
 
     private LevelNetworks(String dimension) {
         this.dimension = dimension;
@@ -91,16 +99,60 @@ public final class LevelNetworks extends SavedData {
         BlockCoord coord = coord(pos);
         if (graph.contains(coord)) {
             graph.setSides(coord, sideMask);
+            graph.setKind(coord, kind);
         } else {
             graph.add(coord, kind, sideMask);
         }
         changed();
     }
 
+    public boolean isRegistered(TransportType type, BlockPos pos) {
+        return registry.graph(type.id()).contains(coord(pos));
+    }
+
     public void remove(TransportType type, BlockPos pos) {
         if (registry.graph(type.id()).remove(coord(pos))) {
             changed();
         }
+    }
+
+    // ------------------------------------------------------------------ Rollen der Anschlussseiten
+
+    /** Rolle der Seite eines Bausteins; ohne eigene Wahl gilt der Standard. */
+    public EndpointMode mode(BlockPos pos, Direction side) {
+        EndpointMode[] stored = modes.get(pos.asLong());
+        return stored == null ? EndpointMode.DEFAULT : stored[side.get3DDataValue()];
+    }
+
+    public void setMode(BlockPos pos, Direction side, EndpointMode mode) {
+        long key = pos.asLong();
+        EndpointMode[] stored = modes.get(key);
+        if (stored == null) {
+            stored = new EndpointMode[Sides.ALL.length];
+            java.util.Arrays.fill(stored, EndpointMode.DEFAULT);
+            modes.put(key, stored);
+        }
+        stored[side.get3DDataValue()] = mode;
+        if (isDefault(stored)) {
+            modes.remove(key);
+        }
+        changed();
+    }
+
+    /** Vergisst die gewählten Rollen dieses Bausteins (beim Abbauen). */
+    public void clearModes(BlockPos pos) {
+        if (modes.remove(pos.asLong()) != null) {
+            changed();
+        }
+    }
+
+    private static boolean isDefault(EndpointMode[] stored) {
+        for (EndpointMode mode : stored) {
+            if (mode != EndpointMode.DEFAULT) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** Das Netz, in dem dieser Baustein liegt, oder {@code null}. */
@@ -127,14 +179,14 @@ public final class LevelNetworks extends SavedData {
             cacheEpoch = epoch;
         }
         long now = level.getGameTime();
-        CachedTargets cached = itemTargets.get(network.id());
+        CachedTargets cached = itemTargets.get(ITEM_KEY_PREFIX + network.id());
         if (cached != null && now < cached.validUntil()) {
             return cached.targets();
         }
 
         boolean[] complete = {true};
         List<ItemTarget> targets = buildItemTargets(level, network, complete);
-        itemTargets.put(network.id(), new CachedTargets(targets,
+        itemTargets.put(ITEM_KEY_PREFIX + network.id(), new CachedTargets(targets,
                 complete[0] ? Long.MAX_VALUE : now + INCOMPLETE_LIFETIME));
         return targets;
     }
@@ -153,16 +205,44 @@ public final class LevelNetworks extends SavedData {
                 continue;
             }
             BlockState state = level.getBlockState(pos);
-            if (!(state.getBlock() instanceof EndpointBlock endpoint)) {
+            if (!(state.getBlock() instanceof ConduitBlock conduit)) {
                 continue;
             }
             for (Direction side : Sides.ALL) {
-                if (endpoint.connection(state, side) == Connection.OUTPUT) {
+                if (conduit.connection(state, side) == Connection.OUTPUT) {
                     result.add(new ItemTarget(pos, side, pos.relative(side)));
                 }
             }
         }
         return List.copyOf(result);
+    }
+
+    /**
+     * Zaehlt fuer die Diagnose die Quell- und Zielseiten eines Netzes (nur in geladenen Chunks).
+     *
+     * @return {@code {Eingaenge, Ausgaenge}}
+     */
+    public int[] countPorts(ServerLevel level, Network network) {
+        int sources = 0;
+        int targets = 0;
+        for (BlockCoord coord : network.endpointPositions()) {
+            BlockPos pos = new BlockPos(coord.x(), coord.y(), coord.z());
+            if (!level.hasChunkAt(pos)) {
+                continue;
+            }
+            BlockState state = level.getBlockState(pos);
+            if (state.getBlock() instanceof ConduitBlock conduit) {
+                for (Direction side : Sides.ALL) {
+                    Connection connection = conduit.connection(state, side);
+                    if (connection == Connection.INPUT) {
+                        sources++;
+                    } else if (connection == Connection.OUTPUT) {
+                        targets++;
+                    }
+                }
+            }
+        }
+        return new int[]{sources, targets};
     }
 
     // ------------------------------------------------------------------ Speichern
@@ -186,6 +266,19 @@ public final class LevelNetworks extends SavedData {
             layers.add(layer);
         }
         tag.put(TAG_LAYERS, layers);
+
+        ListTag ports = new ListTag();
+        for (Map.Entry<Long, EndpointMode[]> entry : modes.entrySet()) {
+            byte[] stored = new byte[entry.getValue().length];
+            for (int i = 0; i < stored.length; i++) {
+                stored[i] = (byte) entry.getValue()[i].ordinal();
+            }
+            CompoundTag port = new CompoundTag();
+            port.putLong(TAG_POS, entry.getKey());
+            port.putByteArray(TAG_MODES, stored);
+            ports.add(port);
+        }
+        tag.put(TAG_PORTS, ports);
         return tag;
     }
 
@@ -209,7 +302,20 @@ public final class LevelNetworks extends SavedData {
             }
             total += count;
         }
-        Vectrum.LOGGER.debug("Netzwerke von {} geladen: {} Bausteine", dimension, total);
+        ListTag ports = tag.getList(TAG_PORTS, Tag.TAG_COMPOUND);
+        for (int i = 0; i < ports.size(); i++) {
+            CompoundTag port = ports.getCompound(i);
+            byte[] stored = port.getByteArray(TAG_MODES);
+            EndpointMode[] restored = new EndpointMode[Sides.ALL.length];
+            for (int side = 0; side < restored.length; side++) {
+                restored[side] = side < stored.length ? EndpointMode.byOrdinal(stored[side]) : EndpointMode.DEFAULT;
+            }
+            if (!isDefault(restored)) {
+                networks.modes.put(port.getLong(TAG_POS), restored);
+            }
+        }
+        Vectrum.LOGGER.debug("Netzwerke von {} geladen: {} Bausteine, {} Anschlusseinstellungen",
+                dimension, total, networks.modes.size());
         return networks;
     }
 }

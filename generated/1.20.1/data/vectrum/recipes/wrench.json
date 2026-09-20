@@ -1,4 +1,5 @@
 {
+  "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
     "C": {
@@ -16,6 +17,5 @@
   "result": {
     "item": "vectrum:wrench"
   },
-  "show_notification": true,
-  "type": "minecraft:crafting_shaped"
+  "show_notification": true
 }

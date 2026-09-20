@@ -7,7 +7,7 @@
     },
     {
       "when": {
-        "north": "true"
+        "north": "link"
       },
       "apply": {
         "model": "vectrum:block/item_cable_arm"
@@ -15,7 +15,23 @@
     },
     {
       "when": {
-        "east": "true"
+        "north": "in"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_in"
+      }
+    },
+    {
+      "when": {
+        "north": "out"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_out"
+      }
+    },
+    {
+      "when": {
+        "east": "link"
       },
       "apply": {
         "model": "vectrum:block/item_cable_arm",
@@ -24,7 +40,25 @@
     },
     {
       "when": {
-        "south": "true"
+        "east": "in"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_in",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "out"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_out",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "south": "link"
       },
       "apply": {
         "model": "vectrum:block/item_cable_arm",
@@ -33,7 +67,25 @@
     },
     {
       "when": {
-        "west": "true"
+        "south": "in"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_in",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "out"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_out",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "west": "link"
       },
       "apply": {
         "model": "vectrum:block/item_cable_arm",
@@ -42,7 +94,25 @@
     },
     {
       "when": {
-        "up": "true"
+        "west": "in"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_in",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "out"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_out",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "up": "link"
       },
       "apply": {
         "model": "vectrum:block/item_cable_arm",
@@ -51,10 +121,46 @@
     },
     {
       "when": {
-        "down": "true"
+        "up": "in"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_in",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "up": "out"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_out",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "down": "link"
       },
       "apply": {
         "model": "vectrum:block/item_cable_arm",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "down": "in"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_in",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "down": "out"
+      },
+      "apply": {
+        "model": "vectrum:block/item_cable_out",
         "x": 90
       }
     }

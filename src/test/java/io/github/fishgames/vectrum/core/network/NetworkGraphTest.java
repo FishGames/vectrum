@@ -291,6 +291,35 @@ class NetworkGraphTest {
     }
 
     @Test
+    void changingTheKindOfANodeUpdatesTheEndpointCount() {
+        line(0, 4);
+        Network network = graph.networkAt(at(2, 0, 0));
+        assertEquals(0, network.endpointCount());
+
+        graph.setKind(at(1, 0, 0), NodeKind.ENDPOINT);
+        graph.setKind(at(3, 0, 0), NodeKind.ENDPOINT);
+        assertEquals(2, graph.networkAt(at(2, 0, 0)).endpointCount());
+        assertEquals(1, graph.networkCount(), "die Art zu wechseln verbindet oder trennt nichts");
+
+        graph.setKind(at(1, 0, 0), NodeKind.ENDPOINT); // gleiche Art: nichts ändert sich
+        assertEquals(2, graph.networkAt(at(2, 0, 0)).endpointCount());
+
+        graph.setKind(at(1, 0, 0), NodeKind.CABLE);
+        assertEquals(1, graph.networkAt(at(2, 0, 0)).endpointCount());
+        assertEquals(List.of(at(3, 0, 0)), graph.networkAt(at(2, 0, 0)).endpointPositions());
+
+        graph.remove(at(2, 0, 0)); // Zähler bleibt nach dem Teilen richtig
+        assertEquals(1, graph.networkAt(at(3, 0, 0)).endpointCount());
+        assertEquals(0, graph.networkAt(at(0, 0, 0)).endpointCount());
+        assertHealthy();
+    }
+
+    @Test
+    void setKindOnUnknownPositionFails() {
+        assertThrows(IllegalArgumentException.class, () -> graph.setKind(at(9, 9, 9), NodeKind.ENDPOINT));
+    }
+
+    @Test
     void endpointsConductLikeCables() {
         graph.add(at(0, 0, 0), NodeKind.CABLE, ALL);
         graph.add(at(1, 0, 0), NodeKind.ENDPOINT, ALL);

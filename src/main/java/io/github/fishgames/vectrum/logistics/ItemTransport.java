@@ -1,10 +1,8 @@
 package io.github.fishgames.vectrum.logistics;
 
 import io.github.fishgames.vectrum.block.Connection;
-import io.github.fishgames.vectrum.block.EndpointBlock;
-import io.github.fishgames.vectrum.block.entity.EndpointBlockEntity;
+import io.github.fishgames.vectrum.block.ConduitBlock;
 import io.github.fishgames.vectrum.core.network.Network;
-import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.transfer.ItemPort;
 import io.github.fishgames.vectrum.transfer.ItemPorts;
 import io.github.fishgames.vectrum.world.LevelNetworks;
@@ -20,7 +18,7 @@ import java.util.function.Predicate;
 
 /**
  * Item-Transport, erste Ausbaustufe: Die Ware reist nicht, es gibt nur eine direkte Übergabe von der Quelle
- * (Endpunkt-Seite mit Eingang) an die Ziele (Endpunkt-Seiten mit Ausgang) im selben Netz.
+ * (Anschlussseite mit Eingang) an die Ziele (Anschlussseiten mit Ausgang) im selben Netz.
  *
  * <p>Ziele werden der Reihe nach bedient (sortiert nach Position): erst wird Ziel A gefüllt, dann B.
  * Filter, Priorität und weitere Modi kommen in Etappe 5 dazu.
@@ -31,28 +29,14 @@ public final class ItemTransport {
     private ItemTransport() {
     }
 
-    /** Eine Übergaberunde für einen Endpunkt: für jede Quellseite bis zu {@code throughput()} Items verteilen. */
-    public static void run(ServerLevel level, EndpointBlockEntity endpoint) {
-        BlockPos pos = endpoint.getBlockPos();
-        BlockState state = endpoint.getBlockState();
-        if (!(state.getBlock() instanceof EndpointBlock block)) {
-            return;
-        }
-
-        // Schneller Ausstieg: Hat dieser Endpunkt gar keine Quellseite, kostet der Takt fast nichts.
-        boolean hasSource = false;
-        for (Direction side : Sides.ALL) {
-            if (block.connection(state, side) == Connection.INPUT) {
-                hasSource = true;
-                break;
-            }
-        }
-        if (!hasSource) {
+    /** Eine Uebergaberunde fuer einen Baustein: fuer jede Quellseite bis zu {@code BASE_THROUGHPUT} Items verteilen. */
+    public static void run(ServerLevel level, BlockPos pos, BlockState state, ConduitBlock block) {
+        if (!block.hasSource(state)) {
             return;
         }
 
         LevelNetworks networks = LevelNetworks.get(level);
-        Network network = networks.networkAt(TransportType.ITEM, pos);
+        Network network = networks.networkAt(block.transportType(), pos);
         if (network == null) {
             return;
         }
@@ -73,7 +57,7 @@ public final class ItemTransport {
             if (source == null) {
                 continue;
             }
-            distribute(level, source, sourcePos, targets, endpoint.throughput());
+            distribute(level, source, sourcePos, targets, ConduitBlock.BASE_THROUGHPUT);
         }
     }
 

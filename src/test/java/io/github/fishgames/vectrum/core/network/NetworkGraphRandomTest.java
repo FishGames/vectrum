@@ -13,7 +13,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Zufallstest: Der Graph wird mit tausenden zufälligen Änderungen (setzen, entfernen, Seiten sperren) bearbeitet.
+ * Zufallstest: Der Graph wird mit tausenden zufälligen Änderungen (setzen, entfernen, Seiten sperren, Art wechseln) bearbeitet.
  * Nach jeder Änderung wird sein Ergebnis mit einer bewusst einfachen Referenz verglichen, die alle Netze jedes Mal
  * komplett neu berechnet. So fallen Fehler im inkrementellen Verschmelzen und Aufspalten auf.
  */
@@ -69,6 +69,10 @@ class NetworkGraphRandomTest {
                 int mask = randomMask(random);
                 graph.setSides(pos, mask);
                 reference.put(pos, new Cell(existing.kind(), mask));
+            } else if (roll < 9) {
+                NodeKind kind = existing.kind() == NodeKind.CABLE ? NodeKind.ENDPOINT : NodeKind.CABLE;
+                graph.setKind(pos, kind);
+                reference.put(pos, new Cell(kind, existing.mask()));
             }
 
             String context = "Seed " + seed + ", Schritt " + step;

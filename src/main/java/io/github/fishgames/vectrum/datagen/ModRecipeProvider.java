@@ -58,6 +58,17 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(ModItems.ITEM_CABLE.get()), has(ModItems.ITEM_CABLE.get()))
                 .save(writer);
 
+        // Diagnosewerkzeug: Glasscheibe + Kupfer + Eisen
+        ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, ModItems.DIAGNOSTIC_TOOL.get())
+                .pattern("G")
+                .pattern("C")
+                .pattern("I")
+                .define('G', Items.GLASS_PANE)
+                .define('C', Items.COPPER_INGOT)
+                .define('I', Items.IRON_INGOT)
+                .unlockedBy(getHasName(Items.COPPER_INGOT), has(Items.COPPER_INGOT))
+                .save(writer);
+
         // Wrench
         ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, ModItems.WRENCH.get())
                 .pattern("I I")

@@ -24,6 +24,8 @@ import net.minecraft.world.level.block.state.BlockState;
  *       ist der Wert, auf {@code int} geklemmt, z. B. fuer {@code /execute store}).</li>
  *   <li>{@code /vectrum throughput <pos> <wert>} setzt es (Einheiten pro Uebergabe und Quellseite).</li>
  *   <li>{@code /vectrum throughput <pos> reset} setzt es auf das Grundlimit zurueck.</li>
+ *   <li>{@code /vectrum port <pos> <seite> ...} Prioritaet, Verteilmodus und Filter einer Anschlussseite
+ *       (siehe {@link PortCommands}).</li>
  * </ul>
  * Die Durchsatz-Upgrades (Etappe 6) setzen denselben Wert; der Befehl bleibt fuer Tests und Verwaltung.
  */
@@ -40,7 +42,8 @@ public final class VectrumCommands {
                                 .then(Commands.literal("reset")
                                         .executes(VectrumCommands::resetThroughput))
                                 .then(Commands.argument("value", LongArgumentType.longArg(0))
-                                        .executes(VectrumCommands::setThroughput)))));
+                                        .executes(VectrumCommands::setThroughput))))
+                .then(PortCommands.node()));
     }
 
     private static int showThroughput(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

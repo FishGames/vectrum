@@ -19,7 +19,7 @@ versions/<mc>-<loader>/       Versionen der Abhängigkeiten je Projekt (Loader, 
 src/main/java/.../Vectrum.java          gemeinsamer Einstieg
 src/main/java/.../registry/             loaderunabhängige Registrierung (Blöcke, Items, Creative-Tab)
 src/main/java/.../datagen/              loaderunabhängige Datengenerierung (nur Vanilla-Klassen)
-src/main/java/.../core/                 Netzwerk-Kern OHNE Minecraft-Klassen (Graph, Transportarten, Hilfsmathe)
+src/main/java/.../core/                 Netzwerk-Kern OHNE Minecraft-Klassen (Graph, Transportarten, Durchsatz, Routing, Hilfsmathe)
 src/test/java/.../core/                 automatische Tests für den Kern
 docs/                                   Konzept, Implementierungs-Prompt, Entscheidungsliste
 src/main/java/.../block/                Kabel, Endpunkt (gemeinsame Basis ConduitBlock), Verbindungszustände, Formen
@@ -74,7 +74,7 @@ Mappings herunter, das dauert einige Minuten.
 ## Kern und Tests
 
 Im Paket `core` liegt die Logik, die kein Minecraft braucht: der Netzwerk-Graph (Kabel und Endpunkte, Verschmelzen
-und Teilen von Netzen), die Transportarten, die Durchsatzlimits und die Hilfsmathe. Weil der Kern ohne Minecraft läuft, lässt er sich
+und Teilen von Netzen), die Transportarten, die Durchsatzlimits, das Routing (Filter, Priorität, Verteilmodi) und die Hilfsmathe. Weil der Kern ohne Minecraft läuft, lässt er sich
 mit normalen JUnit-Tests prüfen (`src/test/java`), auch mit Zufallstests gegen eine einfache Referenzlösung und
 Leistungsmessungen. Der Test `CoreIsolationTest` schlägt fehl, sobald jemand im Kern Minecraft- oder Loader-Klassen
 importiert. Die Tests laufen mit jedem Loader-Projekt, z. B. `./gradlew :1.20.1-forge:test`.

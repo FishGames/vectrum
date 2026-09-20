@@ -208,6 +208,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
             LevelNetworks networks = LevelNetworks.get(server);
             networks.remove(type, pos);
             networks.clearModes(pos);
+            networks.clearSettings(pos);
             networks.clearThroughput(type, pos);
         }
         super.onRemove(state, level, pos, newState, isMoving);

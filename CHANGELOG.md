@@ -5,6 +5,10 @@ Alle wichtigen Änderungen an Vectrum. Neueste zuerst.
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Filter, Priorität und Verteilmodi (Etappe 5): Jede Anschlussseite hat eine Priorität (höhere Zahl wird zuerst
+  beliefert), einen Verteilmodus (der Reihe nach, reihum, ausgleichen) und einen Filter (Positiv- oder Negativliste
+  für Items und Fluide). Einstellbar mit `/vectrum port <pos> <seite> ...` (nur Operatoren, bis Upgrades und Oberfläche
+  folgen); die Einstellungen werden mit der Welt gespeichert. Volle Ziele werden zeitweise seltener gefragt.
 - Vanilla-Kessel lassen sich auf Forge und NeoForge mit Fluid-Kabeln befüllen und leeren (voller Eimer), wie auf Fabric.
 - Fluide und Energie (Etappe 4): Fluid-Kabel und Energie-Kabel, die wie das Item-Kabel funktionieren (Kabel legen,
   Enden schalten mit dem Schlüssel um). Grundlimits: 1000 mB bzw. 2000 FE pro Übergabe und Quellseite. Auf Fabric wird
@@ -16,6 +20,7 @@ Alle wichtigen Änderungen an Vectrum. Neueste zuerst.
 - Rezept-Advancements (Ergebnis des ersten echten Datagen-Laufs).
 
 ### Geändert
+- `Port.moveTo` nimmt jetzt einen Filter entgegen und `Port` kennt den Füllstand; `ItemPort` hat keine eigene Filter-Methode mehr.
 - Der Transport ist jetzt für alle Typen derselbe Code (`Transport`, `Port`); die alten Item-Klassen entfallen.
 - Kabelenden übernehmen die Funktion der bisherigen Endpunkte, ein Item-Kabel reicht für Stufe 1 und 2.
 - Grunddurchsatz auf 4 Items alle 0,5 Sekunden gesenkt.

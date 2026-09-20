@@ -10,6 +10,12 @@ import io.github.fishgames.vectrum.core.network.NetworkGraph;
 import io.github.fishgames.vectrum.core.network.NetworkRegistry;
 import io.github.fishgames.vectrum.core.network.NodeInfo;
 import io.github.fishgames.vectrum.core.network.NodeKind;
+import io.github.fishgames.vectrum.core.routing.DistributionMode;
+import io.github.fishgames.vectrum.core.routing.PortKey;
+import io.github.fishgames.vectrum.core.routing.PortSettings;
+import io.github.fishgames.vectrum.core.routing.PortSettingsTable;
+import io.github.fishgames.vectrum.core.routing.ResourceFilter;
+import io.github.fishgames.vectrum.core.routing.RoundRobinPointers;
 import io.github.fishgames.vectrum.core.throughput.ThroughputLimits;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.logistics.Target;
@@ -18,6 +24,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -48,6 +55,14 @@ public final class LevelNetworks extends SavedData {
     private static final String TAG_MODES = "modes";
     private static final String TAG_LIMITS = "limits";
     private static final String TAG_VALUES = "values";
+    private static final String TAG_SETTINGS = "settings";
+    private static final String TAG_POINTERS = "pointers";
+    private static final String TAG_SIDE = "side";
+    private static final String TAG_PRIORITY = "priority";
+    private static final String TAG_MODE = "mode";
+    private static final String TAG_BLACKLIST = "blacklist";
+    private static final String TAG_IDS = "ids";
+    private static final String TAG_VALUE = "value";
     private static final int ENDPOINT_FLAG = 0x40;
     private static final int MASK_BITS = 0x3F;
 
@@ -72,6 +87,22 @@ public final class LevelNetworks extends SavedData {
 
     /** So lange (in Ticks) gilt eine unvollstaendige Zielliste, bevor sie neu berechnet wird. */
     private static final long INCOMPLETE_LIFETIME = 20;
+
+    /** Einstellungen der Anschlussseiten (Prioritaet, Verteilmodus, Filter); nur Abweichungen vom Standard. */
+    private final PortSettingsTable settings = new PortSettingsTable();
+    /** Rundlaufzeiger je Quellseite. */
+    private final RoundRobinPointers pointers = new RoundRobinPointers();
+
+    /** Wartezeit fuer ein Ziel, das trotz Lieferung an andere nichts angenommen hat. Fluechtig, nicht gespeichert. */
+    private record SleepKey(long source, int sourceSide, long target, int targetSide) {
+    }
+
+    private record Backoff(int failures, long until) {
+    }
+
+    /** Ab dieser Zahl aufeinanderfolgender Fehlversuche wird die Wartezeit nicht weiter verdoppelt. */
+    private static final long MAX_SLEEP_TICKS = 100;
+    private final Map<SleepKey, Backoff> backoff = new HashMap<>();
 
     private long cacheEpoch = -1;
     /** Schluessel: Ebenen-Kennung + Netznummer (Netznummern gelten nur innerhalb einer Ebene). */
@@ -151,6 +182,76 @@ public final class LevelNetworks extends SavedData {
         }
     }
 
+    // ------------------------------------------------------------------ Einstellungen der Anschlussseiten (Etappe 5)
+
+    private PortKey key(BlockPos pos, Direction side) {
+        return new PortKey(coord(pos), io.github.fishgames.vectrum.core.network.Direction.VALUES[side.get3DDataValue()]);
+    }
+
+    /** Prioritaet, Verteilmodus und Filter dieser Seite; ohne eigene Wahl der Standard. */
+    public PortSettings settings(BlockPos pos, Direction side) {
+        return settings.get(key(pos, side));
+    }
+
+    public void setSettings(BlockPos pos, Direction side, PortSettings value) {
+        if (settings.set(key(pos, side), value)) {
+            changed();
+        }
+    }
+
+    /** Rundlaufzeiger dieser Quellseite. */
+    public int pointer(BlockPos pos, Direction side) {
+        return pointers.get(key(pos, side));
+    }
+
+    public void setPointer(BlockPos pos, Direction side, int value) {
+        pointers.set(key(pos, side), value);
+        setDirty(); // aendert kein Netz: Zwischenspeicher bleiben gueltig
+    }
+
+    /** Vergisst Einstellungen und Rundlaufzeiger dieses Bausteins (beim Abbauen). */
+    public void clearSettings(BlockPos pos) {
+        BlockCoord coord = coord(pos);
+        boolean removedSettings = settings.clear(coord);
+        boolean removedPointers = pointers.clear(coord);
+        if (removedSettings) {
+            changed();
+        } else if (removedPointers) {
+            setDirty();
+        }
+    }
+
+    // ------------------------------------------------------------------ Wartezeit fuer volle Ziele
+
+    /** Wartet dieses Ziel gerade, weil es zuletzt nichts angenommen hat, waehrend andere Ziele beliefert wurden? */
+    public boolean isSleeping(BlockPos source, Direction sourceSide, Target target, long now) {
+        syncEpoch();
+        Backoff entry = backoff.get(sleepKey(source, sourceSide, target));
+        return entry != null && now < entry.until();
+    }
+
+    /** Das Ziel hat trotz Angebot nichts angenommen, obwohl die Quelle an andere lieferte: naechster Versuch spaeter. */
+    public void noteMiss(BlockPos source, Direction sourceSide, Target target, long now) {
+        syncEpoch();
+        SleepKey key = sleepKey(source, sourceSide, target);
+        Backoff before = backoff.get(key);
+        int failures = before == null ? 1 : before.failures() + 1;
+        long delay = Math.min(MAX_SLEEP_TICKS, 10L << Math.min(failures, 10)); // 20, 40, 80, 100, ...
+        backoff.put(key, new Backoff(failures, now + delay));
+    }
+
+    /** Das Ziel hat etwas angenommen: die Wartezeit ist vorbei. */
+    public void noteHit(BlockPos source, Direction sourceSide, Target target) {
+        if (!backoff.isEmpty()) {
+            backoff.remove(sleepKey(source, sourceSide, target));
+        }
+    }
+
+    private static SleepKey sleepKey(BlockPos source, Direction sourceSide, Target target) {
+        return new SleepKey(source.asLong(), sourceSide.get3DDataValue(), target.endpoint().asLong(),
+                target.side().get3DDataValue());
+    }
+
     // ------------------------------------------------------------------ Durchsatzlimit (K3)
 
     /** Grundlimit einer Ebene: Einheiten pro Uebergabe und Quellseite, solange kein Upgrade etwas anderes setzt. */
@@ -214,10 +315,7 @@ public final class LevelNetworks extends SavedData {
      * geladener Endpunkt sicher auftaucht.
      */
     public List<Target> targets(ServerLevel level, TransportType type, Network network) {
-        if (cacheEpoch != epoch) {
-            targetCache.clear();
-            cacheEpoch = epoch;
-        }
+        syncEpoch();
         long now = level.getGameTime();
         String key = type.id() + "#" + network.id();
         CachedTargets cached = targetCache.get(key);
@@ -231,7 +329,16 @@ public final class LevelNetworks extends SavedData {
         return targets;
     }
 
-    private static List<Target> buildTargets(ServerLevel level, Network network, boolean[] complete) {
+    /** Verwirft Zwischenspeicher und Wartezeiten, wenn sich seit dem letzten Aufruf etwas geaendert hat. */
+    private void syncEpoch() {
+        if (cacheEpoch != epoch) {
+            targetCache.clear();
+            backoff.clear();
+            cacheEpoch = epoch;
+        }
+    }
+
+    private List<Target> buildTargets(ServerLevel level, Network network, boolean[] complete) {
         List<BlockPos> endpoints = new ArrayList<>(network.endpointCount());
         for (BlockCoord coord : network.endpointPositions()) {
             endpoints.add(new BlockPos(coord.x(), coord.y(), coord.z()));
@@ -250,7 +357,7 @@ public final class LevelNetworks extends SavedData {
             }
             for (Direction side : Sides.ALL) {
                 if (conduit.connection(state, side) == Connection.OUTPUT) {
-                    result.add(new Target(pos, side, pos.relative(side)));
+                    result.add(new Target(pos, side, pos.relative(side), settings(pos, side)));
                 }
             }
         }
@@ -342,7 +449,48 @@ public final class LevelNetworks extends SavedData {
             saved.add(layer);
         }
         tag.put(TAG_LIMITS, saved);
+
+        ListTag savedSettings = new ListTag();
+        for (Map.Entry<PortKey, PortSettings> entry : settings.entries().entrySet()) {
+            PortSettings value = entry.getValue();
+            CompoundTag item = new CompoundTag();
+            item.putLong(TAG_POS, toPos(entry.getKey().pos()).asLong());
+            item.putByte(TAG_SIDE, (byte) entry.getKey().side().ordinal());
+            item.putInt(TAG_PRIORITY, value.priority());
+            item.putString(TAG_MODE, value.mode().id());
+            item.putBoolean(TAG_BLACKLIST, value.filter().blacklist());
+            ListTag ids = new ListTag();
+            for (String id : value.filter().ids()) {
+                ids.add(StringTag.valueOf(id));
+            }
+            item.put(TAG_IDS, ids);
+            savedSettings.add(item);
+        }
+        tag.put(TAG_SETTINGS, savedSettings);
+
+        ListTag savedPointers = new ListTag();
+        for (Map.Entry<PortKey, Integer> entry : pointers.entries().entrySet()) {
+            CompoundTag item = new CompoundTag();
+            item.putLong(TAG_POS, toPos(entry.getKey().pos()).asLong());
+            item.putByte(TAG_SIDE, (byte) entry.getKey().side().ordinal());
+            item.putInt(TAG_VALUE, entry.getValue());
+            savedPointers.add(item);
+        }
+        tag.put(TAG_POINTERS, savedPointers);
         return tag;
+    }
+
+    private static BlockPos toPos(BlockCoord c) {
+        return new BlockPos(c.x(), c.y(), c.z());
+    }
+
+    private static PortKey readKey(LevelNetworks networks, CompoundTag item) {
+        int side = item.getByte(TAG_SIDE);
+        if (side < 0 || side >= io.github.fishgames.vectrum.core.network.Direction.VALUES.length) {
+            return null;
+        }
+        return new PortKey(networks.coord(BlockPos.of(item.getLong(TAG_POS))),
+                io.github.fishgames.vectrum.core.network.Direction.VALUES[side]);
     }
 
     private static LevelNetworks load(String dimension, CompoundTag tag) {
@@ -387,6 +535,31 @@ public final class LevelNetworks extends SavedData {
                 if (values[n] >= 0) {
                     target.set(networks.coord(BlockPos.of(positions[n])), values[n]);
                 }
+            }
+        }
+        ListTag savedSettings = tag.getList(TAG_SETTINGS, Tag.TAG_COMPOUND);
+        for (int i = 0; i < savedSettings.size(); i++) {
+            CompoundTag item = savedSettings.getCompound(i);
+            PortKey key = readKey(networks, item);
+            if (key == null) {
+                continue;
+            }
+            DistributionMode mode = DistributionMode.byId(item.getString(TAG_MODE));
+            java.util.Set<String> ids = new java.util.TreeSet<>();
+            ListTag idList = item.getList(TAG_IDS, Tag.TAG_STRING);
+            for (int n = 0; n < idList.size(); n++) {
+                ids.add(idList.getString(n));
+            }
+            networks.settings.set(key, new PortSettings(item.getInt(TAG_PRIORITY),
+                    mode == null ? DistributionMode.DEFAULT : mode,
+                    new ResourceFilter(item.getBoolean(TAG_BLACKLIST), ids)));
+        }
+        ListTag savedPointers = tag.getList(TAG_POINTERS, Tag.TAG_COMPOUND);
+        for (int i = 0; i < savedPointers.size(); i++) {
+            CompoundTag item = savedPointers.getCompound(i);
+            PortKey key = readKey(networks, item);
+            if (key != null) {
+                networks.pointers.set(key, item.getInt(TAG_VALUE));
             }
         }
         Vectrum.LOGGER.debug("Netzwerke von {} geladen: {} Bausteine, {} Anschlusseinstellungen",

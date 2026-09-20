@@ -5,7 +5,9 @@ import io.github.fishgames.vectrum.core.util.SaturatedMath;
 import io.github.fishgames.vectrum.transfer.Port;
 import net.minecraftforge.energy.IEnergyStorage;
 
-/** {@link Port} fuer Energie auf Basis der Forge-Energy-Capability (gilt auch fuer NeoForge 1.20.1). Einheit: FE. */
+import java.util.function.Predicate;
+
+/** {@link Port} fuer Energie auf Basis der Forge-Energy-Capability (gilt auch fuer NeoForge 1.20.1). Einheit: FE. Energie kennt keine Sorten, der Filter wird ignoriert. */
 final class ForgeEnergyPort implements Port {
     private final IEnergyStorage storage;
 
@@ -14,7 +16,7 @@ final class ForgeEnergyPort implements Port {
     }
 
     @Override
-    public long moveTo(Port target, long max) {
+    public long moveTo(Port target, long max, Predicate<String> filter) {
         if (max <= 0 || !(target instanceof ForgeEnergyPort other) || other.storage == storage) {
             return 0;
         }
@@ -46,5 +48,11 @@ final class ForgeEnergyPort implements Port {
             }
         }
         return received;
+    }
+
+    @Override
+    public double fillLevel() {
+        int capacity = storage.getMaxEnergyStored();
+        return capacity <= 0 ? 1 : (double) storage.getEnergyStored() / capacity;
     }
 }

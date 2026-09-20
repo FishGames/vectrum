@@ -5,6 +5,7 @@ Alle wichtigen Änderungen an Vectrum. Neueste zuerst.
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Vanilla-Kessel lassen sich auf Forge und NeoForge mit Fluid-Kabeln befüllen und leeren (voller Eimer), wie auf Fabric.
 - Fluide und Energie (Etappe 4): Fluid-Kabel und Energie-Kabel, die wie das Item-Kabel funktionieren (Kabel legen,
   Enden schalten mit dem Schlüssel um). Grundlimits: 1000 mB bzw. 2000 FE pro Übergabe und Quellseite. Auf Fabric wird
   Team Reborn Energy (MIT) mitgeliefert.

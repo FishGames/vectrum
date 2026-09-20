@@ -61,6 +61,8 @@ konkreter ist. Stand: 20.09.2026.
 | E24 | **Energie auf Fabric über Team Reborn Energy 3.0.0** (MIT-Lizenz, geprüft), per Jar-in-Jar mitgeliefert. Fabric hat keine eigene Energie-API. Damit ist der offene Punkt aus E6 erledigt. | Nutzer brauchen dafür keine zusätzliche Mod. |
 | E25 | Kein Fluid- oder Energie-Endpunkt-Block. Kabelenden übernehmen den Anschluss (E16). | Der Endpunkt-Block bekommt später eine andere Aufgabe (E17). |
 
+| E26 | **Vanilla-Kessel als Fluidtank auch auf Forge und NeoForge.** Forge kennt für Kessel keine Capability, deshalb gibt es einen eigenen Handler (`CauldronFluidHandler`): leer, voller Wasserkessel oder voller Lavakessel, nur in ganzen Eimern (1000 mB). Teilweise gefüllte Wasserkessel (Stufe 1 und 2) sind auf Forge nicht nutzbar, auf Fabric geht dagegen jede Stufe (dort liefert die Transfer API Drittel-Eimer). | Gleiches Verhalten auf allen Loadern, und Fluide lassen sich ohne Fremdmod ausprobieren. |
+
 ## Noch offen
 
 - Verfügbarkeit von JEI, EMI und Jade/WTHIT/TOP für alle drei Loader in 1.20.1 prüfen.

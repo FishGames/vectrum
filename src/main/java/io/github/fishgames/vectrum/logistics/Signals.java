@@ -16,19 +16,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Redstone-Netze: Sie uebertragen nur, sie verarbeiten nichts. Der Wert eines Netzes ist die groesste Signalstaerke,
- * die an einem seiner Eingaenge anliegt; jeder Ausgang gibt genau diesen Wert ab (0 bis 15, nichts wird verbraucht).
- *
- * <p>Ereignisgesteuert: Aendert sich etwas in der Umgebung eines Redstone-Bausteins (das meldet Minecraft ueber
- * {@code neighborChanged}), wird der Wert seines Netzes neu bestimmt. Nur wenn er sich aendert, werden die
- * Nachbarn der Ausgaenge benachrichtigt, so dass keine Schleife entsteht. Ein seltener Takt der Bausteine ist nur die
- * Absicherung nach dem Laden der Welt.
+ * Redstone network signals: network value and output propagation.
+ * <ul>
+ * <li>Network value: strongest signal at any input side of its blocks (0 to 15).</li>
+ * <li>Every output side emits the network value.</li>
+ * <li>Recalculated on {@code neighborChanged} of a signal block; output neighbours are notified when a stored output
+ * changes.</li>
+ * </ul>
  */
 public final class Signals {
     private Signals() {
     }
 
-    /** Bestimmt den Wert des Netzes, in dem {@code pos} liegt, und gibt ihn an alle Ausgaenge weiter. */
+    /**
+     * Recalculates the network at {@code pos} and applies the value to all outputs.
+     * <ul>
+     * <li>1. collect signal blocks and the strongest input</li>
+     * <li>2. store the output value of every block</li>
+     * <li>3. notify neighbours of blocks whose output changed</li>
+     * </ul>
+     */
     public static void update(ServerLevel level, LevelNetworks networks, BlockPos pos) {
         Network network = networks.networkAt(TransportType.REDSTONE, pos);
         if (network == null) {
@@ -52,7 +59,7 @@ public final class Signals {
             }
         }
 
-        // Erst alle Werte speichern, dann melden: Beim Melden lesen andere Bausteine die neuen Werte schon.
+        // 2. store outputs
         List<Integer> changed = new ArrayList<>();
         for (int i = 0; i < endpoints.size(); i++) {
             int output = hasOutput(states.get(i), blocks.get(i)) ? value : 0;
@@ -60,12 +67,13 @@ public final class Signals {
                 changed.add(i);
             }
         }
+        // 3. notify neighbours
         for (int index : changed) {
             level.updateNeighborsAt(endpoints.get(index), blocks.get(index));
         }
     }
 
-    /** Der aktuelle Wert des Netzes, ohne etwas zu veraendern (fuer die Diagnose). */
+    /** Current network value; read-only. */
     public static int valueAt(ServerLevel level, LevelNetworks networks, BlockPos pos) {
         Network network = networks.networkAt(TransportType.REDSTONE, pos);
         if (network == null) {
@@ -82,7 +90,7 @@ public final class Signals {
         return value;
     }
 
-    /** Anzahl der Eingangs- und Ausgangsseiten aller Bausteine des Netzes: {@code {Eingaenge, Ausgaenge}}. */
+    /** Input and output side counts of the network: {@code {inputs, outputs}}. */
     public static int[] countSides(ServerLevel level, Network network) {
         int[] counts = new int[2];
         for (BlockCoord coord : network.endpointPositions()) {
@@ -114,14 +122,13 @@ public final class Signals {
         return false;
     }
 
-    /** Groesste Signalstaerke, die an den Eingangsseiten dieses Bausteins anliegt. */
+    /** Strongest signal at the input sides of this block. */
     private static int inputOf(ServerLevel level, BlockPos pos, BlockState state, ConduitBlock block) {
         int strongest = 0;
         for (Direction side : Sides.ALL) {
             if (block.connection(state, side) == Connection.INPUT) {
                 BlockPos neighbour = pos.relative(side);
                 if (level.hasChunkAt(neighbour)) {
-                    // getSignal(Nachbar, Richtung vom Leser zum Nachbarn): so liest auch ein Repeater.
                     strongest = Math.max(strongest, level.getSignal(neighbour, side));
                 }
             }

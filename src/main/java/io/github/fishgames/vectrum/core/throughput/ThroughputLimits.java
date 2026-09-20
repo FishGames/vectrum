@@ -8,59 +8,55 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Durchsatzlimit der Anschlussbausteine einer Netz-Ebene (Kernentscheidung K3, Entscheidung E1).
+ * Throughput limits of the port blocks of one network layer.
  *
- * <p>Das Limit ist <b>eine gespeicherte Zahl</b> pro Baustein und wird nie über das Kabelnetz berechnet:
  * <ul>
- *   <li>Ohne eigene Einstellung gilt das Grundlimit der Ebene.</li>
- *   <li>Nur Bausteine mit abweichendem Wert stehen in der Tabelle (dünn besetzt). Spätere Durchsatz-Upgrades tragen
- *       hier ihren Wert ein.</li>
- *   <li>Beim Übergeben genügt ein einziger Nachschlag ({@link #limitOf}) ohne Suche und ohne Berechnung.</li>
+ *   <li>Each block has one stored limit (units per transfer).</li>
+ *   <li>Blocks without an entry use the base limit of the layer.</li>
+ *   <li>Only blocks with a differing value are stored.</li>
+ *   <li>{@link #limitOf} is a single map lookup.</li>
+ *   <li>Values are {@code long}; {@link #budgetOf} clamps to {@code int}.</li>
  * </ul>
- *
- * <p>Gerechnet wird mit {@code long}; erst an der Grenze zu fremden Schnittstellen wird auf {@code int} geklemmt
- * ({@link #budgetOf}, Kernentscheidung K5). Die Klasse ist nicht thread-sicher; Minecraft ruft sie nur aus dem
- * Server-Thread auf.
  */
 public final class ThroughputLimits {
     private final long base;
     private final Map<BlockCoord, Long> overrides = new HashMap<>();
 
     /**
-     * @param base Grundlimit für jeden Baustein ohne eigene Einstellung (Einheiten pro Übergabe), nicht negativ
+     * @param base base limit in units per transfer, not negative
      */
     public ThroughputLimits(long base) {
         if (base < 0) {
-            throw new IllegalArgumentException("Grundlimit darf nicht negativ sein: " + base);
+            throw new IllegalArgumentException("Base limit must not be negative: " + base);
         }
         this.base = base;
     }
 
-    /** Grundlimit der Ebene. */
+    /** Base limit of the layer. */
     public long base() {
         return base;
     }
 
-    /** Limit dieses Bausteins: sein eigener Wert oder das Grundlimit. Ein einziger Tabellenzugriff. */
+    /** Limit of the block: its own value or the base limit. */
     public long limitOf(BlockCoord pos) {
         Long own = overrides.get(pos);
         return own == null ? base : own;
     }
 
-    /** Limit als {@code int} für fremde Schnittstellen, sicher geklemmt (nie negativ, nie übergelaufen). */
+    /** Limit clamped to a non-negative {@code int}. */
     public int budgetOf(BlockCoord pos) {
         return SaturatedMath.clampToNonNegativeInt(limitOf(pos));
     }
 
     /**
-     * Setzt das Limit eines Bausteins. Ein Wert gleich dem Grundlimit wird nicht gespeichert.
+     * Sets the limit of a block; a value equal to the base limit removes the entry.
      *
-     * @return {@code true}, wenn sich das Limit dadurch geändert hat
-     * @throws IllegalArgumentException bei negativem Wert
+     * @return {@code true} when the limit changed
+     * @throws IllegalArgumentException for a negative value
      */
     public boolean set(BlockCoord pos, long limit) {
         if (limit < 0) {
-            throw new IllegalArgumentException("Limit darf nicht negativ sein: " + limit);
+            throw new IllegalArgumentException("Limit must not be negative: " + limit);
         }
         long before = limitOf(pos);
         if (limit == base) {
@@ -71,17 +67,17 @@ public final class ThroughputLimits {
         return before != limit;
     }
 
-    /** Setzt den Baustein auf das Grundlimit zurück (z. B. beim Abbauen). */
+    /** Resets the block to the base limit. */
     public boolean reset(BlockCoord pos) {
         return overrides.remove(pos) != null;
     }
 
-    /** Anzahl der Bausteine mit eigenem Wert. */
+    /** Number of blocks with their own value. */
     public int overrideCount() {
         return overrides.size();
     }
 
-    /** Alle eigenen Werte, zum Speichern. */
+    /** All own values. */
     public Map<BlockCoord, Long> overrides() {
         return Collections.unmodifiableMap(overrides);
     }

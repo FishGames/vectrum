@@ -12,11 +12,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-/**
- * Minimale, loaderunabhaengige Registrierung. Gemeinsamer Code meldet Objekte hier an
- * ({@link #register}); der jeweilige Loader ruft spaeter {@link #apply} auf und traegt sie
- * in die echte Registry ein (Fabric direkt beim Start, Forge/NeoForge im RegisterEvent).
- */
+/** Loader-independent registration queue ({@link #register}, {@link #apply}, {@link #applyTo}). */
 public final class Registration {
     private static final Map<ResourceKey<? extends Registry<?>>, List<Registered<?>>> QUEUE = new LinkedHashMap<>();
 
@@ -31,7 +27,7 @@ public final class Registration {
         return entry;
     }
 
-    /** Uebergibt alle angemeldeten Objekte der Registry an {@code sink} (Id und Wert). */
+    /** Passes all queued entries of a registry to {@code sink}. */
     @SuppressWarnings("unchecked")
     public static <R> void apply(ResourceKey<? extends Registry<R>> registry, BiConsumer<ResourceLocation, R> sink) {
         for (Registered<?> entry : QUEUE.getOrDefault(registry, List.of())) {
@@ -39,7 +35,7 @@ public final class Registration {
         }
     }
 
-    /** Traegt alle angemeldeten Objekte direkt in eine offene Registry ein (Fabric). */
+    /** Registers all queued entries in an open registry. */
     public static <R> void applyTo(ResourceKey<? extends Registry<R>> registryKey, Registry<R> registry) {
         apply(registryKey, (id, value) -> Registry.register(registry, id, value));
     }

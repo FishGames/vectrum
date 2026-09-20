@@ -1,0 +1,19 @@
+{
+  "forge:conditions": [
+    { "type": "forge:item_exists", "item": "vectrum:gas_cable" }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "C": { "item": "vectrum:fluid_cable" },
+    "I": { "item": "minecraft:iron_ingot" }
+  },
+  "pattern": [
+    "ICI"
+  ],
+  "result": {
+    "count": 2,
+    "item": "vectrum:gas_cable"
+  },
+  "show_notification": true
+}

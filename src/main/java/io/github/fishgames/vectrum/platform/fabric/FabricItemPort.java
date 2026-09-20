@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 
-/** {@link ItemPort} auf Basis der Fabric Transfer API. Vanilla-Inventare werden von der API automatisch angepasst. */
+/** {@link ItemPort} on the Fabric Transfer API. */
 final class FabricItemPort implements ItemPort {
     private final Storage<ItemVariant> storage;
 
@@ -29,11 +29,11 @@ final class FabricItemPort implements ItemPort {
                 ? variant -> true
                 : variant -> filter.test(ResourceIds.of(variant.getItem()));
         if (maxTypes >= Integer.MAX_VALUE) {
-            // StorageUtil.move arbeitet mit einer Transaktion: entweder komplett oder gar nicht, nichts geht verloren.
+            // Single transaction
             return StorageUtil.move(storage, other.storage, allowed, max, null);
         }
 
-        // Mit Sortenlimit: Sorte fuer Sorte bewegen, bis das Limit erreicht ist.
+        // Type-limited move: one item type at a time
         Set<ItemVariant> moved = new HashSet<>();
         Set<ItemVariant> refused = new HashSet<>();
         long total = 0;

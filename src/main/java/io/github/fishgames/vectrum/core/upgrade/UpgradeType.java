@@ -2,40 +2,50 @@ package io.github.fishgames.vectrum.core.upgrade;
 
 import java.util.Locale;
 
-/**
- * Die Upgrade-Sorten (ein einziger Satz für alle Transportkabel-Stufen). Jede Sorte darf höchstens
- * {@link #maxCount()} Mal in einem Baustein stecken.
- */
+/** Upgrade types with their maximum count per block. */
 public enum UpgradeType {
-    /** Höheres Durchsatzlimit pro Übergabe (jedes Upgrade vervierfacht es). */
+    /** Throughput limit times 4 per upgrade. */
     THROUGHPUT(6),
-    /** Kürzerer Abstand zwischen zwei Übergaben (jedes Upgrade halbiert ihn). */
+    /** Transfer interval halved per upgrade. */
     SPEED(3),
-    /** Mehr Item-Sorten gleichzeitig pro Übergabe (jedes Upgrade erlaubt eine Sorte mehr). */
+    /** One more item type per transfer per upgrade. */
     TYPES(4),
-    /** Schaltet den Filter frei. */
+    /** Unlocks the filter. */
     FILTER(1),
-    /** Schaltet die Prioritätseinstellung frei. */
-    PRIORITY(1);
+    /** Unlocks the priority setting. */
+    PRIORITY(1),
+    /** Wireless port only: allows links across dimensions. */
+    DIMENSION(1, true);
 
     public static final UpgradeType[] VALUES = values();
 
     private final int maxCount;
+    private final boolean wireless;
 
     UpgradeType(int maxCount) {
+        this(maxCount, false);
+    }
+
+    UpgradeType(int maxCount, boolean wireless) {
         this.maxCount = maxCount;
+        this.wireless = wireless;
+    }
+
+    /** {@code true}: fits the wireless port only; {@code false}: fits cables and endpoints only. */
+    public boolean wireless() {
+        return wireless;
     }
 
     public int maxCount() {
         return maxCount;
     }
 
-    /** Kleingeschriebener Name, z. B. für Befehle und Speicherung. */
+    /** Lower-case name. */
     public String id() {
         return name().toLowerCase(Locale.ROOT);
     }
 
-    /** Sucht nach dem Namen (Groß-/Kleinschreibung egal); {@code null}, wenn es ihn nicht gibt. */
+    /** Case-insensitive lookup by name; {@code null} when unknown. */
     public static UpgradeType byId(String id) {
         for (UpgradeType type : VALUES) {
             if (type.id().equalsIgnoreCase(id)) {

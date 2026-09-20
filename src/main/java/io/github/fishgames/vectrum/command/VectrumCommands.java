@@ -7,6 +7,7 @@ import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.fishgames.vectrum.block.NetworkBlock;
+import io.github.fishgames.vectrum.block.WirelessBlock;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.core.util.SaturatedMath;
 import io.github.fishgames.vectrum.world.LevelNetworks;
@@ -22,24 +23,19 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.List;
 
 /**
- * Verwaltungsbefehle ({@code /vectrum ...}, nur fuer Operatoren). Sie sind loaderunabhaengig; der jeweilige Loader
- * ruft {@link #register} beim Registrieren der Befehle auf.
+ * Operator commands ({@code /vectrum ...}).
  *
  * <ul>
- *   <li>{@code /vectrum throughput <pos>} zeigt das Durchsatzlimit eines Kabels oder Endpunkts (Ergebnis des Befehls
- *       ist der Wert, auf {@code int} geklemmt, z. B. fuer {@code /execute store}).</li>
- *   <li>{@code /vectrum throughput <pos> <wert>} setzt es (Einheiten pro Uebergabe und Quellseite).</li>
- *   <li>{@code /vectrum throughput <pos> reset} setzt es auf das Grundlimit zurueck.</li>
- *   <li>Ein Universalkabel hat je Typ ein eigenes Limit: {@code /vectrum throughput <pos> type <item|fluid|energy> ...}
- *       waehlt den Typ; ohne Angabe gilt der erste Typ des Bausteins (Items).</li>
- *   <li>{@code /vectrum port <pos> <seite> ...} Prioritaet, Verteilmodus und Filter einer Anschlussseite
- *       (siehe {@link PortCommands}).</li>
- *   <li>{@code /vectrum upgrade <pos> ...} zeigt, fuegt hinzu und entfernt Upgrades (siehe {@link UpgradeCommands}).</li>
+ *   <li>{@code /vectrum throughput <pos>}: show the throughput limit.</li>
+ *   <li>{@code /vectrum throughput <pos> <value>}: set it.</li>
+ *   <li>{@code /vectrum throughput <pos> reset}: reset it.</li>
+ *   <li>{@code /vectrum throughput <pos> type <item|fluid|energy> ...}: per-type variant.</li>
+ *   <li>{@code /vectrum port ...} (see {@link PortCommands}).</li>
+ *   <li>{@code /vectrum upgrade ...} (see {@link UpgradeCommands}).</li>
  * </ul>
- * Die Durchsatz-Upgrades setzen denselben Wert; der Befehl bleibt fuer Tests und Verwaltung.
  */
 public final class VectrumCommands {
-    /** Kurznamen der Typen fuer den Befehl: der Teil der Kennung nach dem Doppelpunkt. */
+    /** Transport types accepted as short names. */
     private static final List<TransportType> KNOWN_TYPES = List.of(TransportType.ITEM, TransportType.FLUID,
             TransportType.ENERGY, TransportType.REDSTONE, TransportType.GAS);
 
@@ -62,15 +58,17 @@ public final class VectrumCommands {
                                                 .then(resetNode("type"))
                                                 .then(valueNode("type"))))))
                 .then(PortCommands.node())
+                .then(FrequencyCommands.node())
+                .then(WirelessCommands.node())
                 .then(UpgradeCommands.node()));
     }
 
-    /** {@code reset}; {@code typeArgument} ist der Name des Typ-Arguments oder {@code null}. */
+    /** {@code reset} node; {@code typeArgument} is the type argument name or {@code null}. */
     private static ArgumentBuilder<CommandSourceStack, ?> resetNode(String typeArgument) {
         return Commands.literal("reset").executes(context -> resetThroughput(context, typeArgument));
     }
 
-    /** {@code <wert>}; {@code typeArgument} ist der Name des Typ-Arguments oder {@code null}. */
+    /** {@code <value>} node; {@code typeArgument} is the type argument name or {@code null}. */
     private static ArgumentBuilder<CommandSourceStack, ?> valueNode(String typeArgument) {
         return Commands.argument("value", LongArgumentType.longArg(0))
                 .executes(context -> setThroughput(context, typeArgument));
@@ -86,7 +84,7 @@ public final class VectrumCommands {
             long limit = networks.throughput(type, pos);
             context.getSource().sendSuccess(() -> Component.translatable(
                     "command.vectrum.throughput.show", pos.toShortString(), limit), false);
-            return SaturatedMath.clampToNonNegativeInt(limit); // Ergebnis fuer /execute store
+            return SaturatedMath.clampToNonNegativeInt(limit);
         });
     }
 
@@ -117,8 +115,11 @@ public final class VectrumCommands {
     }
 
     /**
-     * Liest die Position, prueft, dass dort ein Netzbaustein steht, und waehlt den Typ (Angabe im Befehl oder der
-     * erste Typ des Bausteins). Fuehrt dann die Aktion aus.
+     * <ul>
+     *   <li>1. read the position and check for a network block</li>
+     *   <li>2. pick the type (command argument or the block's first type)</li>
+     *   <li>3. run the action</li>
+     * </ul>
      */
     private static int withNetworkBlock(CommandContext<CommandSourceStack> context, String typeArgument, Action action)
             throws CommandSyntaxException {
@@ -126,11 +127,11 @@ public final class VectrumCommands {
         BlockPos pos = BlockPosArgument.getLoadedBlockPos(context, "pos");
         ServerLevel level = source.getLevel();
         BlockState state = level.getBlockState(pos);
-        if (!(state.getBlock() instanceof NetworkBlock block)) {
+        if (!(state.getBlock() instanceof NetworkBlock block) || block instanceof WirelessBlock) {
             source.sendFailure(Component.translatable("command.vectrum.not_a_network_block", pos.toShortString()));
             return 0;
         }
-        if (block.transportType().behavior() == io.github.fishgames.vectrum.core.transport.TransportType.Behavior.SIGNAL) {
+        if (block instanceof io.github.fishgames.vectrum.block.ConduitBlock conduit && !conduit.acceptsUpgrades()) {
             source.sendFailure(Component.translatable("command.vectrum.signal_unsupported", pos.toShortString()));
             return 0;
         }

@@ -53,7 +53,7 @@ class ResourceFilterTest {
         assertEquals("a:a", filter.ids().iterator().next());
         try {
             filter.ids().add("c:c");
-            throw new AssertionError("Set muss unveränderlich sein");
+            throw new AssertionError("Set must be immutable");
         } catch (UnsupportedOperationException expected) {
             // ok
         }

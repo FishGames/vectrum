@@ -2,21 +2,17 @@ package io.github.fishgames.vectrum.core.upgrade;
 
 import io.github.fishgames.vectrum.core.util.SaturatedMath;
 
-/**
- * Was die Upgrades bewirken, als reine Rechnung. Alle Werte werden einmal beim Ändern der Upgrades berechnet und
- * gespeichert bzw. beim Takt nachgeschlagen, nie über das Netz berechnet (K3). Zwischenrechnungen sind gesättigt
- * (K5), ein Überlauf ist ausgeschlossen.
- */
+/** Effects of upgrades: throughput limit, transfer interval, item type count, feature unlocks. */
 public final class UpgradeEffects {
-    /** Jedes Durchsatz-Upgrade multipliziert das Limit mit diesem Faktor. */
+    /** Limit factor per throughput upgrade. */
     public static final long THROUGHPUT_FACTOR = 4;
-    /** Ohne Upgrade wird pro Übergabe an ein Ziel diese Zahl Item-Sorten bewegt. */
+    /** Item types per transfer without upgrades. */
     public static final int BASE_TYPES = 1;
 
     private UpgradeEffects() {
     }
 
-    /** Durchsatzlimit pro Übergabe: {@code base × 4^Anzahl}, nach oben bei {@link Long#MAX_VALUE} gedeckelt. */
+    /** Throughput limit per transfer: {@code base * 4^count}, saturating at {@link Long#MAX_VALUE}. */
     public static long throughput(long base, Upgrades upgrades) {
         long result = base;
         for (int i = 0; i < upgrades.count(UpgradeType.THROUGHPUT); i++) {
@@ -25,13 +21,13 @@ public final class UpgradeEffects {
         return result;
     }
 
-    /** Ticks zwischen zwei Übergaben: jedes Speed-Upgrade halbiert den Grundwert, mindestens 1. */
+    /** Ticks between transfers: base halved per speed upgrade, at least 1. */
     public static int interval(int baseTicks, Upgrades upgrades) {
         int shift = upgrades.count(UpgradeType.SPEED);
         return Math.max(1, baseTicks >> shift);
     }
 
-    /** Wie viele verschiedene Item-Sorten pro Übergabe an ein Ziel bewegt werden dürfen. */
+    /** Item types allowed per transfer to one target. */
     public static int maxTypes(Upgrades upgrades) {
         return BASE_TYPES + upgrades.count(UpgradeType.TYPES);
     }
@@ -42,5 +38,14 @@ public final class UpgradeEffects {
 
     public static boolean priorityUnlocked(Upgrades upgrades) {
         return upgrades.has(UpgradeType.PRIORITY);
+    }
+
+    public static boolean dimensionUnlocked(Upgrades upgrades) {
+        return upgrades.has(UpgradeType.DIMENSION);
+    }
+
+    /** Whether two wireless ports can link: same dimension, or both have the dimension upgrade. */
+    public static boolean canLink(boolean sameDimension, Upgrades sender, Upgrades receiver) {
+        return sameDimension || dimensionUnlocked(sender) && dimensionUnlocked(receiver);
     }
 }

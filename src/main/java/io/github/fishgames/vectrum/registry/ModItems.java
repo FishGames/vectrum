@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.function.Supplier;
 
+/** Item registrations. */
 public final class ModItems {
     private static final List<Registered<Item>> ALL = new ArrayList<>();
     private static final List<Registered<Item>> PLAIN = new ArrayList<>();
@@ -24,7 +25,12 @@ public final class ModItems {
     public static final Registered<Item> ITEM_CABLE = blockItem(ModBlocks.ITEM_CABLE);
     public static final Registered<Item> FLUID_CABLE = blockItem(ModBlocks.FLUID_CABLE);
     public static final Registered<Item> ENERGY_CABLE = blockItem(ModBlocks.ENERGY_CABLE);
+    /** {@code null} unless the gas module is on. */
+    public static final Registered<Item> GAS_CABLE = ModBlocks.GAS_CABLE == null ? null : blockItem(ModBlocks.GAS_CABLE);
     public static final Registered<Item> REDSTONE_CABLE = blockItem(ModBlocks.REDSTONE_CABLE);
+    public static final Registered<Item> DIGITAL_CABLE = blockItem(ModBlocks.DIGITAL_CABLE);
+    public static final Registered<Item> CODER = blockItem(ModBlocks.CODER);
+    public static final Registered<Item> WIRELESS_PORT = blockItem(ModBlocks.WIRELESS_PORT);
     public static final Registered<Item> UNIVERSAL_CABLE = blockItem(ModBlocks.UNIVERSAL_CABLE);
     public static final Registered<Item> ITEM_ENDPOINT = blockItem(ModBlocks.ITEM_ENDPOINT);
     public static final Registered<Item> WRENCH = plainItem("wrench", () -> new WrenchItem(new Item.Properties().stacksTo(1)));
@@ -42,17 +48,17 @@ public final class ModItems {
     private ModItems() {
     }
 
-    /** Registrierungsname des Upgrade-Items einer Sorte. */
+    /** Registry id of an upgrade item. */
     public static net.minecraft.resources.ResourceLocation upgradeId(UpgradeType type) {
         return io.github.fishgames.vectrum.Vectrum.id(type.id() + "_upgrade");
     }
 
-    /** Das Item zu einer Upgrade-Sorte. */
+    /** Upgrade item of a type. */
     public static Item upgrade(UpgradeType type) {
         return UPGRADES.get(type).get();
     }
 
-    /** Einfacher Gegenstand mit flachem Item-Modell ("item/generated"). */
+    /** Registers an item without a block. */
     private static Registered<Item> plainItem(String name, Supplier<Item> factory) {
         Registered<Item> entry = Registration.register(Registries.ITEM, name, factory);
         ALL.add(entry);
@@ -60,7 +66,7 @@ public final class ModItems {
         return entry;
     }
 
-    /** Block-Item mit demselben Namen wie der Block. */
+    /** Registers the block item of a block. */
     private static Registered<Item> blockItem(Registered<Block> block) {
         Registered<Item> entry = Registration.register(Registries.ITEM, block.id().getPath(),
                 () -> new BlockItem(block.get(), new Item.Properties()));
@@ -68,12 +74,12 @@ public final class ModItems {
         return entry;
     }
 
-    /** Alle Items dieser Mod (Creative-Tab, Datagen). */
+    /** All mod items. */
     public static List<Registered<Item>> all() {
         return List.copyOf(ALL);
     }
 
-    /** Nur die Items ohne zugehoerigen Block (fuer die Item-Modelle im Datagen). */
+    /** Items without a block. */
     public static List<Registered<Item>> plainItems() {
         return List.copyOf(PLAIN);
     }

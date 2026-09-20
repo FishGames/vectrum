@@ -4,12 +4,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 
-/** Sucht den Speicher eines Transporttyps an einer Position. Jeder Loader liefert dafür eigene Umsetzungen. */
+/** Finds the storage of one transport type at a position. */
 @FunctionalInterface
 public interface PortFinder {
     /**
-     * @param side die Seite des <em>Speicherblocks</em>, von der aus zugegriffen wird
-     * @return der Port oder {@code null}, wenn dort kein passender Speicher ist
+     * @param side side of the <em>storage block</em> that is accessed
+     * @return the port, or {@code null} when there is no matching storage
      */
     Port find(Level level, BlockPos pos, Direction side);
 }

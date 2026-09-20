@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RouterTest {
-    /** Ein Test-Ziel mit Fassungsvermögen, Füllstand und Priorität. */
+    /** Test target with capacity, fill level and priority. */
     private static final class Sink {
         final String name;
         final int priority;
@@ -111,7 +111,7 @@ class RouterTest {
     void roundRobinPointerSurvivesAsPlainNumber() {
         Sink a = sink("a", 0, 100), b = sink("b", 0, 100);
         Ptr ptr = new Ptr();
-        ptr.value = 1; // z. B. nach dem Laden
+        ptr.value = 1; // pointer after load
         run(1, List.of(a, b), DistributionMode.ROUND_ROBIN, ptr);
 
         assertEquals(0, a.stored);
@@ -123,7 +123,7 @@ class RouterTest {
     void roundRobinHandlesPointerOutsideTheRange() {
         Sink a = sink("a", 0, 100), b = sink("b", 0, 100);
         Ptr ptr = new Ptr();
-        ptr.value = 17; // Ziele haben sich seither geändert
+        ptr.value = 17; // out-of-range pointer
         assertEquals(1, run(1, List.of(a, b), DistributionMode.ROUND_ROBIN, ptr));
         ptr.value = -3;
         assertEquals(1, run(1, List.of(a, b), DistributionMode.ROUND_ROBIN, ptr));
@@ -134,7 +134,7 @@ class RouterTest {
         Sink empty = sink("empty", 0, 1000), half = new Sink("half", 0, 1000, 500);
         run(100, List.of(half, empty), DistributionMode.BALANCED, new Ptr());
 
-        assertTrue(empty.stored > half.stored - 500, "leeres Ziel muss mehr bekommen");
+        assertTrue(empty.stored > half.stored - 500, "empty target must receive more");
         assertEquals(100, empty.stored + (half.stored - 500));
     }
 
@@ -197,14 +197,14 @@ class RouterTest {
             long moved = run(budget, sinks, mode, ptr);
 
             long after = sinks.stream().mapToLong(s -> s.stored).sum();
-            assertEquals(after - before, moved, "Bewegt-Summe stimmt nicht (" + mode + ")");
+            assertEquals(after - before, moved, "moved sum mismatch (" + mode + ")");
             assertTrue(moved <= budget);
             for (Sink s : sinks) {
                 assertTrue(s.stored <= s.capacity && s.stored >= 0);
             }
-            // Wird das Budget nicht ausgeschöpft, muss jedes Ziel voll sein: es bleibt nichts liegen, das ankommen könnte.
+            // budget not exhausted: every target is full
             if (moved < budget) {
-                assertEquals(totalFree, moved, "Es blieb Platz übrig, obwohl Budget da war (" + mode + ")");
+                assertEquals(totalFree, moved, "free space remained with budget left (" + mode + ")");
             }
         }
     }

@@ -1,48 +1,48 @@
 # Vectrum
-So Leude, Forza ist 'runtergeladen
 
-Minecraft-Mod für **Fabric**, **Forge** und **NeoForge** aus einer gemeinsamen Codebasis.
-Aktuell unterstützt: **Minecraft 1.20.1** (Java 17). Weitere Versionen sind vorbereitet, siehe unten.
+Minecraft mod for **Fabric**, **Forge** and **NeoForge** from one shared code base.
+Currently supported: **Minecraft 1.20.1** (Java 17). More versions are prepared, see below.
 
-## Aufbau
+## Layout
 
-Das Projekt nutzt [Stonecutter](https://stonecutter.kikugie.dev) (mehrere Minecraft-Versionen aus einem Quelltext)
-zusammen mit Architectury Loom (Fabric, Forge und NeoForge im selben Build). Jede Kombination aus
-Version und Loader ist ein eigenes Gradle-Projekt, z. B. `1.20.1-fabric`.
+The project uses [Stonecutter](https://stonecutter.kikugie.dev) (several Minecraft versions from one source tree)
+together with Architectury Loom (Fabric, Forge and NeoForge in the same build). Each combination of version and
+loader is its own Gradle project, e.g. `1.20.1-fabric`.
 
 ```
-settings.gradle.kts           Liste aller Versions-/Loader-Projekte
-stonecutter.gradle.kts        Steuer-Skript (aktive Version, Loader-Konstanten, buildAll)
-build.gradle.kts              Ein Build-Skript für ALLE Projekte (verzweigt nach Loader)
-gradle.properties             Mod-Metadaten (ID, Name, Version, Autor, Lizenz)
-versions/<mc>-<loader>/       Versionen der Abhängigkeiten je Projekt (Loader, API, Parchment, pack_format)
-src/main/java/.../Vectrum.java          gemeinsamer Einstieg
-src/main/java/.../registry/             loaderunabhängige Registrierung (Blöcke, Items, Creative-Tab)
-src/main/java/.../datagen/              loaderunabhängige Datengenerierung (nur Vanilla-Klassen)
-src/main/java/.../core/                 Netzwerk-Kern OHNE Minecraft-Klassen (Graph, Transportarten, Durchsatz, Routing, Hilfsmathe)
-src/test/java/.../core/                 automatische Tests für den Kern
-docs/                                   Konzept, Implementierungs-Prompt, Entscheidungsliste
-src/main/java/.../block/                Kabel, Endpunkt (gemeinsame Basis ConduitBlock), Verbindungszustände, Formen
-src/main/java/.../world/                Netzwerke einer Dimension (Speicherung, Verbindung zum Kern)
-src/main/java/.../logistics/            Transportlogik (wer liefert wohin)
-src/main/java/.../command/              Verwaltungsbefehle (/vectrum ...), loaderunabhängig
-src/main/java/.../transfer/             Zugang zu Speichern (Items, Fluide, Energie), gemeinsame Schnittstelle (Umsetzung je Loader)
-src/main/java/.../item/                 Werkzeuge (Wrench, Diagnosewerkzeug)
-src/main/resources/assets/vectrum/      Handgeschriebene Modelle und Blockstates von Kabel und Endpunkt, Texturen
-src/main/java/.../platform/fabric/      Fabric-Einstieg + Fabric-Datagen-Einstieg + Inventarzugriff (Transfer API)
-src/main/java/.../platform/forge/       Forge-Einstieg + Inventarzugriff (Item-Handler), nutzt auch NeoForge 1.20.1
-platforms/<loader>/resources/           fabric.mod.json bzw. META-INF/mods.toml
-generated/<mc>/                         Ausgabe des Datagens (wird als Ressourcenordner eingebunden)
+settings.gradle.kts           List of all version/loader projects
+stonecutter.gradle.kts        Control script (active version, loader constants, buildAll)
+build.gradle.kts              One build script for ALL projects (branches by loader)
+gradle.properties             Mod metadata (id, name, version, author, licence)
+versions/<mc>-<loader>/       Dependency versions per project (loader, API, Parchment, pack_format, Mekanism API)
+src/main/java/.../Vectrum.java          shared entry point
+src/main/java/.../registry/             loader-independent registration (blocks, items, creative tab)
+src/main/java/.../datagen/              loader-independent data generation (vanilla classes only)
+src/main/java/.../core/                 network core WITHOUT Minecraft classes (graph, transport types, throughput, routing, math helpers)
+src/test/java/.../core/                 automated tests for the core
+docs/                                   concept, implementation prompt, decision log
+src/main/java/.../block/                cables, endpoint (shared base ConduitBlock), connection states, shapes
+src/main/java/.../world/                networks of a dimension (storage, link to the core)
+src/main/java/.../logistics/            transport logic (who delivers where)
+src/main/java/.../command/              admin commands (/vectrum ...), loader-independent
+src/main/java/.../transfer/             access to storage (items, fluids, energy), shared interface (implemented per loader)
+src/main/java/.../item/                 tools (wrench, diagnostic tool)
+src/main/resources/assets/vectrum/      hand-written models and blockstates of cable and endpoint, textures
+src/main/java/.../platform/fabric/      Fabric entry point + Fabric datagen entry point + inventory access (Transfer API)
+src/main/java/.../platform/forge/       Forge entry point + inventory access (item handler), also used by NeoForge 1.20.1
+src/main/java/.../platform/forge/mekanism/  Mekanism gas integration (Forge and NeoForge, loaded only with Mekanism)
+platforms/<loader>/resources/           fabric.mod.json / META-INF/mods.toml
+generated/<mc>/                         datagen output (included as a resource folder)
 ```
 
-Forge und NeoForge teilen sich bis 1.20.1 dieselbe API (`net.minecraftforge.*`) und damit dasselbe Paket
-`platform/forge`. Für NeoForge 1.20.2 und neuer wird ein eigenes Paket `platform/neoforge` erwartet; die
-Auswahl steht schon in `build.gradle.kts` (`sourcePlatform`).
+Up to 1.20.1, Forge and NeoForge share the same API (`net.minecraftforge.*`) and therefore the same package
+`platform/forge`. For NeoForge 1.20.2 and newer a separate package `platform/neoforge` is expected; the selection
+is already in `build.gradle.kts` (`sourcePlatform`).
 
-## Loaderspezifischer Code
+## Loader-specific code
 
-Unterschiede zwischen Loadern und Versionen werden mit Stonecutter-Kommentaren direkt im Code geschrieben,
-Beispiele stehen in `Vectrum.java` und `ModCreativeTabs.java`:
+Differences between loaders and versions are written directly in the code with Stonecutter comments; examples are in
+`Vectrum.java` and `ModCreativeTabs.java`:
 
 ```java
 //? if fabric {
@@ -54,58 +54,66 @@ return "fabric";
 *///?}
 ```
 
-Welche Variante gerade im Editor aktiv ist, steht in `stonecutter.gradle.kts` (`stonecutter active ...`).
-In IntelliJ lässt sie sich über die Gradle-Tasks `Set active project to ...` (Gruppe *stonecutter*) umschalten.
+The variant currently active in the editor is set in `stonecutter.gradle.kts` (`stonecutter active ...`).
+In IntelliJ it can be switched with the Gradle tasks `Set active project to ...` (group *stonecutter*).
 
-## Häufige Befehle
+## Common commands
 
-| Befehl | Wirkung |
+| Command | Effect |
 | --- | --- |
-| `./gradlew :1.20.1-fabric:runClient` | Client mit Fabric starten (analog `-forge`, `-neoforge`) |
-| `./gradlew :1.20.1-fabric:runDatagen` | Datagen über Fabric ausführen, schreibt nach `generated/1.20.1/` |
-| `./gradlew :1.20.1-forge:runData` | Datagen über Forge (oder `-neoforge`) |
-| `./gradlew :1.20.1-forge:build` | Nur diesen Loader bauen (Jar in `versions/1.20.1-forge/build/libs`) |
-| `./gradlew :1.20.1-forge:test` | Automatische Tests des Kerns ausführen |
-| `./gradlew buildAll` | Alle Loader und Versionen bauen |
+| `./gradlew :1.20.1-fabric:runClient` | Start the client with Fabric (likewise `-forge`, `-neoforge`) |
+| `./gradlew :1.20.1-fabric:runDatagen` | Run datagen through Fabric, writes to `generated/1.20.1/` |
+| `./gradlew :1.20.1-forge:runData` | Run datagen through Forge (or `-neoforge`) |
+| `./gradlew :1.20.1-forge:build` | Build this loader only (jar in `versions/1.20.1-forge/build/libs`) |
+| `./gradlew :1.20.1-forge:test` | Run the automated core tests |
+| `./gradlew :1.20.1-forge:runServer -PwithMekanism` | Forge (or NeoForge) run with the full Mekanism jar added as runtime dependency |
+| `./gradlew buildAll` | Build all loaders and versions |
 
-Unter Windows `gradlew.bat` statt `./gradlew` verwenden. Beim ersten Start lädt Loom Minecraft und die
-Mappings herunter, das dauert einige Minuten.
+On Windows use `gradlew.bat` instead of `./gradlew`. On first start Loom downloads Minecraft and the mappings,
+which takes a few minutes.
 
-## Kern und Tests
+## Core and tests
 
-Im Paket `core` liegt die Logik, die kein Minecraft braucht: der Netzwerk-Graph (Kabel und Endpunkte, Verschmelzen
-und Teilen von Netzen), die Transportarten, die Durchsatzlimits, das Routing (Filter, Priorität, Verteilmodi) und die Hilfsmathe. Weil der Kern ohne Minecraft läuft, lässt er sich
-mit normalen JUnit-Tests prüfen (`src/test/java`), auch mit Zufallstests gegen eine einfache Referenzlösung und
-Leistungsmessungen. Der Test `CoreIsolationTest` schlägt fehl, sobald jemand im Kern Minecraft- oder Loader-Klassen
-importiert. Die Tests laufen mit jedem Loader-Projekt, z. B. `./gradlew :1.20.1-forge:test`.
+The package `core` holds the logic that needs no Minecraft: the network graph (cables and endpoints, merging and
+splitting of networks), the transport types, the throughput limits, the routing (filter, priority, distribution modes)
+and the math helpers. Because the core runs without Minecraft, it can be checked with plain JUnit tests
+(`src/test/java`), including randomised tests against a simple reference solution and performance measurements.
+The test `CoreIsolationTest` fails as soon as someone imports Minecraft or loader classes in the core. The tests run
+with every loader project, e.g. `./gradlew :1.20.1-forge:test`.
 
-Konzept, Aufgabenstellung und getroffene Entscheidungen stehen im Ordner `docs/`.
+Concept, task description and decisions are in the folder `docs/`.
 
 ## Datagen
 
-`generated/1.20.1/` enthält Lang-Dateien (en_us, de_de), Modelle, Blockstate, Loot-Table, Rezepte und Block-Tags
-für den Beispielblock. Die Dateien wurden anfangs von Hand vorbefüllt, damit die Mod sofort spielbar ist; ein
-Datagen-Lauf ersetzt sie durch die echte Ausgabe (und ergänzt z. B. die Rezept-Advancements). Die Provider liegen
-in `datagen/` und laufen auf allen drei Loadern unverändert.
+`generated/1.20.1/` contains lang files (en_us, de_de), models, blockstates, loot tables, recipes and block tags for
+the example block. The files were initially pre-filled by hand so that the mod is playable immediately; a datagen run
+replaces them with the real output (and adds e.g. the recipe advancements). The providers are in `datagen/` and run
+unchanged on all three loaders.
 
-Die Texturen (`src/main/resources/assets/vectrum/textures/`) sind einfache Platzhalter.
+The textures (`src/main/resources/assets/vectrum/textures/`) are simple placeholders.
 
-## Neue Minecraft-Version hinzufügen (Beispiel 1.21.1)
+## Gas module
 
-1. In `settings.gradle.kts` eine Zeile ergänzen, z. B. `match("1.21.1", "fabric", "neoforge")`.
-2. Je Loader `versions/1.21.1-<loader>/gradle.properties` anlegen (Vorlage: die Dateien von 1.20.1) und
-   `java_version` (21 ab 1.20.5), `pack_format`, Loader-/API-Versionen sowie `parchment_version` anpassen.
-3. Bei NeoForge ab 1.20.2 zusätzlich `loom.platform=neoforge` setzen, Paket `platform/neoforge` anlegen und
-   die Metadaten-Datei in `platforms/neoforge/resources/` anpassen (ab 1.20.5 heißt sie `neoforge.mods.toml`).
-4. Unterschiede im Code per Stonecutter-Kommentar lösen, z. B. `//? if >=1.21 { ... //?}`.
-5. Mit `Set active project to 1.21.1-...` die neue Version im Editor aktivieren und mit `buildAll` prüfen.
+Optional, Forge and NeoForge 1.20.1 only, active when Mekanism is loaded. Mekanism is a compile-only dependency
+(`modCompileOnly mekanism:Mekanism:<version>:api` from ModMaven, version in `versions/*/gradle.properties`) and an
+optional dependency in `mods.toml`. On Fabric the module stays off.
 
-## Mitgelieferte Software
+## Adding a new Minecraft version (example 1.21.1)
 
-- Fabric-Jar: [Team Reborn Energy](https://github.com/TechReborn/Energy) 3.0.0 (MIT-Lizenz), per Jar-in-Jar für die Energie-Übertragung.
+1. Add a line to `settings.gradle.kts`, e.g. `match("1.21.1", "fabric", "neoforge")`.
+2. Create `versions/1.21.1-<loader>/gradle.properties` per loader (template: the 1.20.1 files) and adjust
+   `java_version` (21 from 1.20.5), `pack_format`, loader/API versions and `parchment_version`.
+3. For NeoForge from 1.20.2, additionally set `loom.platform=neoforge`, create the package `platform/neoforge` and
+   adjust the metadata file in `platforms/neoforge/resources/` (from 1.20.5 it is called `neoforge.mods.toml`).
+4. Solve differences in code with Stonecutter comments, e.g. `//? if >=1.21 { ... //?}`.
+5. Activate the new version in the editor with `Set active project to 1.21.1-...` and verify with `buildAll`.
 
-## Bekannte Lücken
+## Bundled software
 
-- Es sind noch keine Mixins enthalten. Zum Ergänzen: `vectrum.mixins.json` anlegen, in `fabric.mod.json` unter
-  `mixins` eintragen und für Forge/NeoForge in `build.gradle.kts` `loom { forge { mixinConfig("vectrum.mixins.json") } }` setzen.
-- Lizenz: `All Rights Reserved` (siehe `LICENSE`, gleiche Angabe in den Mod-Metadaten).
+- Fabric jar: [Team Reborn Energy](https://github.com/TechReborn/Energy) 3.0.0 (MIT licence), bundled as jar-in-jar for energy transfer.
+
+## Known gaps
+
+- No mixins are included yet. To add them: create `vectrum.mixins.json`, list it under `mixins` in `fabric.mod.json`,
+  and for Forge/NeoForge set `loom { forge { mixinConfig("vectrum.mixins.json") } }` in `build.gradle.kts`.
+- Licence: `All Rights Reserved` (see `LICENSE`, same entry in the mod metadata).

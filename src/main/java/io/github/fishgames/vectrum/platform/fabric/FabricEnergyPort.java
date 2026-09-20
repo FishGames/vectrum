@@ -6,7 +6,7 @@ import team.reborn.energy.api.EnergyStorageUtil;
 
 import java.util.function.Predicate;
 
-/** {@link Port} fuer Energie auf Basis der Team Reborn Energy API (1 E = 1 FE). Wird mit der Mod mitgeliefert. Energie kennt keine Sorten, der Filter wird ignoriert. */
+/** {@link Port} for energy on the Team Reborn Energy API (1 E = 1 FE); the filter is ignored. */
 final class FabricEnergyPort implements Port {
     private final EnergyStorage storage;
 
@@ -19,7 +19,7 @@ final class FabricEnergyPort implements Port {
         if (max <= 0 || !(target instanceof FabricEnergyPort other) || other.storage == storage) {
             return 0;
         }
-        // Eine Transaktion: entweder komplett oder gar nicht.
+        // Single transaction
         return EnergyStorageUtil.move(storage, other.storage, max, null);
     }
 

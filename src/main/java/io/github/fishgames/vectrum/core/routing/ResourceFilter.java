@@ -6,28 +6,27 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 
 /**
- * Filter über Ressourcen-Kennungen (z. B. {@code "minecraft:cobblestone"}). Ein leerer Filter lässt alles durch
- * (Kernentscheidung K7). Sonst gilt je nach Art:
+ * Filter over resource ids (for example {@code "minecraft:cobblestone"}). An empty filter passes everything.
  * <ul>
- *   <li>Positivliste: nur die genannten Kennungen passen.</li>
- *   <li>Negativliste: alles außer den genannten passt.</li>
+ *   <li>Whitelist: only the listed ids pass.</li>
+ *   <li>Blacklist: everything except the listed ids passes.</li>
  * </ul>
- * Unveränderlich; {@code with...}-Methoden liefern eine neue Instanz.
+ * Immutable.
  */
 public record ResourceFilter(boolean blacklist, Set<String> ids) {
-    /** Leerer Filter: lässt alles durch. */
+    /** Empty filter. */
     public static final ResourceFilter NONE = new ResourceFilter(false, Set.of());
 
     public ResourceFilter {
-        ids = Collections.unmodifiableSet(new TreeSet<>(ids)); // sortiert: stabile Reihenfolge beim Speichern und Anzeigen
+        ids = Collections.unmodifiableSet(new TreeSet<>(ids));
     }
 
-    /** {@code true}, wenn nichts eingetragen ist (dann passt alles, egal ob Positiv- oder Negativliste). */
+    /** Whether no id is listed. */
     public boolean isEmpty() {
         return ids.isEmpty();
     }
 
-    /** Darf diese Ressource passieren? */
+    /** Whether the resource passes. */
     public boolean matches(String id) {
         if (ids.isEmpty()) {
             return true;
@@ -51,11 +50,7 @@ public record ResourceFilter(boolean blacklist, Set<String> ids) {
         return new ResourceFilter(blacklist, ids);
     }
 
-    /**
-     * Der Teil dieses Filters, der einen bestimmten Transporttyp betrifft: nur Eintraege, fuer die
-     * {@code relevant} zutrifft. Bleibt keiner uebrig, sagt der Filter nichts ueber diesen Typ und laesst alles
-     * durch. So sperrt ein Positivfilter fuer Items nicht ungewollt alle Fluide, wenn ein Universalkabel beides fuehrt.
-     */
+    /** Filter reduced to the ids matching {@code relevant}; {@link #NONE} when none remain. */
     public ResourceFilter restrictedTo(Predicate<String> relevant) {
         if (ids.isEmpty()) {
             return this;
@@ -69,7 +64,7 @@ public record ResourceFilter(boolean blacklist, Set<String> ids) {
         return kept.isEmpty() ? NONE : new ResourceFilter(blacklist, kept);
     }
 
-    /** Leert die Liste, behält aber die Art (Positiv- oder Negativliste). */
+    /** Same list type with no ids. */
     public ResourceFilter cleared() {
         return new ResourceFilter(blacklist, Set.of());
     }

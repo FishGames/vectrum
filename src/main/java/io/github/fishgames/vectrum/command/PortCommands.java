@@ -8,11 +8,14 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.fishgames.vectrum.block.ConduitBlock;
 import io.github.fishgames.vectrum.block.EndpointMode;
 import io.github.fishgames.vectrum.block.NetworkBlock;
+import io.github.fishgames.vectrum.block.WirelessBlock;
 import io.github.fishgames.vectrum.core.routing.DistributionMode;
 import io.github.fishgames.vectrum.core.routing.PortSettings;
 import io.github.fishgames.vectrum.core.routing.ResourceFilter;
 import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
+import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.registry.ModItems;
+import io.github.fishgames.vectrum.transfer.ResourceIds;
 import io.github.fishgames.vectrum.world.LevelNetworks;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -31,18 +34,16 @@ import java.util.Arrays;
 import java.util.function.UnaryOperator;
 
 /**
- * {@code /vectrum port <pos> <seite> ...}: Einstellungen einer Anschlussseite (Prioritaet, Verteilmodus, Filter).
- * Bis die Upgrades (Etappe 6) und die Oberflaeche (Etappe 12) da sind, ist das der Weg, sie zu setzen.
+ * {@code /vectrum port <pos> <side> ...}: port side settings (priority, distribution mode, filter, role).
  *
  * <ul>
- *   <li>{@code ... <seite>} zeigt die Einstellungen (Ergebnis des Befehls ist die Prioritaet).</li>
- *   <li>{@code ... priority <zahl>}: hoehere Zahl wird als Ziel zuerst beliefert (Standard 0, auch negativ).</li>
- *   <li>{@code ... mode sequential|round_robin|balanced}: wie die Seite als Quelle verteilt.</li>
- *   <li>{@code ... filter add|remove <id>}, {@code filter clear}, {@code filter type whitelist|blacklist}.</li>
- *   <li>{@code ... reset}: alles auf Standard.</li>
+ *   <li>{@code ... <side>}: show the settings.</li>
+ *   <li>{@code ... priority <value>}</li>
+ *   <li>{@code ... mode sequential|round_robin|balanced}</li>
+ *   <li>{@code ... filter add|remove <id>}, {@code filter clear}, {@code filter type whitelist|blacklist}</li>
+ *   <li>{@code ... role in|out|off}</li>
+ *   <li>{@code ... reset}</li>
  * </ul>
- * Prioritaet und Filter lassen sich nur setzen, wenn der Baustein das Prioritaets- bzw. Filter-Upgrade hat (siehe
- * {@link UpgradeCommands}); der Verteilmodus ist frei.
  */
 final class PortCommands {
     private PortCommands() {
@@ -91,7 +92,7 @@ final class PortCommands {
         int run(LevelNetworks networks, BlockPos pos, Direction side) throws CommandSyntaxException;
     }
 
-    /** Liest Position und Seite, prueft, dass dort ein Netzbaustein steht, und fuehrt die Aktion aus. */
+    /** Reads position and side, checks for a network block there, runs the action. */
     private static int withPort(CommandContext<CommandSourceStack> context, Action action)
             throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
@@ -104,7 +105,7 @@ final class PortCommands {
         }
         ServerLevel level = source.getLevel();
         BlockState state = level.getBlockState(pos);
-        if (!(state.getBlock() instanceof NetworkBlock)) {
+        if (!(state.getBlock() instanceof NetworkBlock) && !(state.getBlock() instanceof WirelessBlock)) {
             source.sendFailure(Component.translatable("command.vectrum.not_a_network_block", pos.toShortString()));
             return 0;
         }
@@ -131,11 +132,12 @@ final class PortCommands {
                     pos.toShortString(), sideName(side), settings.priority(),
                     Component.translatable("distribution.vectrum." + settings.mode().id()),
                     describeFilter(settings.filter())), false);
-            if (!networks.upgrades(pos).has(UpgradeType.PRIORITY) && settings.priority() != 0
-                    || !networks.upgrades(pos).has(UpgradeType.FILTER) && !settings.filter().isEmpty()) {
+            boolean free = context.getSource().getLevel().getBlockState(pos).getBlock() instanceof WirelessBlock;
+            if (!free && (!networks.upgrades(pos).has(UpgradeType.PRIORITY) && settings.priority() != 0
+                    || !networks.upgrades(pos).has(UpgradeType.FILTER) && !settings.filter().isEmpty())) {
                 context.getSource().sendSuccess(() -> Component.translatable("command.vectrum.port.inactive"), false);
             }
-            return settings.priority(); // Ergebnis fuer /execute store
+            return settings.priority();
         });
     }
 
@@ -143,7 +145,8 @@ final class PortCommands {
                               String messageKey, java.util.function.Function<PortSettings, Object> argument,
                               UpgradeType required) throws CommandSyntaxException {
         return withPort(context, (networks, pos, side) -> {
-            if (required != null && !networks.upgrades(pos).has(required)) {
+            if (required != null && !networks.upgrades(pos).has(required)
+                    && !(context.getSource().getLevel().getBlockState(pos).getBlock() instanceof WirelessBlock)) {
                 context.getSource().sendFailure(Component.translatable("command.vectrum.port.locked",
                         pos.toShortString(), Component.translatable(ModItems.upgrade(required).getDescriptionId())));
                 return 0;
@@ -176,7 +179,8 @@ final class PortCommands {
     private static int editFilter(CommandContext<CommandSourceStack> context, boolean add)
             throws CommandSyntaxException {
         ResourceLocation id = ResourceLocationArgument.getId(context, "id");
-        if (add && !BuiltInRegistries.ITEM.containsKey(id) && !BuiltInRegistries.FLUID.containsKey(id)) {
+        if (add && !BuiltInRegistries.ITEM.containsKey(id) && !BuiltInRegistries.FLUID.containsKey(id)
+                && !ResourceIds.belongsTo(TransportType.GAS, id.toString())) {
             context.getSource().sendFailure(Component.translatable("command.vectrum.port.unknown_resource", id));
             return 0;
         }
@@ -197,7 +201,7 @@ final class PortCommands {
                 "command.vectrum.port.filter", settings -> describeFilter(settings.filter()), UpgradeType.FILTER);
     }
 
-    /** Setzt die Rolle einer Seite (Eingang, Ausgang, aus), wie der Schluessel es tut. Vor allem fuer Tests und Redstone. */
+    /** Sets the role of a side (in, out, off). */
     private static int setRole(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         String name = StringArgumentType.getString(context, "role");
         EndpointMode mode = switch (name) {

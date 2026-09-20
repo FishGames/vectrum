@@ -6,10 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Eine zusammenhängende Gruppe von Knoten. Netze werden ausschließlich vom {@link NetworkGraph} erzeugt und
- * verändert; von außen ist nur Lesen möglich.
- */
+/** Connected group of nodes; read-only view of a {@link NetworkGraph} component. */
 public final class Network {
     private final long id;
     final Set<Node> nodes = new HashSet<>();
@@ -19,22 +16,22 @@ public final class Network {
         this.id = id;
     }
 
-    /** Fortlaufende Nummer innerhalb eines Graphen. Beim Verschmelzen bleibt die Nummer des größeren Netzes. */
+    /** Network id, unique within a graph. */
     public long id() {
         return id;
     }
 
-    /** Anzahl aller Knoten (Kabel und Endpunkte). */
+    /** Number of nodes (cables and endpoints). */
     public int size() {
         return nodes.size();
     }
 
-    /** Anzahl der Endpunkte. Ein Netz ohne Endpunkte braucht keine Rechenzeit. */
+    /** Number of endpoints. */
     public int endpointCount() {
         return endpointCount;
     }
 
-    /** Kopie aller Positionen des Netzes (für Tests, Speichern und Diagnose, nicht für heiße Pfade). */
+    /** Copy of all node positions. */
     public Set<BlockCoord> positions() {
         Set<BlockCoord> result = new HashSet<>(nodes.size() * 2);
         for (Node node : nodes) {
@@ -43,7 +40,7 @@ public final class Network {
         return Collections.unmodifiableSet(result);
     }
 
-    /** Kopie der Positionen aller Endpunkte. */
+    /** Copy of all endpoint positions. */
     public List<BlockCoord> endpointPositions() {
         List<BlockCoord> result = new ArrayList<>(endpointCount);
         for (Node node : nodes) {
@@ -56,6 +53,6 @@ public final class Network {
 
     @Override
     public String toString() {
-        return "Network#" + id + "[" + nodes.size() + " Knoten, " + endpointCount + " Endpunkte]";
+        return "Network#" + id + "[" + nodes.size() + " nodes, " + endpointCount + " endpoints]";
     }
 }

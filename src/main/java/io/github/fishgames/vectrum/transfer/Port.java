@@ -3,46 +3,39 @@ package io.github.fishgames.vectrum.transfer;
 import java.util.function.Predicate;
 
 /**
- * Loaderunabhängiger Zugang zu einem Speicher an einer Blockseite (Item-Inventar, Fluidtank, Energiespeicher). Der
- * gemeinsame Code braucht nur zwei Fähigkeiten: Ware von einem Port zu einem anderen bewegen und den Füllstand
- * nennen. Beide Ports gehören immer zum selben Transporttyp und stammen vom selben Loader; die Umsetzungen liegen in
- * {@code platform/forge} und {@code platform/fabric}.
+ * Loader-independent access to a storage at a block side (item inventory, fluid tank, energy storage).
  *
- * <p>Einheiten je Transporttyp: Items in Stück, Fluide in Millibucket (mB), Energie in FE (bzw. E der Team Reborn
- * Energy API, 1:1).
+ * <p>Units per transport type: items in pieces, fluids in millibuckets (mB), energy in FE.
  *
- * <p>Ressourcen werden dem Filter als Kennung übergeben (z. B. {@code "minecraft:cobblestone"}, {@code "minecraft:water"}),
- * siehe {@link ResourceIds}. Energie kennt keine Sorten und ignoriert den Filter.
+ * <p>The filter receives resource ids (e.g. {@code "minecraft:cobblestone"}), see {@link ResourceIds}. Energy has no
+ * resource types and ignores the filter.
  */
 public interface Port {
-    /** Filter, der alles durchlässt. Wird per Identität erkannt, damit sich der schnelle Weg lohnt. */
+    /** Filter that accepts everything. */
     Predicate<String> ALL = id -> true;
 
     /**
-     * Bewegt höchstens {@code max} Einheiten von diesem Port in {@code target}, nur Ware, die {@code filter} erfüllt.
-     * Es geht nichts verloren: was das Ziel nicht annimmt, bleibt in der Quelle.
+     * Moves up to {@code max} units from this port into {@code target}, limited to resources accepted by
+     * {@code filter}.
      *
-     * @return Anzahl der tatsächlich bewegten Einheiten
+     * @return number of units actually moved
      */
     long moveTo(Port target, long max, Predicate<String> filter);
 
     /**
-     * Wie {@link #moveTo(Port, long, Predicate)}, bewegt aber höchstens {@code maxTypes} verschiedene Sorten
-     * (nur für Items sinnvoll; Fluide und Energie kennen pro Übergabe nur eine Sorte und ignorieren den Wert).
+     * Like {@link #moveTo(Port, long, Predicate)}, limited to {@code maxTypes} distinct resource types (items only;
+     * fluids and energy ignore the value).
      */
     default long moveTo(Port target, long max, Predicate<String> filter, int maxTypes) {
         return moveTo(target, max, filter);
     }
 
-    /** Ohne Filter. */
+    /** Move without a filter. */
     default long moveTo(Port target, long max) {
         return moveTo(target, max, ALL);
     }
 
-    /**
-     * Füllstand von 0 (leer) bis 1 (voll). Wird nur für den Verteilmodus „Ausgleichen“ abgefragt, also selten.
-     * Ist der Speicher nicht bestimmbar, gilt er als leer.
-     */
+    /** Fill level from 0 (empty) to 1 (full); 0 when not determinable. */
     default double fillLevel() {
         return 0;
     }

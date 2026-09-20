@@ -14,10 +14,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Sichert die Regel ab, dass der Kern (Paket {@code core}) nichts aus Minecraft, Forge, NeoForge, Fabric oder
- * Mojang-Bibliotheken benutzt. Sobald jemand einen solchen Import einbaut, schlägt dieser Test fehl.
- */
+/** Checks that the core package imports nothing from Minecraft, Forge, NeoForge, Fabric or Mojang libraries. */
 class CoreIsolationTest {
     private static final Pattern FORBIDDEN = Pattern.compile(
             "\\b(net\\.minecraft|net\\.minecraftforge|net\\.neoforged|net\\.fabricmc|com\\.mojang|cpw\\.mods|org\\.spongepowered)\\b");
@@ -40,11 +37,11 @@ class CoreIsolationTest {
             }
         }
 
-        assertTrue(files > 0, "keine Quelldateien im Kern gefunden unter " + coreDir);
-        assertEquals(List.of(), violations, "Der Kern darf keine Minecraft- oder Loader-Klassen benutzen");
+        assertTrue(files > 0, "no source files found in core under " + coreDir);
+        assertEquals(List.of(), violations, "Core must not use Minecraft or loader classes");
     }
 
-    /** Sucht den Kernordner über die Systemeigenschaft von Gradle oder ausgehend vom Arbeitsverzeichnis. */
+    /** Core source directory: system property, else searched upwards from the working directory. */
     private static Path findCoreDir() {
         String configured = System.getProperty("vectrum.coreDir");
         if (configured != null) {
@@ -58,6 +55,6 @@ class CoreIsolationTest {
             }
             directory = directory.getParent();
         }
-        throw new IllegalStateException("Kernordner nicht gefunden. Systemeigenschaft vectrum.coreDir setzen.");
+        throw new IllegalStateException("Core directory not found. Set system property vectrum.coreDir.");
     }
 }

@@ -9,7 +9,7 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 
 import java.util.function.Predicate;
 
-/** {@link Port} fuer Fluide auf Basis der Forge-Fluid-Handler-Capability (gilt auch fuer NeoForge 1.20.1). Einheit: mB. */
+/** {@link Port} for fluids on the Forge fluid handler capability. Unit: mB. */
 final class ForgeFluidPort implements Port {
     private final IFluidHandler handler;
 
@@ -24,37 +24,37 @@ final class ForgeFluidPort implements Port {
         }
         int limit = SaturatedMath.clampToNonNegativeInt(max);
 
-        // 1. Probe: Was koennte die Quelle hergeben, und wie viel davon nimmt das Ziel?
+        // 1. probe: source offer
         FluidStack offered = filter == ALL
                 ? handler.drain(limit, IFluidHandler.FluidAction.SIMULATE)
                 : firstAllowed(limit, filter);
         if (offered.isEmpty()) {
             return 0;
         }
-        // 2. Probe: Wie viel davon nimmt das Ziel?
+        // 2. probe: target acceptance
         int accepted = other.handler.fill(offered, IFluidHandler.FluidAction.SIMULATE);
         if (accepted <= 0) {
             return 0;
         }
-        // Echte Uebergabe
+        // 3. transfer
         FluidStack taken = handler.drain(new FluidStack(offered, accepted), IFluidHandler.FluidAction.EXECUTE);
         if (taken.isEmpty()) {
             return 0;
         }
         int filled = other.handler.fill(taken, IFluidHandler.FluidAction.EXECUTE);
         if (filled < taken.getAmount()) {
-            // Sollte nach der Probe nicht vorkommen. Zur Sicherheit zurueck in die Quelle fuellen.
+            // 4. return remainder to the source
             FluidStack rest = new FluidStack(taken, taken.getAmount() - filled);
             int back = handler.fill(rest, IFluidHandler.FluidAction.EXECUTE);
             if (back < rest.getAmount()) {
-                Vectrum.LOGGER.warn("{} mB {} konnten weder ins Ziel noch zurueck in die Quelle gefuellt werden",
+                Vectrum.LOGGER.warn("{} mB {} could be filled neither into the target nor back into the source",
                         rest.getAmount() - back, rest.getFluid());
             }
         }
         return filled;
     }
 
-    /** Das erste Fluid in den Tanks der Quelle, das der Filter durchlaesst (Probe, ohne etwas zu entnehmen). */
+    /** First fluid in the source tanks that the filter allows (simulated drain). */
     private FluidStack firstAllowed(int limit, Predicate<String> filter) {
         for (int tank = 0; tank < handler.getTanks(); tank++) {
             FluidStack inTank = handler.getFluidInTank(tank);

@@ -77,7 +77,7 @@ class ThroughputLimitsTest {
 
     @Test
     void hugeValuesStayExactInternallyAndAreClampedAtTheBoundary() {
-        long huge = 5_000_000_000L; // mehr als ein int
+        long huge = 5_000_000_000L; // larger than int
         limits.set(A, huge);
         limits.set(B, Long.MAX_VALUE);
 
@@ -111,7 +111,7 @@ class ThroughputLimitsTest {
         long micros = (System.nanoTime() - start) / 1000;
 
         assertTrue(sum > 0);
-        System.out.println("100.000 Limit-Nachschlage: " + micros + " us");
-        assertTrue(micros < 200_000, "Nachschlagen war zu langsam: " + micros + " us");
+        System.out.println("100,000 limit lookups: " + micros + " us");
+        assertTrue(micros < 200_000, "Lookup was too slow: " + micros + " us");
     }
 }

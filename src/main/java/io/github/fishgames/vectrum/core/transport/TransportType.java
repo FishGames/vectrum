@@ -3,11 +3,10 @@ package io.github.fishgames.vectrum.core.transport;
 import java.util.Objects;
 
 /**
- * Art der transportierten Ware. Jeder Typ bildet sein eigenes, getrenntes Netz (auch im Universalkabel).
- * Fremdmods können später über die API eigene Typen ergänzen, deshalb ist das hier ein Record und kein Enum.
+ * Transport type; each type forms its own network layer.
  *
- * @param id       eindeutige Kennung mit Namensraum, z. B. {@code "vectrum:item"}; dient auch als Name der Netz-Ebene
- * @param behavior wie der Typ übertragen wird
+ * @param id       namespaced id, for example {@code "vectrum:item"}; also the layer name
+ * @param behavior transfer behavior
  */
 public record TransportType(String id, Behavior behavior) {
     public TransportType {
@@ -15,18 +14,22 @@ public record TransportType(String id, Behavior behavior) {
         Objects.requireNonNull(behavior, "behavior");
     }
 
-    /** Übertragungsverhalten: entscheidet, ob der Kern Mengen verschiebt oder einen Wert spiegelt. */
+    /** Transfer behavior. */
     public enum Behavior {
-        /** Menge wird aus der Quelle entnommen und im Ziel eingefügt (Items, Fluide, Energie, Gase). */
+        /** Quantity moved from source to target (items, fluids, energy, gases). */
         QUANTITY,
-        /** Ein Zustandswert wird gespiegelt, nichts wird verbraucht (Redstone-Signalstärke). */
-        SIGNAL
+        /** State value mirrored (redstone signal strength). */
+        SIGNAL,
+        /** Connection layer without transfer (digital network). */
+        CONNECTION
     }
 
     public static final TransportType ITEM = new TransportType("vectrum:item", Behavior.QUANTITY);
     public static final TransportType FLUID = new TransportType("vectrum:fluid", Behavior.QUANTITY);
     public static final TransportType ENERGY = new TransportType("vectrum:energy", Behavior.QUANTITY);
     public static final TransportType REDSTONE = new TransportType("vectrum:redstone", Behavior.SIGNAL);
-    /** Nur mit Mekanism vorhanden; die Konstante liegt hier, damit der Kern keine Sonderfälle braucht. */
+    /** Digital layer. */
+    public static final TransportType DIGITAL = new TransportType("vectrum:digital", Behavior.CONNECTION);
+    /** Gas type (Mekanism). */
     public static final TransportType GAS = new TransportType("vectrum:gas", Behavior.QUANTITY);
 }

@@ -1,6 +1,7 @@
 package io.github.fishgames.vectrum.item;
 
 import io.github.fishgames.vectrum.block.ConduitBlock;
+import io.github.fishgames.vectrum.block.WirelessBlock;
 import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
 import io.github.fishgames.vectrum.core.upgrade.Upgrades;
 import io.github.fishgames.vectrum.world.LevelNetworks;
@@ -20,9 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Ein Upgrade. Rechtsklick auf ein Kabel oder einen Endpunkt mit angeschlossenem Inventar steckt eines hinein; die
- * Upgrades bleiben im Block ({@link LevelNetworks}, nicht im Item) und kommen beim Abbauen vollstaendig zurueck.
- * Herausnehmen: Schluessel mit Schleichen (Shift) und Rechtsklick. Eine Oberflaeche dafuer folgt in Etappe 12.
+ * Upgrade item. Right click on a cable, endpoint or wireless port installs one upgrade (stored in {@link LevelNetworks}).
  */
 public class UpgradeItem extends Item {
     private final UpgradeType type;
@@ -42,14 +41,23 @@ public class UpgradeItem extends Item {
         BlockPos pos = context.getClickedPos();
         BlockState state = level.getBlockState(pos);
         Player player = context.getPlayer();
-        if (!(state.getBlock() instanceof ConduitBlock conduit)) {
+        boolean wirelessPort = state.getBlock() instanceof WirelessBlock;
+        if (!wirelessPort && !(state.getBlock() instanceof ConduitBlock)) {
             return InteractionResult.PASS;
         }
         if (level.isClientSide || !(level instanceof ServerLevel server)) {
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
+        if (wirelessPort) {
+            return useOnWirelessPort(context, server, pos);
+        }
+        ConduitBlock conduit = (ConduitBlock) state.getBlock();
 
         Component name = Component.translatable(getDescriptionId());
+        if (type.wireless()) {
+            tell(player, Component.translatable("message.vectrum.upgrade_wireless_only", name));
+            return InteractionResult.CONSUME;
+        }
         if (!conduit.acceptsUpgrades()) {
             tell(player, Component.translatable("message.vectrum.upgrade_not_supported"));
             return InteractionResult.CONSUME;
@@ -66,6 +74,43 @@ public class UpgradeItem extends Item {
         }
         Upgrades updated = installed.with(type, installed.count(type) + 1);
         networks.setUpgrades(conduit.transportTypes(), pos, updated);
+        if (player == null || !player.getAbilities().instabuild) {
+            context.getItemInHand().shrink(1);
+        }
+        tell(player, Component.translatable("message.vectrum.upgrade_added", name, updated.count(type),
+                type.maxCount()));
+        return InteractionResult.CONSUME;
+    }
+
+    /** Installs, or with sneaking removes, a wireless upgrade. */
+    private InteractionResult useOnWirelessPort(UseOnContext context, ServerLevel server, BlockPos pos) {
+        Player player = context.getPlayer();
+        Component name = Component.translatable(getDescriptionId());
+        if (!type.wireless()) {
+            tell(player, Component.translatable("message.vectrum.upgrade_not_supported"));
+            return InteractionResult.CONSUME;
+        }
+        LevelNetworks networks = LevelNetworks.get(server);
+        Upgrades installed = networks.upgrades(pos);
+        if (player != null && player.isSecondaryUseActive()) {
+            if (installed.count(type) == 0) {
+                tell(player, Component.translatable("message.vectrum.upgrades_none"));
+                return InteractionResult.CONSUME;
+            }
+            networks.setUpgrades(WirelessBlock.TYPES, pos, installed.with(type, installed.count(type) - 1));
+            ItemStack returned = new ItemStack(this);
+            if (!player.getInventory().add(returned) && !returned.isEmpty()) {
+                player.drop(returned, false);
+            }
+            tell(player, Component.translatable("message.vectrum.upgrades_removed", 1));
+            return InteractionResult.CONSUME;
+        }
+        if (installed.freeSlots(type) <= 0) {
+            tell(player, Component.translatable("message.vectrum.upgrade_full", name, type.maxCount()));
+            return InteractionResult.CONSUME;
+        }
+        Upgrades updated = installed.with(type, installed.count(type) + 1);
+        networks.setUpgrades(WirelessBlock.TYPES, pos, updated);
         if (player == null || !player.getAbilities().instabuild) {
             context.getItemInHand().shrink(1);
         }

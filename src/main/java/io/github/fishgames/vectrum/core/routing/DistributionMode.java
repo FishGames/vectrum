@@ -2,25 +2,23 @@ package io.github.fishgames.vectrum.core.routing;
 
 import java.util.Locale;
 
-/**
- * Wie eine Quelle ihre Ware auf gleichwertige Ziele (gleiche Priorität) verteilt. Wird an der Quelle eingestellt.
- */
+/** Distribution mode of a source across targets of equal priority. */
 public enum DistributionMode {
-    /** Standard: das erste Ziel wird bis zum Anschlag gefüllt, dann das nächste. */
+    /** Fill the first target completely, then the next. */
     SEQUENTIAL,
-    /** Reihum: jede Übergabe beginnt beim Ziel hinter dem, das zuletzt beliefert wurde. */
+    /** Each transfer starts after the target served first in the previous transfer. */
     ROUND_ROBIN,
-    /** Ausgleichen: leerere Ziele bekommen mehr, so dass sich die Füllstände angleichen. */
+    /** Emptier targets receive larger shares. */
     BALANCED;
 
     public static final DistributionMode DEFAULT = SEQUENTIAL;
 
-    /** Kleingeschriebener Name, z. B. für Befehle und Speicherung. */
+    /** Lower-case name. */
     public String id() {
         return name().toLowerCase(Locale.ROOT);
     }
 
-    /** Sucht nach dem Namen (Groß-/Kleinschreibung egal); {@code null}, wenn es ihn nicht gibt. */
+    /** Case-insensitive lookup by name; {@code null} when unknown. */
     public static DistributionMode byId(String id) {
         for (DistributionMode mode : values()) {
             if (mode.id().equalsIgnoreCase(id)) {

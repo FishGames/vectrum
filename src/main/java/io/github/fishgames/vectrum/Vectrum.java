@@ -10,11 +10,7 @@ import io.github.fishgames.vectrum.transfer.RedstonePorts;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 
-/**
- * Gemeinsamer, loaderunabhaengiger Einstiegspunkt. Die Plattform-Klassen unter
- * {@code platform/<loader>} rufen {@link #init()} auf und haengen die Registrierung
- * an den jeweiligen Loader an (siehe {@link io.github.fishgames.vectrum.registry.Registration}).
- */
+/** Common, loader-independent entry point. */
 public final class Vectrum {
     public static final String MOD_ID = "vectrum";
     public static final String MOD_NAME = "Vectrum";
@@ -24,14 +20,13 @@ public final class Vectrum {
     }
 
     public static void init() {
-        // Laedt die Klassen und legt damit alle Registrierungen in die Warteschlange.
         ModBlocks.init();
         ModItems.init();
         ModCreativeTabs.init();
-        // Redstone braucht keinen Loader-Zugang (Vanilla-Signale), deshalb steht sein Finder hier.
+        // Redstone port finder
         Ports.setFinder(TransportType.REDSTONE, RedstonePorts::find);
 
-        LOGGER.info("{} initialisiert (Loader: {})", MOD_NAME, platform());
+        LOGGER.info("{} initialised (loader: {})", MOD_NAME, platform());
     }
 
     public static ResourceLocation id(String path) {
@@ -42,7 +37,7 @@ public final class Vectrum {
         //?}
     }
 
-    /** Name des Loaders - Beispiel fuer loaderspezifischen Code per Stonecutter-Kommentar. */
+    /** Loader name. */
     public static String platform() {
         //? if fabric {
         return "fabric";

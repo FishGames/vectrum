@@ -3,17 +3,17 @@ package io.github.fishgames.vectrum.world;
 import net.minecraft.core.Direction;
 
 /**
- * Hilfen für die sechs Blockseiten. Die Reihenfolge ({@code get3DDataValue}) ist unten, oben, Norden, Süden,
- * Westen, Osten und stimmt mit {@code core.network.Direction} überein. Deshalb kann ein Bit einer Seitenmaske
- * direkt mit {@code 1 << side.get3DDataValue()} berechnet werden.
+ * Helpers for the six block sides. Order ({@code get3DDataValue}): down, up, north, south, west, east; identical
+ * to {@code core.network.Direction}.
  */
 public final class Sides {
-    /** Alle Seiten, einmal angelegt (vermeidet das Kopieren bei {@code Direction.values()}). */
+    /** All sides. */
     public static final Direction[] ALL = Direction.values();
 
     private Sides() {
     }
 
+    /** Side-mask bit of a side. */
     public static int bit(Direction side) {
         return 1 << side.get3DDataValue();
     }

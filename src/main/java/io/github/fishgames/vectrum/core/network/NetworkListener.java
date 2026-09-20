@@ -2,28 +2,21 @@ package io.github.fishgames.vectrum.core.network;
 
 import java.util.List;
 
-/**
- * Wird vom {@link NetworkGraph} über Änderungen an den Netzen informiert. Die Routing-Schicht nutzt das später,
- * um Angebots-/Nachfrage-Register und gecachte Werte (z. B. das Durchsatzlimit) nur bei Änderungen anzupassen.
- * Alle Methoden sind optional.
- */
+/** Callbacks for network changes reported by a {@link NetworkGraph}. All methods are optional. */
 public interface NetworkListener {
-    /** Ein neues Netz ist entstanden (z. B. erster Knoten ohne Nachbarn). */
+    /** A network was created. */
     default void onCreated(Network network) {
     }
 
-    /** {@code absorbed} wurde in {@code survivor} aufgenommen und existiert nicht mehr. */
+    /** {@code absorbed} was merged into {@code survivor}. */
     default void onMerged(Network survivor, Network absorbed) {
     }
 
-    /**
-     * {@code original} hat Knoten abgegeben. Die abgespaltenen Teile sind neue Netze; {@code original} lebt mit den
-     * verbleibenden Knoten weiter.
-     */
+    /** {@code original} was split; {@code newParts} are the new networks. */
     default void onSplit(Network original, List<Network> newParts) {
     }
 
-    /** Das Netz hat seinen letzten Knoten verloren und existiert nicht mehr. */
+    /** The network lost its last node. */
     default void onDissolved(Network network) {
     }
 }

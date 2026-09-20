@@ -3,11 +3,11 @@ package io.github.fishgames.vectrum.core.routing;
 import java.util.Objects;
 
 /**
- * Einstellungen einer Anschlussseite. Alle Felder haben einen Standard, mit dem alles ohne Konfiguration läuft (K7).
+ * Settings of a port side.
  *
- * @param priority höher = wird als Ziel zuerst beliefert; Standard 0
- * @param mode     Verteilmodus; gilt, wenn die Seite Quelle ist
- * @param filter   gilt für Quelle (was darf raus) und Ziel (was darf rein)
+ * @param priority higher = served first as target; default 0
+ * @param mode     distribution mode when the side is a source
+ * @param filter   applies to source (outgoing) and target (incoming)
  */
 public record PortSettings(int priority, DistributionMode mode, ResourceFilter filter) {
     public static final PortSettings DEFAULT = new PortSettings(0, DistributionMode.DEFAULT, ResourceFilter.NONE);

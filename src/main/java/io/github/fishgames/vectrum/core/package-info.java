@@ -1,12 +1,10 @@
 /**
- * Loaderunabhängiger Kern der Logistik (Netzwerke, später Routing, Durchsatz, Filter).
+ * Minecraft-free core: network graph, routing, throughput, filters, upgrades, wireless table, coder links.
  *
- * <p><b>Regel:</b> Nichts in diesem Paket und seinen Unterpaketen darf Minecraft, Forge, NeoForge, Fabric oder
- * Mojang-Bibliotheken importieren. Dadurch lässt sich der Kern ohne laufendes Spiel testen. Ein Test
- * ({@code CoreIsolationTest}) prüft die Regel automatisch.
+ * <p>Nothing in this package or its subpackages imports Minecraft, Forge, NeoForge, Fabric or Mojang libraries
+ * ({@code CoreIsolationTest} checks this).
  *
- * <p>Positionen laufen über {@link io.github.fishgames.vectrum.core.network.BlockCoord} und
- * {@link io.github.fishgames.vectrum.core.network.Direction}, die Anbindung an Minecraft-Typen liegt in den
- * Plattform-Paketen.
+ * <p>Positions use {@link io.github.fishgames.vectrum.core.network.BlockCoord} and
+ * {@link io.github.fishgames.vectrum.core.network.Direction}.
  */
 package io.github.fishgames.vectrum.core;

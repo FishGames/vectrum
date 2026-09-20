@@ -1,0 +1,98 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "vectrum:block/coder",
+    "core": "vectrum:block/coder",
+    "all": "vectrum:block/coder",
+    "port": "vectrum:block/coder"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        2,
+        2
+      ],
+      "to": [
+        14,
+        14,
+        14
+      ],
+      "faces": {
+        "down": {
+          "texture": "#core"
+        },
+        "up": {
+          "texture": "#core"
+        },
+        "north": {
+          "texture": "#core"
+        },
+        "south": {
+          "texture": "#core"
+        },
+        "west": {
+          "texture": "#core"
+        },
+        "east": {
+          "texture": "#core"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        3,
+        14
+      ],
+      "to": [
+        13,
+        13,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#all"
+        },
+        "up": {
+          "texture": "#all"
+        },
+        "west": {
+          "texture": "#all"
+        },
+        "east": {
+          "texture": "#all"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        4,
+        0
+      ],
+      "to": [
+        12,
+        12,
+        1
+      ],
+      "faces": {
+        "down": {
+          "texture": "#port"
+        },
+        "up": {
+          "texture": "#port"
+        },
+        "north": {
+          "texture": "#port"
+        },
+        "west": {
+          "texture": "#port"
+        },
+        "east": {
+          "texture": "#port"
+        }
+      }
+    }
+  ]
+}

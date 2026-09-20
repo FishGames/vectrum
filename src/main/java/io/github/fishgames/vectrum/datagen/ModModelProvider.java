@@ -15,12 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Schreibt Blockstates sowie Block- und Item-Modelle. Bewusst ohne loaderspezifische
- * Modell-Provider, damit derselbe Code auf Fabric, Forge und NeoForge laeuft.
- * Nur fuer Bloecke mit einfachem Wuerfelmodell ("cube_all", siehe ModBlocks.cubes()) und einfache Items
- * ("item/generated"). Kabel und Endpunkte haben handgeschriebene Modelle unter src/main/resources.
- */
+/** Block states plus block and item models for cube blocks and plain items. */
 public final class ModModelProvider implements DataProvider {
     private final PackOutput.PathProvider models;
     private final PackOutput.PathProvider blockStates;
@@ -37,20 +32,20 @@ public final class ModModelProvider implements DataProvider {
         for (Registered<Block> block : ModBlocks.cubes()) {
             String name = block.id().getPath();
 
-            // Blockstate -> Blockmodell
+            // Block state
             JsonObject variants = new JsonObject();
             variants.add("", model(Vectrum.MOD_ID + ":block/" + name));
             JsonObject blockState = new JsonObject();
             blockState.add("variants", variants);
             writes.add(DataProvider.saveStable(cache, blockState, blockStates.json(block.id())));
 
-            // Blockmodell: ein Wuerfel mit einer Textur
+            // Block model
             JsonObject blockModel = new JsonObject();
             blockModel.addProperty("parent", "minecraft:block/cube_all");
             blockModel.add("textures", textures("all", Vectrum.MOD_ID + ":block/" + name));
             writes.add(DataProvider.saveStable(cache, blockModel, models.json(Vectrum.id("block/" + name))));
 
-            // Item-Modell des Block-Items -> zeigt das Blockmodell
+            // Block item model
             JsonObject itemModel = new JsonObject();
             itemModel.addProperty("parent", Vectrum.MOD_ID + ":block/" + name);
             writes.add(DataProvider.saveStable(cache, itemModel, models.json(Vectrum.id("item/" + name))));

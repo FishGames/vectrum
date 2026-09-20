@@ -14,10 +14,7 @@ import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 
 import java.util.function.BiConsumer;
 
-/**
- * Jeder Block dieser Mod droppt sich selbst. Vanillas BlockLootSubProvider wird bewusst nicht benutzt,
- * weil er ohne loaderspezifische Erweiterung ALLE registrierten Bloecke (auch fremde) pruefen wuerde.
- */
+/** Loot tables: every mod block drops itself. */
 public final class ModBlockLoot implements LootTableSubProvider {
     @Override
     public void generate(BiConsumer<ResourceLocation, LootTable.Builder> output) {

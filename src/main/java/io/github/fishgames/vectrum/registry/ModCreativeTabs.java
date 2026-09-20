@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 
+/** Creative tab registrations. */
 public final class ModCreativeTabs {
     public static final Registered<CreativeModeTab> MAIN = Registration.register(Registries.CREATIVE_MODE_TAB, "main",
             () -> tabBuilder()

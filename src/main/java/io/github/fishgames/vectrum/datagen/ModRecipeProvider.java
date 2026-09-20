@@ -15,6 +15,7 @@ import net.minecraft.world.item.Items;
 
 import java.util.function.Consumer;
 
+/** Crafting recipes. */
 public final class ModRecipeProvider extends RecipeProvider {
     public ModRecipeProvider(PackOutput output) {
         super(output);
@@ -22,14 +23,14 @@ public final class ModRecipeProvider extends RecipeProvider {
 
     @Override
     public void buildRecipes(Consumer<FinishedRecipe> writer) {
-        // Diamant + Redstone -> Beispielgegenstand
+        // Example item
         ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, ModItems.EXAMPLE_ITEM.get())
                 .requires(Items.DIAMOND)
                 .requires(Items.REDSTONE)
                 .unlockedBy(getHasName(Items.DIAMOND), has(Items.DIAMOND))
                 .save(writer);
 
-        // 9 Beispielgegenstaende -> Beispielblock
+        // Example block
         ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.EXAMPLE_BLOCK.get())
                 .pattern("###")
                 .pattern("###")
@@ -38,13 +39,13 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(ModItems.EXAMPLE_ITEM.get()), has(ModItems.EXAMPLE_ITEM.get()))
                 .save(writer);
 
-        // Beispielblock -> 9 Beispielgegenstaende
+        // Example item from example block
         ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, ModItems.EXAMPLE_ITEM.get(), 9)
                 .requires(ModBlocks.EXAMPLE_BLOCK.get())
                 .unlockedBy(getHasName(ModBlocks.EXAMPLE_BLOCK.get()), has(ModBlocks.EXAMPLE_BLOCK.get()))
                 .save(writer, Vectrum.id("example_item_from_example_block"));
 
-        // Item-Kabel: 2 Eisen + 1 Kupfer -> 6 Kabel
+        // Item cable
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.ITEM_CABLE.get(), 6)
                 .pattern("ICI")
                 .define('I', Items.IRON_INGOT)
@@ -52,7 +53,7 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(Items.COPPER_INGOT), has(Items.COPPER_INGOT))
                 .save(writer);
 
-        // Fluid-Kabel: 2 Eisen + 1 Glas -> 6 Kabel
+        // Fluid cable
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.FLUID_CABLE.get(), 6)
                 .pattern("IGI")
                 .define('I', Items.IRON_INGOT)
@@ -60,7 +61,7 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(Items.GLASS), has(Items.GLASS))
                 .save(writer);
 
-        // Energie-Kabel: 2 Kupfer + 1 Redstone -> 6 Kabel
+        // Energy cable
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.ENERGY_CABLE.get(), 6)
                 .pattern("CRC")
                 .define('C', Items.COPPER_INGOT)
@@ -68,7 +69,7 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(Items.REDSTONE), has(Items.REDSTONE))
                 .save(writer);
 
-        // Redstone-Kabel: 2 Redstone + 1 Eisen -> 6 Kabel
+        // Redstone cable
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.REDSTONE_CABLE.get(), 6)
                 .pattern("RIR")
                 .define('R', Items.REDSTONE)
@@ -76,7 +77,39 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(Items.REDSTONE), has(Items.REDSTONE))
                 .save(writer);
 
-        // Universalkabel (Stufe 2): verbraucht je ein Kabel der drei Einzeltypen, ergibt 2
+        // Digital cable
+        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.DIGITAL_CABLE.get(), 4)
+                .pattern("QAQ")
+                .define('Q', Items.QUARTZ)
+                .define('A', Items.AMETHYST_SHARD)
+                .unlockedBy(getHasName(Items.AMETHYST_SHARD), has(Items.AMETHYST_SHARD))
+                .save(writer);
+
+        // Coder
+        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.CODER.get(), 1)
+                .pattern("GDG")
+                .pattern("EUE")
+                .pattern("GDG")
+                .define('G', Items.GOLD_INGOT)
+                .define('D', Items.DIAMOND)
+                .define('E', Items.ENDER_PEARL)
+                .define('U', ModItems.UNIVERSAL_CABLE.get())
+                .unlockedBy(getHasName(ModItems.UNIVERSAL_CABLE.get()), has(ModItems.UNIVERSAL_CABLE.get()))
+                .save(writer);
+
+        // Wireless port
+        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.WIRELESS_PORT.get(), 2)
+                .pattern("GEG")
+                .pattern("DND")
+                .pattern("GEG")
+                .define('G', Items.GOLD_INGOT)
+                .define('E', Items.ENDER_EYE)
+                .define('D', Items.DIAMOND)
+                .define('N', Items.NETHER_STAR)
+                .unlockedBy(getHasName(Items.NETHER_STAR), has(Items.NETHER_STAR))
+                .save(writer);
+
+        // Universal cable
         ShapelessRecipeBuilder.shapeless(RecipeCategory.REDSTONE, ModItems.UNIVERSAL_CABLE.get(), 2)
                 .requires(ModItems.ITEM_CABLE.get())
                 .requires(ModItems.FLUID_CABLE.get())
@@ -85,7 +118,7 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(ModItems.ITEM_CABLE.get()), has(ModItems.ITEM_CABLE.get()))
                 .save(writer);
 
-        // Item-Endpunkt: Trichter + Item-Kabel + Eisen
+        // Item endpoint
         ShapelessRecipeBuilder.shapeless(RecipeCategory.REDSTONE, ModItems.ITEM_ENDPOINT.get())
                 .requires(Items.HOPPER)
                 .requires(ModItems.ITEM_CABLE.get())
@@ -93,7 +126,7 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(ModItems.ITEM_CABLE.get()), has(ModItems.ITEM_CABLE.get()))
                 .save(writer);
 
-        // Diagnosewerkzeug: Glasscheibe + Kupfer + Eisen
+        // Diagnostic tool
         ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, ModItems.DIAGNOSTIC_TOOL.get())
                 .pattern("G")
                 .pattern("C")
@@ -113,15 +146,17 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .define('C', Items.COPPER_INGOT)
                 .unlockedBy(getHasName(Items.COPPER_INGOT), has(Items.COPPER_INGOT))
                 .save(writer);
-        // Upgrades (Platzhalter-Rezepte, das Balancing folgt spaeter)
+
+        // Upgrades
         upgrade(writer, UpgradeType.THROUGHPUT, Items.HOPPER, Items.REDSTONE);
         upgrade(writer, UpgradeType.SPEED, Items.SUGAR, Items.REDSTONE);
         upgrade(writer, UpgradeType.TYPES, Items.CHEST, Items.REDSTONE);
         upgrade(writer, UpgradeType.FILTER, Items.PAPER, Items.REDSTONE);
         upgrade(writer, UpgradeType.PRIORITY, Items.GOLD_INGOT, Items.REDSTONE);
+        upgrade(writer, UpgradeType.DIMENSION, Items.ENDER_PEARL, Items.REDSTONE);
     }
 
-    /** Ein Upgrade aus einem Kennzeichen-Item, Redstone, Kupfer und Eisen (formlos). */
+    /** Shapeless upgrade recipe. */
     private void upgrade(Consumer<FinishedRecipe> writer, UpgradeType type, Item mark, Item dust) {
         ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, ModItems.upgrade(type))
                 .requires(mark)

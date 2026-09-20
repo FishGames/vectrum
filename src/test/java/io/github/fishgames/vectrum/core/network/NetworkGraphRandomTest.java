@@ -13,9 +13,8 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Zufallstest: Der Graph wird mit tausenden zufälligen Änderungen (setzen, entfernen, Seiten sperren, Art wechseln) bearbeitet.
- * Nach jeder Änderung wird sein Ergebnis mit einer bewusst einfachen Referenz verglichen, die alle Netze jedes Mal
- * komplett neu berechnet. So fallen Fehler im inkrementellen Verschmelzen und Aufspalten auf.
+ * Random test: applies thousands of random edits (add, remove, set sides, change kind) and compares the graph after
+ * each edit with a reference that recomputes all networks from scratch.
  */
 class NetworkGraphRandomTest {
     private static final String DIM = "minecraft:overworld";
@@ -33,14 +32,14 @@ class NetworkGraphRandomTest {
     @Test
     void randomOperationsOnAFlatGridMatchTheReference() {
         for (long seed = 100; seed <= 110; seed++) {
-            run(seed, 14, 1, 14, 3000); // flach: viele Ringe und Engstellen
+            run(seed, 14, 1, 14, 3000); // flat grid
         }
     }
 
     @Test
     void randomOperationsOnAThinLineMatchTheReference() {
         for (long seed = 200; seed <= 205; seed++) {
-            run(seed, 40, 1, 1, 2000); // Linie: jeder Eingriff spaltet oder verbindet
+            run(seed, 40, 1, 1, 2000); // thin line
         }
     }
 
@@ -75,20 +74,20 @@ class NetworkGraphRandomTest {
                 reference.put(pos, new Cell(kind, existing.mask()));
             }
 
-            String context = "Seed " + seed + ", Schritt " + step;
+            String context = "Seed " + seed + ", step " + step;
             assertEquals(List.of(), graph.validate(), context);
             assertEquals(referencePartition(reference), NetworkGraphTest.partition(graph), context);
             assertEquals(reference.size(), graph.nodeCount(), context);
-            assertEquals(graph.networkCount(), counts.expectedNetworkCount(), context + " (Ereignisse)");
+            assertEquals(graph.networkCount(), counts.expectedNetworkCount(), context + " (events)");
         }
     }
 
-    /** Meist alle Seiten offen, manchmal eine zufällige Auswahl. */
+    /** Random side mask; usually all sides open. */
     private static int randomMask(Random random) {
         return random.nextInt(4) == 0 ? random.nextInt(Direction.ALL_MASK + 1) : Direction.ALL_MASK;
     }
 
-    /** Referenz: berechnet alle Netze von Grund auf mit einfacher Breitensuche. */
+    /** Reference partition: all networks recomputed by breadth-first search. */
     private static Set<Set<BlockCoord>> referencePartition(Map<BlockCoord, Cell> cells) {
         Set<Set<BlockCoord>> result = new HashSet<>();
         Set<BlockCoord> seen = new HashSet<>();
@@ -121,7 +120,7 @@ class NetworkGraphRandomTest {
         return result;
     }
 
-    /** Rechnet aus den Ereignissen mit, wie viele Netze es geben muss. */
+    /** Network count derived from listener events. */
     private static final class Counts implements NetworkListener {
         int created;
         int merged;

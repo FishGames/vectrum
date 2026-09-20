@@ -8,7 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 
-/** Findet Fluidspeicher ueber die Fluid-Lookup der Fabric Transfer API (auch Kessel u. a. aus Vanilla). */
+/** Fluid storage lookup on the Fabric Transfer API. */
 final class FabricFluidPorts {
     private FabricFluidPorts() {
     }

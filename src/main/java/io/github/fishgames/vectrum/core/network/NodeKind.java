@@ -1,6 +1,6 @@
 package io.github.fishgames.vectrum.core.network;
 
-/** Art eines Netzknotens. Beide leiten weiter; Endpunkte sind zusätzlich die Stellen, an denen gehandelt wird. */
+/** Node kind: cable or endpoint. */
 public enum NodeKind {
     CABLE,
     ENDPOINT

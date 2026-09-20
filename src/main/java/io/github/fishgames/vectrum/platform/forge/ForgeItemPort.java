@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-/** {@link ItemPort} auf Basis der Forge-Item-Handler-Capability (gilt auch für NeoForge 1.20.1). */
+/** {@link ItemPort} on the Forge item handler capability. */
 final class ForgeItemPort implements ItemPort {
     private final IItemHandler handler;
 
@@ -31,23 +31,23 @@ final class ForgeItemPort implements ItemPort {
         IItemHandler to = other.handler;
 
         int moved = 0;
-        List<ItemStack> movedTypes = new ArrayList<>(); // Sorten, die in dieser Uebergabe schon bewegt wurden
+        List<ItemStack> movedTypes = new ArrayList<>(); // item types moved so far
         for (int slot = 0; slot < from.getSlots() && moved < max; slot++) {
-            // 1. Probe: Was könnte dieser Slot hergeben?
+            // 1. probe: slot offer
             ItemStack probe = from.extractItem(slot, max - moved, true);
             if (probe.isEmpty() || (filter != ALL && !filter.test(ResourceIds.of(probe.getItem())))) {
                 continue;
             }
             if (movedTypes.size() >= maxTypes && !containsType(movedTypes, probe)) {
-                continue; // Sortenlimit erreicht
+                continue;
             }
-            // 2. Probe: Wie viel davon nimmt das Ziel?
+            // 2. probe: target acceptance
             ItemStack rest = ItemHandlerHelper.insertItem(to, probe, true);
             int accepted = probe.getCount() - rest.getCount();
             if (accepted <= 0) {
                 continue;
             }
-            // Echte Übergabe
+            // 3. transfer
             ItemStack taken = from.extractItem(slot, accepted, false);
             if (taken.isEmpty()) {
                 continue;
@@ -59,10 +59,10 @@ final class ForgeItemPort implements ItemPort {
                 movedTypes.add(taken);
             }
             if (!leftover.isEmpty()) {
-                // Sollte nach der Probe nicht vorkommen. Zur Sicherheit zurück in die Quelle legen.
+                // 4. return remainder to the source
                 ItemStack lost = ItemHandlerHelper.insertItem(from, leftover, false);
                 if (!lost.isEmpty()) {
-                    Vectrum.LOGGER.warn("{}x {} konnten weder ins Ziel noch zurück in die Quelle gelegt werden",
+                    Vectrum.LOGGER.warn("{}x {} could be moved neither to the target nor back to the source",
                             lost.getCount(), lost.getItem());
                 }
             }

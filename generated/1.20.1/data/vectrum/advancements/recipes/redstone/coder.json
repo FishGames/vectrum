@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "vectrum:coder"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_universal_cable": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "vectrum:universal_cable"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_universal_cable",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "vectrum:coder"
+    ]
+  },
+  "sends_telemetry_event": false
+}

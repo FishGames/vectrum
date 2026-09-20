@@ -2,7 +2,10 @@ package io.github.fishgames.vectrum.world;
 
 import io.github.fishgames.vectrum.Vectrum;
 import io.github.fishgames.vectrum.block.Connection;
+import io.github.fishgames.vectrum.block.CoderBlock;
 import io.github.fishgames.vectrum.block.ConduitBlock;
+import io.github.fishgames.vectrum.block.WirelessBlock;
+import io.github.fishgames.vectrum.core.digital.CoderLinks;
 import io.github.fishgames.vectrum.block.EndpointMode;
 import io.github.fishgames.vectrum.core.network.BlockCoord;
 import io.github.fishgames.vectrum.core.network.Network;
@@ -41,14 +44,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Die Netzwerke einer Dimension. Kabel haben keinen Blockentity, deshalb merkt sich dieses Objekt, welche
- * Positionen Netzknoten sind. Es wird mit der Welt gespeichert (Datei {@code data/vectrum_networks.dat} im
- * Dimensionsordner) und beim Laden der Dimension in Millisekunden neu aufgebaut.
- *
- * <p>Die eigentliche Netzlogik (Verschmelzen, Teilen) steckt im Kern ({@link NetworkGraph}); diese Klasse ist nur
- * die Verbindung zwischen dem Kern und Minecraft.
- *
- * <p>Hinweis für neuere Minecraft-Versionen: ab 1.20.2 hat {@code computeIfAbsent} eine andere Signatur.
+ * Per-dimension network state ({@code data/vectrum_networks.dat}): node graphs per layer, endpoint modes, coder
+ * frequencies, signal outputs, throughput limits, port settings, round-robin pointers, upgrades, target caches and
+ * back-off state. Bridges the core ({@link NetworkGraph}) and Minecraft.
  */
 public final class LevelNetworks extends SavedData {
     private static final String DATA_NAME = "vectrum_networks";
@@ -70,55 +68,56 @@ public final class LevelNetworks extends SavedData {
     private static final String TAG_VALUE = "value";
     private static final String TAG_UPGRADES = "upgrades";
     private static final String TAG_COUNTS = "counts";
+    private static final String TAG_FREQUENCIES = "frequencies";
     private static final byte UNSET_MODE = -1;
     private static final int ENDPOINT_FLAG = 0x40;
     private static final int MASK_BITS = 0x3F;
 
-    /**
-     * Zählt jede Änderung an Netzen oder Endpunkt-Einstellungen hoch. Zwischengespeicherte Ziellisten gelten nur,
-     * solange der Wert gleich bleibt. Bewusst statisch: Zugriff nur aus dem Server-Thread, und ein Aufruf darf nie
-     * die Datenspeicherung anfassen (z. B. beim Entladen von Chunks).
-     */
+    /** Global change counter for networks and endpoint settings; cached target lists are valid for one value. */
     private static long epoch;
 
     private final String dimension;
     private final NetworkRegistry registry = new NetworkRegistry();
-    /** Gewählte Rollen der Anschlussseiten, nur für Bausteine, die vom Standard abweichen. Schlüssel: BlockPos.asLong(). */
+    /** Chosen roles of the port sides, per block that differs from the default. Key: BlockPos.asLong(). */
     private final Map<Long, EndpointMode[]> modes = new HashMap<>();
 
-    /** Aktuelle Redstone-Ausgaenge (nur Werte ungleich 0, nicht gespeichert: sie werden beim Takt neu berechnet). */
+    /** Coder frequencies (non-zero only). Key: BlockPos.asLong(). */
+    private final Map<Long, Integer> frequencies = new HashMap<>();
+
+    /** Current redstone outputs (non-zero only, not persisted). Key: BlockPos.asLong(). */
     private final Map<Long, Integer> signalOutputs = new HashMap<>();
 
-    /** Durchsatzlimits je Ebene (Schluessel: Ebenen-Kennung). Nur Bausteine mit eigenem Wert stehen darin. */
+    /** Throughput limits per layer (key: layer id); own values only. */
     private final Map<String, ThroughputLimits> limits = new HashMap<>();
 
-    /** Zwischengespeicherte Zielliste. Unvollstaendige Listen (Endpunkte in nicht geladenen Chunks) laufen ab. */
+    /** Cached target list with expiry tick. */
     private record CachedTargets(List<Target> targets, long validUntil) {
     }
 
-    /** So lange (in Ticks) gilt eine unvollstaendige Zielliste, bevor sie neu berechnet wird. */
+    /** Lifetime in ticks of an incomplete target list. */
     private static final long INCOMPLETE_LIFETIME = 20;
 
-    /** Einstellungen der Anschlussseiten (Prioritaet, Verteilmodus, Filter); nur Abweichungen vom Standard. */
+    /** Port side settings (priority, distribution mode, filter); non-default only. */
     private final PortSettingsTable settings = new PortSettingsTable();
-    /** Upgrades der Bausteine (nur Bausteine mit mindestens einem Upgrade). */
+    /** Upgrades per block (blocks with at least one upgrade). */
     private final UpgradeTable upgrades = new UpgradeTable();
-    /** Rundlaufzeiger je Quellseite. */
+    /** Round-robin pointer per source side. */
     private final RoundRobinPointers pointers = new RoundRobinPointers();
 
-    /** Wartezeit fuer ein Ziel, das trotz Lieferung an andere nichts angenommen hat. Fluechtig, nicht gespeichert. */
-    private record SleepKey(long source, int sourceSide, long target, int targetSide) {
+    /** Back-off key: source side plus target side. Not persisted. */
+    private record SleepKey(long source, int sourceSide, int targetDimension, long target, int targetSide) {
     }
 
+    /** Back-off state: failure count and wait-until tick. */
     private record Backoff(int failures, long until) {
     }
 
-    /** Ab dieser Zahl aufeinanderfolgender Fehlversuche wird die Wartezeit nicht weiter verdoppelt. */
+    /** Maximum back-off in ticks. */
     private static final long MAX_SLEEP_TICKS = 100;
     private final Map<SleepKey, Backoff> backoff = new HashMap<>();
 
     private long cacheEpoch = -1;
-    /** Schluessel: Ebenen-Kennung + Netznummer (Netznummern gelten nur innerhalb einer Ebene). */
+    /** Target cache. Key: layer id + network id. */
     private final Map<String, CachedTargets> targetCache = new HashMap<>();
 
     private LevelNetworks(String dimension) {
@@ -131,18 +130,23 @@ public final class LevelNetworks extends SavedData {
                 tag -> load(dimension, tag), () -> new LevelNetworks(dimension), DATA_NAME);
     }
 
-    /** Muss aufgerufen werden, wenn sich etwas ändert, das Zwischenspeicher ungültig macht. */
+    /** Current value of the global change counter. */
+    public static long epoch() {
+        return epoch;
+    }
+
+    /** Increments the change counter, invalidating all caches. */
     public static void invalidateCaches() {
         epoch++;
     }
 
-    // ------------------------------------------------------------------ Knoten
+    // Nodes
 
     public BlockCoord coord(BlockPos pos) {
         return new BlockCoord(dimension, pos.getX(), pos.getY(), pos.getZ());
     }
 
-    /** Legt den Knoten an oder aktualisiert seine offenen Seiten. */
+    /** Adds the node or updates its kind and open sides. */
     public void put(TransportType type, BlockPos pos, NodeKind kind, int sideMask) {
         NetworkGraph graph = registry.graph(type.id());
         BlockCoord coord = coord(pos);
@@ -155,10 +159,16 @@ public final class LevelNetworks extends SavedData {
         changed();
     }
 
-    /** Steht der Knoten schon genau so (Art und Seiten) im Netz des Typs? */
+    /** Whether the node is already registered with this kind and side mask. */
     public boolean matches(TransportType type, BlockPos pos, NodeKind kind, int sideMask) {
         NodeInfo info = registry.graph(type.id()).info(coord(pos));
         return info != null && info.kind() == kind && info.sideMask() == (sideMask & MASK_BITS);
+    }
+
+    /** Enabled link sides of the registered node, or 0 when unregistered. */
+    public int sideMask(TransportType type, BlockPos pos) {
+        NodeInfo info = registry.graph(type.id()).info(coord(pos));
+        return info == null ? 0 : info.sideMask();
     }
 
     public boolean isRegistered(TransportType type, BlockPos pos) {
@@ -171,12 +181,9 @@ public final class LevelNetworks extends SavedData {
         }
     }
 
-    // ------------------------------------------------------------------ Rollen der Anschlussseiten
+    // Port side roles
 
-    /**
-     * Die vom Spieler gewaehlte Rolle der Seite eines Bausteins oder {@code null}, wenn er nichts gewaehlt hat. Dann
-     * gilt der Standard des Bausteins (siehe {@code ConduitBlock#effectiveMode}).
-     */
+    /** Chosen role of a block side, or {@code null} when none is chosen. */
     public EndpointMode storedMode(BlockPos pos, Direction side) {
         EndpointMode[] stored = modes.get(pos.asLong());
         return stored == null ? null : stored[side.get3DDataValue()];
@@ -196,21 +203,46 @@ public final class LevelNetworks extends SavedData {
         changed();
     }
 
-    /** Vergisst die gewaehlten Rollen dieses Bausteins (beim Abbauen). */
+    /** Removes the chosen roles of a block. */
     public void clearModes(BlockPos pos) {
         if (modes.remove(pos.asLong()) != null) {
             changed();
         }
     }
 
-    // ------------------------------------------------------------------ Redstone-Ausgaenge
+    // Coder frequencies
 
-    /** Signalstaerke, die dieser Baustein gerade an seinen Ausgangsseiten abgibt (0 bis 15, fluechtig). */
+    /** Frequency of this coder (default 0). */
+    public int frequency(BlockPos pos) {
+        return frequencies.getOrDefault(pos.asLong(), 0);
+    }
+
+    public void setFrequency(BlockPos pos, int frequency) {
+        int before = frequency(pos);
+        if (frequency <= 0) {
+            frequencies.remove(pos.asLong());
+        } else {
+            frequencies.put(pos.asLong(), frequency);
+        }
+        if (before != Math.max(0, frequency)) {
+            changed();
+        }
+    }
+
+    public void clearFrequency(BlockPos pos) {
+        if (frequencies.remove(pos.asLong()) != null) {
+            changed();
+        }
+    }
+
+    // Redstone outputs
+
+    /** Current output signal strength of this block (0 to 15). */
     public int signalOutput(BlockPos pos) {
         return signalOutputs.getOrDefault(pos.asLong(), 0);
     }
 
-    /** @return {@code true}, wenn sich der Wert geaendert hat */
+    /** @return {@code true} when the value changed */
     public boolean setSignalOutput(BlockPos pos, int strength) {
         int before = signalOutput(pos);
         if (strength <= 0) {
@@ -221,13 +253,13 @@ public final class LevelNetworks extends SavedData {
         return before != Math.max(0, strength);
     }
 
-    // ------------------------------------------------------------------ Einstellungen der Anschlussseiten (Etappe 5)
+    // Port side settings
 
     private PortKey key(BlockPos pos, Direction side) {
         return new PortKey(coord(pos), io.github.fishgames.vectrum.core.network.Direction.VALUES[side.get3DDataValue()]);
     }
 
-    /** Prioritaet, Verteilmodus und Filter dieser Seite; ohne eigene Wahl der Standard. */
+    /** Priority, distribution mode and filter of this side. */
     public PortSettings settings(BlockPos pos, Direction side) {
         return settings.get(key(pos, side));
     }
@@ -238,17 +270,17 @@ public final class LevelNetworks extends SavedData {
         }
     }
 
-    /** Rundlaufzeiger dieser Quellseite. */
+    /** Round-robin pointer of this source side. */
     public int pointer(BlockPos pos, Direction side) {
         return pointers.get(key(pos, side));
     }
 
     public void setPointer(BlockPos pos, Direction side, int value) {
         pointers.set(key(pos, side), value);
-        setDirty(); // aendert kein Netz: Zwischenspeicher bleiben gueltig
+        setDirty();
     }
 
-    /** Vergisst Einstellungen und Rundlaufzeiger dieses Bausteins (beim Abbauen). */
+    /** Removes settings and round-robin pointers of a block. */
     public void clearSettings(BlockPos pos) {
         BlockCoord coord = coord(pos);
         boolean removedSettings = settings.clear(coord);
@@ -260,17 +292,20 @@ public final class LevelNetworks extends SavedData {
         }
     }
 
-    // ------------------------------------------------------------------ Upgrades (Etappe 6)
+    // Upgrades
 
-    /** Die Upgrades dieses Bausteins. */
+    /** Upgrades of this block. */
     public Upgrades upgrades(BlockPos pos) {
         return upgrades.get(coord(pos));
     }
 
     /**
-     * Setzt die Upgrades eines Bausteins und rechnet ihre Wirkung einmal aus: Aendert sich die Zahl der
-     * Durchsatz-Upgrades, wird das Durchsatzlimit neu gespeichert (Grundlimit x 4^Anzahl); Filter und Prioritaet
-     * werden freigeschaltet oder gesperrt. Beim Takt wird nur nachgeschlagen (K3).
+     * Sets the upgrades of a block.
+     * <ul>
+     * <li>1. no change: return</li>
+     * <li>2. throughput upgrade count changed: store the throughput limit per type (base limit x 4^count)</li>
+     * <li>3. invalidate caches</li>
+     * </ul>
      */
     public void setUpgrades(List<TransportType> types, BlockPos pos, Upgrades value) {
         Upgrades before = upgrades.get(coord(pos));
@@ -278,14 +313,14 @@ public final class LevelNetworks extends SavedData {
             return;
         }
         if (before.count(UpgradeType.THROUGHPUT) != value.count(UpgradeType.THROUGHPUT)) {
-            for (TransportType type : types) { // Universalkabel: jeder Typ hat sein eigenes Limit
+            for (TransportType type : types) {
                 setThroughput(type, pos, UpgradeEffects.throughput(baseLimit(type.id()), value));
             }
         }
-        changed(); // Filter und Prioritaet koennen frei- oder gesperrt worden sein: Zielliste neu berechnen
+        changed();
     }
 
-    /** Entnimmt alle Upgrades eines Bausteins (beim Abbauen, damit sie zurueckgegeben werden koennen). */
+    /** Removes and returns all upgrades of a block. */
     public Upgrades takeUpgrades(BlockPos pos) {
         Upgrades taken = upgrades.take(coord(pos));
         if (!taken.isEmpty()) {
@@ -294,23 +329,25 @@ public final class LevelNetworks extends SavedData {
         return taken;
     }
 
-    /** Ticks zwischen zwei Uebergaben dieser Quelle (Grundwert, verkuerzt durch Speed-Upgrades). */
+    /** Ticks between two transfers of this source. */
     public int interval(BlockPos pos) {
         return UpgradeEffects.interval(ConduitBlock.INTERVAL, upgrades(pos));
     }
 
-    /** Wie viele Item-Sorten pro Uebergabe an ein Ziel bewegt werden duerfen. */
+    /** Maximum item types per transfer to one target. */
     public int maxTypes(BlockPos pos) {
         return UpgradeEffects.maxTypes(upgrades(pos));
     }
 
-    /**
-     * Die Einstellungen, die tatsaechlich wirken: Ohne Filter-Upgrade gilt kein Filter, ohne Prioritaets-Upgrade
-     * Prioritaet 0. Die gespeicherten Werte bleiben erhalten und wirken wieder, sobald das Upgrade steckt.
-     */
+    /** Effective settings: no filter without filter upgrade, priority 0 without priority upgrade. */
     public PortSettings effectiveSettings(BlockPos pos, Direction side) {
+        return effectiveSettings(pos, side, false);
+    }
+
+    /** Like {@link #effectiveSettings(BlockPos, Direction)}; {@code free}: filter and priority need no upgrade (wireless blocks). */
+    public PortSettings effectiveSettings(BlockPos pos, Direction side, boolean free) {
         PortSettings stored = settings(pos, side);
-        if (stored.isDefault()) {
+        if (stored.isDefault() || free) {
             return stored;
         }
         Upgrades installed = upgrades(pos);
@@ -324,26 +361,26 @@ public final class LevelNetworks extends SavedData {
         return effective;
     }
 
-    // ------------------------------------------------------------------ Wartezeit fuer volle Ziele
+    // Target back-off
 
-    /** Wartet dieses Ziel gerade, weil es zuletzt nichts angenommen hat, waehrend andere Ziele beliefert wurden? */
+    /** Whether the target is currently backed off for this source side. */
     public boolean isSleeping(BlockPos source, Direction sourceSide, Target target, long now) {
         syncEpoch();
         Backoff entry = backoff.get(sleepKey(source, sourceSide, target));
         return entry != null && now < entry.until();
     }
 
-    /** Das Ziel hat trotz Angebot nichts angenommen, obwohl die Quelle an andere lieferte: naechster Versuch spaeter. */
+    /** Records a miss: back-off delay {@code min(100, 10 << min(failures, 10))} ticks. */
     public void noteMiss(BlockPos source, Direction sourceSide, Target target, long now) {
         syncEpoch();
         SleepKey key = sleepKey(source, sourceSide, target);
         Backoff before = backoff.get(key);
         int failures = before == null ? 1 : before.failures() + 1;
-        long delay = Math.min(MAX_SLEEP_TICKS, 10L << Math.min(failures, 10)); // 20, 40, 80, 100, ...
+        long delay = Math.min(MAX_SLEEP_TICKS, 10L << Math.min(failures, 10));
         backoff.put(key, new Backoff(failures, now + delay));
     }
 
-    /** Das Ziel hat etwas angenommen: die Wartezeit ist vorbei. */
+    /** Records a hit: clears the back-off. */
     public void noteHit(BlockPos source, Direction sourceSide, Target target) {
         if (!backoff.isEmpty()) {
             backoff.remove(sleepKey(source, sourceSide, target));
@@ -351,13 +388,13 @@ public final class LevelNetworks extends SavedData {
     }
 
     private static SleepKey sleepKey(BlockPos source, Direction sourceSide, Target target) {
-        return new SleepKey(source.asLong(), sourceSide.get3DDataValue(), target.endpoint().asLong(),
-                target.side().get3DDataValue());
+        return new SleepKey(source.asLong(), sourceSide.get3DDataValue(), target.level().dimension().location().hashCode(),
+                target.endpoint().asLong(), target.side().get3DDataValue());
     }
 
-    // ------------------------------------------------------------------ Durchsatzlimit (K3)
+    // Throughput limit
 
-    /** Grundlimit einer Ebene: Einheiten pro Uebergabe und Quellseite, solange kein Upgrade etwas anderes setzt. */
+    /** Base limit of a layer: units per transfer and source side. */
     private static long baseLimit(String layer) {
         return TransportDefaults.baseThroughput(layer);
     }
@@ -366,24 +403,24 @@ public final class LevelNetworks extends SavedData {
         return limits.computeIfAbsent(layer, id -> new ThroughputLimits(baseLimit(id)));
     }
 
-    /** Durchsatzlimit des Bausteins (ein einziger Nachschlag, keine Berechnung ueber das Netz). */
+    /** Throughput limit of the block. */
     public long throughput(TransportType type, BlockPos pos) {
         return limits(type.id()).limitOf(coord(pos));
     }
 
-    /** Wie {@link #throughput}, fuer fremde Schnittstellen auf {@code int} geklemmt. */
+    /** Like {@link #throughput}, clamped to {@code int}. */
     public int budget(TransportType type, BlockPos pos) {
         return limits(type.id()).budgetOf(coord(pos));
     }
 
-    /** Setzt das Limit eines Bausteins. Das aendert kein Netz und macht keine Zwischenspeicher ungueltig. */
+    /** Sets the limit of a block. */
     public void setThroughput(TransportType type, BlockPos pos, long limit) {
         if (limits(type.id()).set(coord(pos), limit)) {
             setDirty();
         }
     }
 
-    /** Vergisst das eigene Limit eines Bausteins (beim Abbauen). */
+    /** Removes the own limit of a block. */
     public void clearThroughput(TransportType type, BlockPos pos) {
         if (limits(type.id()).reset(coord(pos))) {
             setDirty();
@@ -399,7 +436,7 @@ public final class LevelNetworks extends SavedData {
         return true;
     }
 
-    /** Das Netz, in dem dieser Baustein liegt, oder {@code null}. */
+    /** Network containing this block, or {@code null}. */
     public Network networkAt(TransportType type, BlockPos pos) {
         return registry.networkAt(type.id(), coord(pos));
     }
@@ -409,30 +446,196 @@ public final class LevelNetworks extends SavedData {
         invalidateCaches();
     }
 
-    // ------------------------------------------------------------------ Ziele
+    // Targets
 
     /**
-     * Alle Ziele (Anschluss-Seiten mit Ausgang) des Netzes, nach Position sortiert. Die Liste wird zwischengespeichert
-     * und nur neu berechnet, wenn sich seit dem letzten Aufruf etwas geaendert hat. Endpunkte in nicht geladenen
-     * Chunks fehlen; solche unvollstaendigen Listen werden nach einer Sekunde neu berechnet, damit ein spaeter
-     * geladener Endpunkt sicher auftaucht.
+     * All targets (output sides) of the network, sorted by position, cached until the epoch changes. Incomplete
+     * lists (endpoints in unloaded chunks) expire after {@code INCOMPLETE_LIFETIME} ticks.
      */
     public List<Target> targets(ServerLevel level, TransportType type, Network network) {
+        return cachedTargets(level, type, network).targets();
+    }
+
+    private CachedTargets cachedTargets(ServerLevel level, TransportType type, Network network) {
         syncEpoch();
         long now = level.getGameTime();
         String key = type.id() + "#" + network.id();
         CachedTargets cached = targetCache.get(key);
         if (cached != null && now < cached.validUntil()) {
-            return cached.targets();
+            return cached;
         }
 
         boolean[] complete = {true};
         List<Target> targets = buildTargets(level, type, network, complete);
-        targetCache.put(key, new CachedTargets(targets, complete[0] ? Long.MAX_VALUE : now + INCOMPLETE_LIFETIME));
-        return targets;
+        CachedTargets fresh = new CachedTargets(targets, complete[0] ? Long.MAX_VALUE : now + INCOMPLETE_LIFETIME);
+        targetCache.put(key, fresh);
+        return fresh;
     }
 
-    /** Verwirft Zwischenspeicher und Wartezeiten, wenn sich seit dem letzten Aufruf etwas geaendert hat. */
+    /**
+     * Targets of the network plus the networks coupled to it through coders (own network first).
+     * <ul>
+     * <li>1. no digital layer or non-quantity type: own targets</li>
+     * <li>2. cache lookup under key {@code reach:<type>#<network>}</li>
+     * <li>3. own targets plus targets of every partner network</li>
+     * <li>4. validity is the minimum over all parts</li>
+     * </ul>
+     */
+    private CachedTargets coupledTargets(ServerLevel level, TransportType type, Network network) {
+        if (type.behavior() != TransportType.Behavior.QUANTITY || !registry.hasLayer(TransportType.DIGITAL.id())) {
+            return cachedTargets(level, type, network);
+        }
+        syncEpoch();
+        long now = level.getGameTime();
+        String key = "reach:" + type.id() + "#" + network.id();
+        CachedTargets cached = targetCache.get(key);
+        if (cached != null && now < cached.validUntil()) {
+            return cached;
+        }
+
+        CachedTargets own = cachedTargets(level, type, network);
+        List<Network> partners = partnerNetworks(level, type, network);
+        if (partners.isEmpty()) {
+            targetCache.put(key, own);
+            return own;
+        }
+        List<Target> all = new ArrayList<>(own.targets());
+        long validUntil = own.validUntil();
+        for (Network partner : partners) {
+            CachedTargets part = cachedTargets(level, type, partner);
+            all.addAll(part.targets());
+            validUntil = Math.min(validUntil, part.validUntil());
+        }
+        CachedTargets combined = new CachedTargets(List.copyOf(all), validUntil);
+        targetCache.put(key, combined);
+        return combined;
+    }
+
+    /**
+     * Targets of the network at {@code pos} including coder partners; used for wireless receivers.
+     *
+     * @param complete set to {@code false} when the list is incomplete
+     */
+    List<Target> attachedTargets(ServerLevel level, TransportType type, BlockPos pos, boolean[] complete) {
+        Network network = networkAt(type, pos);
+        if (network == null) {
+            return List.of();
+        }
+        CachedTargets coupled = coupledTargets(level, type, network);
+        if (coupled.validUntil() != Long.MAX_VALUE) {
+            complete[0] = false;
+        }
+        return coupled.targets();
+    }
+
+    /**
+     * All targets a source in {@code network} can reach.
+     * <ul>
+     * <li>1. non-quantity types: {@link #targets}</li>
+     * <li>2. cache lookup under key {@code full:<type>#<network>}</li>
+     * <li>3. coupled targets (own network and coder partners)</li>
+     * <li>4. per sending wireless port in these networks: receivers of its frequency</li>
+     * <li>5. duplicates removed; validity is the minimum over all parts</li>
+     * </ul>
+     */
+    public List<Target> reachableTargets(ServerLevel level, TransportType type, Network network) {
+        if (type.behavior() != TransportType.Behavior.QUANTITY) {
+            return targets(level, type, network);
+        }
+        syncEpoch();
+        long now = level.getGameTime();
+        String key = "full:" + type.id() + "#" + network.id();
+        CachedTargets cached = targetCache.get(key);
+        if (cached != null && now < cached.validUntil()) {
+            return cached.targets();
+        }
+
+        CachedTargets coupled = coupledTargets(level, type, network);
+        List<Network> networks = new ArrayList<>();
+        networks.add(network);
+        if (registry.hasLayer(TransportType.DIGITAL.id())) {
+            networks.addAll(partnerNetworks(level, type, network));
+        }
+        java.util.Set<Target> all = new java.util.LinkedHashSet<>(coupled.targets());
+        long validUntil = coupled.validUntil();
+        WirelessRegistry wireless = WirelessRegistry.get(level);
+        for (Network part : networks) {
+            List<BlockPos> endpoints = new ArrayList<>();
+            for (BlockCoord coord : part.endpointPositions()) {
+                endpoints.add(toPos(coord));
+            }
+            endpoints.sort((a, b) -> Long.compare(a.asLong(), b.asLong()));
+            for (BlockPos pos : endpoints) {
+                if (!level.hasChunkAt(pos) || !(level.getBlockState(pos).getBlock() instanceof WirelessBlock)
+                        || !wireless.mode(level, pos, type).sends()) {
+                    continue;
+                }
+                WirelessRegistry.Receivers receivers = wireless.receivers(level.getServer(), type,
+                        wireless.frequency(level, pos), level, upgrades(pos));
+                all.addAll(receivers.targets());
+                if (!receivers.complete()) {
+                    validUntil = Math.min(validUntil, now + INCOMPLETE_LIFETIME);
+                }
+            }
+        }
+        CachedTargets combined = new CachedTargets(List.copyOf(all), validUntil);
+        targetCache.put(key, combined);
+        return combined.targets();
+    }
+
+    /**
+     * Transport networks of the same type coupled to {@code network} through coders.
+     * <ul>
+     * <li>1. collect coder endpoints of the network in loaded chunks, sorted by position</li>
+     * <li>2. per digital network (visited once): list all coders with frequency and transport network id</li>
+     * <li>3. resolve partner coders via {@link CoderLinks#partners} to their transport networks</li>
+     * </ul>
+     */
+    private List<Network> partnerNetworks(ServerLevel level, TransportType type, Network network) {
+        List<Network> result = new ArrayList<>();
+        java.util.Set<Long> visited = new java.util.HashSet<>();
+        List<BlockPos> endpoints = new ArrayList<>();
+        for (BlockCoord coord : network.endpointPositions()) {
+            endpoints.add(toPos(coord));
+        }
+        endpoints.sort((a, b) -> Long.compare(a.asLong(), b.asLong()));
+        for (BlockPos pos : endpoints) {
+            if (!level.hasChunkAt(pos) || !(level.getBlockState(pos).getBlock() instanceof CoderBlock)) {
+                continue;
+            }
+            Network digital = registry.networkAt(TransportType.DIGITAL.id(), coord(pos));
+            if (digital == null || !visited.add(digital.id())) {
+                continue;
+            }
+            List<CoderLinks.Coder> coders = new ArrayList<>();
+            for (BlockCoord coord : digital.endpointPositions()) {
+                BlockPos other = toPos(coord);
+                Network transport = registry.networkAt(type.id(), coord);
+                coders.add(new CoderLinks.Coder(other.asLong(), frequency(other), transport == null ? -1 : transport.id()));
+            }
+            for (CoderLinks.Coder partner : CoderLinks.partners(network.id(), coders)) {
+                Network found = registry.networkAt(type.id(), coord(BlockPos.of(partner.pos())));
+                if (found != null && !result.contains(found)) {
+                    result.add(found);
+                }
+            }
+        }
+        return result;
+    }
+
+    /** Sorted distinct frequencies of all coders in the digital network of this block. */
+    public List<Integer> digitalFrequencies(BlockPos pos) {
+        Network digital = registry.networkAt(TransportType.DIGITAL.id(), coord(pos));
+        java.util.TreeSet<Integer> result = new java.util.TreeSet<>();
+        if (digital != null) {
+            for (BlockCoord coord : digital.endpointPositions()) {
+                result.add(frequency(toPos(coord)));
+            }
+        }
+        return new ArrayList<>(result);
+    }
+
+    /** Clears target cache and back-off state when the epoch changed. */
     private void syncEpoch() {
         if (cacheEpoch != epoch) {
             targetCache.clear();
@@ -441,6 +644,14 @@ public final class LevelNetworks extends SavedData {
         }
     }
 
+    /**
+     * Builds the target list of a network.
+     * <ul>
+     * <li>1. endpoints sorted by position</li>
+     * <li>2. unloaded chunk: mark incomplete; non-conduit block: skip</li>
+     * <li>3. per side with OUTPUT connection (and a matching port for multi-type conduits): add a target</li>
+     * </ul>
+     */
     private List<Target> buildTargets(ServerLevel level, TransportType type, Network network, boolean[] complete) {
         List<BlockPos> endpoints = new ArrayList<>(network.endpointCount());
         for (BlockCoord coord : network.endpointPositions()) {
@@ -462,7 +673,7 @@ public final class LevelNetworks extends SavedData {
                 if (conduit.connection(state, side) == Connection.OUTPUT
                         && (conduit.transportTypes().size() == 1
                         || hasPort(level, type, pos.relative(side), side.getOpposite()))) {
-                    result.add(new Target(pos, side, pos.relative(side), effectiveSettings(pos, side)));
+                    result.add(new Target(level, pos, side, pos.relative(side), effectiveSettings(pos, side)));
                 }
             }
         }
@@ -474,9 +685,9 @@ public final class LevelNetworks extends SavedData {
     }
 
     /**
-     * Zaehlt fuer die Diagnose die Quell- und Zielseiten eines Netzes (nur in geladenen Chunks).
+     * Counts source and target sides of a network (loaded chunks only).
      *
-     * @return {@code {Eingaenge, Ausgaenge}}
+     * @return {@code {inputs, outputs}}
      */
     public int[] countPorts(ServerLevel level, TransportType type, Network network) {
         int sources = 0;
@@ -506,8 +717,21 @@ public final class LevelNetworks extends SavedData {
         return new int[]{sources, targets};
     }
 
-    // ------------------------------------------------------------------ Speichern
+    // Persistence
 
+    /**
+     * Writes all state to NBT.
+     * <ul>
+     * <li>{@code layers}: per graph layer, node positions and data bytes (endpoint flag + side mask)</li>
+     * <li>{@code ports}: per block, side role bytes (unset = -1)</li>
+     * <li>{@code limits}: per layer, own throughput limits as position and value arrays</li>
+     * <li>{@code settings}: per port key, side, priority, mode, blacklist flag, filter ids</li>
+     * <li>{@code pointers}: per port key, side, round-robin value</li>
+     * <li>{@code upgrades}: per block, upgrade counts</li>
+     * <li>{@code frequencies}: per coder, frequency</li>
+     * </ul>
+     * Signal outputs, back-off state and caches are not written.
+     */
     @Override
     public CompoundTag save(CompoundTag tag) {
         ListTag layers = new ListTag();
@@ -601,6 +825,15 @@ public final class LevelNetworks extends SavedData {
             savedUpgrades.add(item);
         }
         tag.put(TAG_UPGRADES, savedUpgrades);
+
+        ListTag savedFrequencies = new ListTag();
+        for (Map.Entry<Long, Integer> entry : frequencies.entrySet()) {
+            CompoundTag item = new CompoundTag();
+            item.putLong(TAG_POS, entry.getKey());
+            item.putInt(TAG_VALUE, entry.getValue());
+            savedFrequencies.add(item);
+        }
+        tag.put(TAG_FREQUENCIES, savedFrequencies);
         return tag;
     }
 
@@ -617,6 +850,16 @@ public final class LevelNetworks extends SavedData {
                 io.github.fishgames.vectrum.core.network.Direction.VALUES[side]);
     }
 
+    /**
+     * Reads all state from NBT.
+     * <ul>
+     * <li>1. layers: rebuild each graph from positions and data bytes (endpoint flag, side mask)</li>
+     * <li>2. ports: restore side roles; drop all-unset entries</li>
+     * <li>3. limits: restore non-negative own limits</li>
+     * <li>4. settings: restore priority, mode (default when unknown) and filter; skip invalid sides</li>
+     * <li>5. pointers, upgrades, frequencies (positive only): restore</li>
+     * </ul>
+     */
     private static LevelNetworks load(String dimension, CompoundTag tag) {
         LevelNetworks networks = new LevelNetworks(dimension);
         ListTag layers = tag.getList(TAG_LAYERS, Tag.TAG_COMPOUND);
@@ -643,7 +886,6 @@ public final class LevelNetworks extends SavedData {
             byte[] stored = port.getByteArray(TAG_MODES);
             EndpointMode[] restored = new EndpointMode[Sides.ALL.length];
             for (int side = 0; side < restored.length; side++) {
-                // Aeltere Staende speicherten "unberuehrt" als Standard-Rolle; das verhaelt sich unveraendert.
                 restored[side] = side < stored.length && stored[side] != UNSET_MODE
                         ? EndpointMode.byOrdinal(stored[side]) : null;
             }
@@ -694,7 +936,14 @@ public final class LevelNetworks extends SavedData {
             networks.upgrades.set(networks.coord(BlockPos.of(item.getLong(TAG_POS))),
                     Upgrades.of(item.getIntArray(TAG_COUNTS)));
         }
-        Vectrum.LOGGER.debug("Netzwerke von {} geladen: {} Bausteine, {} Anschlusseinstellungen",
+        ListTag savedFrequencies = tag.getList(TAG_FREQUENCIES, Tag.TAG_COMPOUND);
+        for (int i = 0; i < savedFrequencies.size(); i++) {
+            CompoundTag item = savedFrequencies.getCompound(i);
+            if (item.getInt(TAG_VALUE) > 0) {
+                networks.frequencies.put(item.getLong(TAG_POS), item.getInt(TAG_VALUE));
+            }
+        }
+        Vectrum.LOGGER.debug("Loaded networks of {}: {} nodes, {} port mode entries",
                 dimension, total, networks.modes.size());
         return networks;
     }

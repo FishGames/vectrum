@@ -6,7 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import team.reborn.energy.api.EnergyStorage;
 
-/** Findet Energiespeicher ueber die Lookup der Team Reborn Energy API. */
+/** Energy storage lookup on the Team Reborn Energy API. */
 final class FabricEnergyPorts {
     private FabricEnergyPorts() {
     }

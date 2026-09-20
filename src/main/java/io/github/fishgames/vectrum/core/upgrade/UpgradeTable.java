@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/** Dünn besetzte Tabelle: nur Bausteine mit mindestens einem Upgrade stehen darin. Nicht thread-sicher. */
+/** Sparse table of upgrades per block; only blocks with at least one upgrade are stored. */
 public final class UpgradeTable {
     private final Map<BlockCoord, Upgrades> entries = new HashMap<>();
 
@@ -15,7 +15,7 @@ public final class UpgradeTable {
         return entries.getOrDefault(pos, Upgrades.EMPTY);
     }
 
-    /** @return {@code true}, wenn sich dadurch etwas geändert hat */
+    /** @return {@code true} when the stored value changed */
     public boolean set(BlockCoord pos, Upgrades upgrades) {
         Objects.requireNonNull(upgrades, "upgrades");
         Upgrades before = get(pos);
@@ -27,7 +27,7 @@ public final class UpgradeTable {
         return !before.equals(upgrades);
     }
 
-    /** Entnimmt alle Upgrades des Bausteins (beim Abbauen) und vergisst sie. */
+    /** Removes and returns the upgrades of the block. */
     public Upgrades take(BlockCoord pos) {
         Upgrades removed = entries.remove(pos);
         return removed == null ? Upgrades.EMPTY : removed;

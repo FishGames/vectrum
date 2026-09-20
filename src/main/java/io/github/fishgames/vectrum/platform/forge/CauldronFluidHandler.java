@@ -12,9 +12,8 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Macht vanilla Kessel fuer Forge/NeoForge als Fluidtank ansprechbar (auf Fabric bringt die Transfer API das mit).
- * Ein Kessel ist ein Eimer-Speicher: leer, mit Wasser voll oder mit Lava voll. Es wird nur in ganzen Eimern (1000 mB)
- * gefuellt und geleert; teilweise gefuellte Wasserkessel (Stufe 1 und 2) gelten als nicht nutzbar.
+ * {@link IFluidHandler} for vanilla cauldrons: one tank of one bucket (1000 mB) holding water or lava; partially
+ * filled water cauldrons count as empty.
  */
 final class CauldronFluidHandler implements IFluidHandler {
     private static final int BUCKET = 1000;
@@ -27,14 +26,14 @@ final class CauldronFluidHandler implements IFluidHandler {
         this.pos = pos;
     }
 
-    /** Der Handler fuer den Kessel an dieser Position oder {@code null}, wenn dort keiner steht. */
+    /** Handler for the cauldron at this position, or {@code null} if there is none. */
     static CauldronFluidHandler find(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         boolean cauldron = state.is(Blocks.CAULDRON) || state.is(Blocks.WATER_CAULDRON) || state.is(Blocks.LAVA_CAULDRON);
         return cauldron ? new CauldronFluidHandler(level, pos) : null;
     }
 
-    /** Was voll im Kessel steckt; {@code EMPTY} bei leerem oder nur teilweise gefuelltem Kessel. */
+    /** Fluid of a full cauldron; {@code EMPTY} if empty or partially filled. */
     private Fluid content() {
         BlockState state = level.getBlockState(pos);
         if (state.is(Blocks.LAVA_CAULDRON)) {

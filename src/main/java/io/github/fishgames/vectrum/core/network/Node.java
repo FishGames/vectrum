@@ -1,13 +1,10 @@
 package io.github.fishgames.vectrum.core.network;
 
-/**
- * Interner Knoten des Graphen. {@code links} speichert je Richtung den tatsächlich verbundenen Nachbarn
- * (oder {@code null}), damit Suchläufe reine Zeigersprünge sind und keine Koordinaten nachschlagen müssen.
- */
+/** Graph node; {@code links} holds the connected neighbour per direction (or {@code null}). */
 final class Node {
     final BlockCoord pos;
     NodeKind kind;
-    /** Bit pro {@link Direction}: Seite ist für Verbindungen freigegeben. */
+    /** Bit per {@link Direction}: side is enabled for connections. */
     int sideMask;
     final Node[] links = new Node[Direction.VALUES.length];
     Network network;

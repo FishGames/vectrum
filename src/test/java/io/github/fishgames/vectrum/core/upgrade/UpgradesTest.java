@@ -101,4 +101,31 @@ class UpgradesTest {
         }
         assertEquals(null, UpgradeType.byId("nope"));
     }
+
+    @Test
+    void dimensionUpgradeIsWirelessOnly() {
+        assertTrue(UpgradeType.DIMENSION.wireless());
+        for (UpgradeType type : UpgradeType.VALUES) {
+            assertEquals(type == UpgradeType.DIMENSION, type.wireless());
+        }
+    }
+
+    @Test
+    void crossDimensionLinkNeedsBothEnds() {
+        Upgrades with = Upgrades.EMPTY.with(UpgradeType.DIMENSION, 1);
+
+        assertTrue(UpgradeEffects.canLink(true, Upgrades.EMPTY, Upgrades.EMPTY));
+        assertFalse(UpgradeEffects.canLink(false, Upgrades.EMPTY, Upgrades.EMPTY));
+        assertFalse(UpgradeEffects.canLink(false, with, Upgrades.EMPTY));
+        assertFalse(UpgradeEffects.canLink(false, Upgrades.EMPTY, with));
+        assertTrue(UpgradeEffects.canLink(false, with, with));
+    }
+
+    @Test
+    void storedCountsWithoutTheNewestTypeStillLoad() {
+        Upgrades old = Upgrades.of(new int[]{1, 2, 3, 1, 1});
+
+        assertEquals(1, old.count(UpgradeType.PRIORITY));
+        assertFalse(old.has(UpgradeType.DIMENSION));
+    }
 }

@@ -11,7 +11,7 @@ import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
 
 import java.util.function.Predicate;
 
-/** {@link Port} fuer Fluide auf Basis der Fabric Transfer API. Fabric zaehlt in Tropfen, wir in mB (1 mB = 81 Tropfen). */
+/** {@link Port} for fluids on the Fabric Transfer API (1 mB = 81 droplets). */
 final class FabricFluidPort implements Port {
     private static final long DROPLETS_PER_MB = FluidConstants.BUCKET / 1000;
 
@@ -26,7 +26,7 @@ final class FabricFluidPort implements Port {
         if (max <= 0 || !(target instanceof FabricFluidPort other) || other.storage == storage) {
             return 0;
         }
-        // Eine Transaktion: entweder komplett oder gar nicht, nichts geht verloren.
+        // Single transaction
         long droplets = SaturatedMath.multiplySaturated(max, DROPLETS_PER_MB);
         Predicate<FluidVariant> allowed = filter == ALL
                 ? variant -> true

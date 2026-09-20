@@ -2,18 +2,15 @@ package io.github.fishgames.vectrum.block;
 
 import net.minecraft.util.StringRepresentable;
 
-/**
- * Was ein Endpunkt an einer seiner sechs Seiten hat. Der Zustand steckt im BlockState, damit Modell und Netz
- * ihn ohne Blockentity lesen können.
- */
+/** Block-state value of one side of a conduit block. */
 public enum Connection implements StringRepresentable {
-    /** Nichts angeschlossen (oder Seite ausgeschaltet). */
+    /** Nothing attached, or side switched off. */
     NONE("none"),
-    /** Verbunden mit einem Kabel oder Endpunkt desselben Typs: Teil des Netzes. */
+    /** Cable or endpoint of the same type (network link). */
     LINK("link"),
-    /** Inventar angeschlossen, Endpunkt entnimmt daraus und speist ins Netz ein (Quelle). */
+    /** Inventory attached, source side. */
     INPUT("in"),
-    /** Inventar angeschlossen, Endpunkt liefert Ware aus dem Netz hinein (Ziel). */
+    /** Inventory attached, target side. */
     OUTPUT("out");
 
     private final String name;

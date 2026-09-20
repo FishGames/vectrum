@@ -1,6 +1,8 @@
 package io.github.fishgames.vectrum.platform.forge;
 
+import io.github.fishgames.vectrum.Modules;
 import io.github.fishgames.vectrum.Vectrum;
+import io.github.fishgames.vectrum.platform.forge.mekanism.MekanismCompat;
 import io.github.fishgames.vectrum.command.VectrumCommands;
 import io.github.fishgames.vectrum.datagen.VectrumDataGen;
 import io.github.fishgames.vectrum.registry.Registration;
@@ -16,16 +18,14 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.RegisterEvent;
 
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Einstiegspunkt fuer Forge und - bis Minecraft 1.20.1 - auch fuer NeoForge,
- * denn NeoForge 1.20.1 nutzt noch dieselbe API ({@code net.minecraftforge.*}).
- */
+/** Forge and NeoForge 1.20.1 entry point ({@code net.minecraftforge.*} API). */
 @Mod(Vectrum.MOD_ID)
 public final class VectrumForge {
     public VectrumForge() {
@@ -34,6 +34,10 @@ public final class VectrumForge {
         Ports.setFinder(TransportType.ITEM, ForgeItemPorts::find);
         Ports.setFinder(TransportType.FLUID, ForgeFluidPorts::find);
         Ports.setFinder(TransportType.ENERGY, ForgeEnergyPorts::find);
+        // Gas module
+        if (ModList.get().isLoaded("mekanism") && MekanismCompat.init()) {
+            Modules.setGas(true);
+        }
         Vectrum.init();
         modBus.addListener(VectrumForge::onRegister);
         modBus.addListener(VectrumForge::onGatherData);

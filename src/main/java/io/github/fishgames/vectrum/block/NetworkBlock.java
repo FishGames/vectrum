@@ -5,16 +5,12 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
 
-/**
- * Ein Block, der Teil eines Vectrum-Netzes ist (Kabel oder Endpunkt). Einzelkabel (Stufe 1) und Endpunkte fuehren
- * genau einen Transporttyp, das Universalkabel (Stufe 2) mehrere; fuer jeden Typ bildet der Block einen Knoten in
- * einem eigenen, getrennten Netz an derselben Position.
- */
+/** Block that is a node of a Vectrum network (cable or endpoint); one node per carried transport type. */
 public interface NetworkBlock {
-    /** Alle Typen, die dieser Block fuehrt (mindestens einer, feste Reihenfolge). */
+    /** All carried types (at least one, fixed order). */
     List<TransportType> transportTypes();
 
-    /** Der erste (Haupt-)Typ, z. B. fuer Meldungen und Befehle ohne Typangabe. */
+    /** First (main) type. */
     default TransportType transportType() {
         return transportTypes().get(0);
     }
@@ -23,12 +19,12 @@ public interface NetworkBlock {
         return transportTypes().contains(type);
     }
 
-    /** Verbinden sich ein Baustein dieses Typs und der Nachbar miteinander? */
+    /** Whether the neighbour is a network block carrying {@code type}. */
     static boolean connects(BlockState neighbour, TransportType type) {
         return neighbour.getBlock() instanceof NetworkBlock other && other.carries(type);
     }
 
-    /** Fuehren beide Bausteine mindestens einen gemeinsamen Typ? */
+    /** Whether the neighbour is a network block carrying at least one of {@code types}. */
     static boolean connectsAny(BlockState neighbour, List<TransportType> types) {
         if (!(neighbour.getBlock() instanceof NetworkBlock other)) {
             return false;

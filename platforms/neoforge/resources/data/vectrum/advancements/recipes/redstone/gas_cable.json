@@ -1,0 +1,38 @@
+{
+  "forge:conditions": [
+    { "type": "forge:item_exists", "item": "vectrum:gas_cable" }
+  ],
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_fluid_cable": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "vectrum:fluid_cable"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "vectrum:gas_cable"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_fluid_cable",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "vectrum:gas_cable"
+    ]
+  },
+  "sends_telemetry_event": false
+}

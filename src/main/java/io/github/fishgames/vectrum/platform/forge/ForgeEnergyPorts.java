@@ -7,7 +7,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 
-/** Findet Energiespeicher ueber die Energy-Capability des Blockentities. */
+/** Energy storage lookup on the block entity energy capability. */
 final class ForgeEnergyPorts {
     private ForgeEnergyPorts() {
     }

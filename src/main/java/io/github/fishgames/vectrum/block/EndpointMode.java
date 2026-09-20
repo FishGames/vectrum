@@ -1,15 +1,15 @@
 package io.github.fishgames.vectrum.block;
 
-/** Rolle einer Endpunkt-Seite, die an ein Inventar grenzt. Wird in LevelNetworks gespeichert. */
+/** Role of a conduit side that touches an inventory (stored in LevelNetworks). */
 public enum EndpointMode {
-    /** Seite ist abgeschaltet: der Endpunkt fasst das Inventar nicht an. */
+    /** Side switched off. */
     OFF("off"),
-    /** Quelle: entnimmt Ware aus dem Inventar und gibt sie ans Netz. */
+    /** Source: inventory to network. */
     IN("in"),
-    /** Ziel: nimmt Ware aus dem Netz und legt sie ins Inventar. */
+    /** Target: network to inventory. */
     OUT("out");
 
-    /** Standard für neue Seiten: Ziel. So wird nichts ungewollt aus einer Kiste gezogen. */
+    /** Default role of new sides: target. */
     public static final EndpointMode DEFAULT = OUT;
 
     private final String name;
@@ -18,7 +18,7 @@ public enum EndpointMode {
         this.name = name;
     }
 
-    /** Nächste Rolle beim Umschalten mit dem Wrench: Ziel, Quelle, Aus, wieder Ziel. */
+    /** Next role in the wrench cycle: target, source, off. */
     public EndpointMode next() {
         return switch (this) {
             case OUT -> IN;

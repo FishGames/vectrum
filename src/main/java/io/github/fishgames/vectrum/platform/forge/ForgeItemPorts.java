@@ -7,7 +7,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 
-/** Findet Inventare über die Item-Handler-Capability des Blockentities. */
+/** Inventory lookup on the block entity item handler capability. */
 final class ForgeItemPorts {
     private ForgeItemPorts() {
     }

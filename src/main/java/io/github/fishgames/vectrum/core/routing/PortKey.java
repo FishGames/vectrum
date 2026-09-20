@@ -5,7 +5,7 @@ import io.github.fishgames.vectrum.core.network.Direction;
 
 import java.util.Objects;
 
-/** Eine Anschlussseite: der Netzbaustein an {@code pos} und die Seite, hinter der der Speicher liegt. */
+/** Port side: the network block at {@code pos} and the side facing the storage. */
 public record PortKey(BlockCoord pos, Direction side) {
     public PortKey {
         Objects.requireNonNull(pos, "pos");

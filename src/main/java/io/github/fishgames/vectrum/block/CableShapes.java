@@ -6,17 +6,16 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-/**
- * Baut die Umrisse von Kabeln und Endpunkten. Alle Maße sind in Pixeln (16 = ein Block).
- * Kabel: Kollision 6 px (5..11), Auswahl und Modell 10 px (3..13), so wie in {@code docs/implementierungs-prompt.md}.
- */
+/** Voxel shapes of cables and endpoint blocks; all measures in pixels (16 = one block). */
 final class CableShapes {
     private CableShapes() {
     }
 
     /**
-     * @param linkMask Seiten mit Verbindung zu einem Kabel/Endpunkt (Arme)
-     * @param portMask Seiten mit angeschlossenem Inventar (flache Platten, {@code plateDepth} dick)
+     * Core cube plus one arm per link side and one plate per port side.
+     *
+     * @param linkMask side bits with a cable/endpoint link (arms)
+     * @param portMask side bits with an attached inventory (plates, {@code plateDepth} thick)
      */
     static VoxelShape build(int linkMask, int portMask,
                             double coreLo, double coreHi,
@@ -34,7 +33,7 @@ final class CableShapes {
         return shape.optimize();
     }
 
-    /** Quader von der Kernfläche bis zum Blockrand in Richtung {@code direction}, {@code lo..hi} breit. */
+    /** Box from the core face to the block edge in {@code direction}, {@code lo..hi} wide. */
     private static VoxelShape side(Direction direction, double lo, double hi, double coreLo, double coreHi) {
         return switch (direction) {
             case DOWN -> Block.box(lo, 0, lo, hi, coreLo, hi);

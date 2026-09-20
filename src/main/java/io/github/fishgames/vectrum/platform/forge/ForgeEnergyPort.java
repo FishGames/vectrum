@@ -7,7 +7,7 @@ import net.minecraftforge.energy.IEnergyStorage;
 
 import java.util.function.Predicate;
 
-/** {@link Port} fuer Energie auf Basis der Forge-Energy-Capability (gilt auch fuer NeoForge 1.20.1). Einheit: FE. Energie kennt keine Sorten, der Filter wird ignoriert. */
+/** {@link Port} for energy on the Forge energy capability. Unit: FE; the filter is ignored. */
 final class ForgeEnergyPort implements Port {
     private final IEnergyStorage storage;
 
@@ -25,7 +25,7 @@ final class ForgeEnergyPort implements Port {
         }
         int limit = SaturatedMath.clampToNonNegativeInt(max);
 
-        // 1. Probe: Was koennte die Quelle hergeben? 2. Probe: Wie viel davon nimmt das Ziel?
+        // 1. probe: source offer
         int offered = storage.extractEnergy(limit, true);
         if (offered <= 0) {
             return 0;
@@ -34,17 +34,17 @@ final class ForgeEnergyPort implements Port {
         if (accepted <= 0) {
             return 0;
         }
-        // Echte Uebergabe
+        // 3. transfer
         int taken = storage.extractEnergy(accepted, false);
         if (taken <= 0) {
             return 0;
         }
         int received = other.storage.receiveEnergy(taken, false);
         if (received < taken) {
-            // Sollte nach der Probe nicht vorkommen. Zur Sicherheit zurueck in die Quelle geben.
+            // 4. return remainder to the source
             int back = storage.receiveEnergy(taken - received, false);
             if (back < taken - received) {
-                Vectrum.LOGGER.warn("{} FE gingen bei der Uebergabe verloren", taken - received - back);
+                Vectrum.LOGGER.warn("{} FE were lost during the transfer", taken - received - back);
             }
         }
         return received;

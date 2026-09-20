@@ -4,6 +4,7 @@ import io.github.fishgames.vectrum.datagen.VectrumDataGen;
 import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
 
+/** Fabric data generator entry point. */
 public final class VectrumFabricDataGenerator implements DataGeneratorEntrypoint {
     @Override
     public void onInitializeDataGenerator(FabricDataGenerator generator) {

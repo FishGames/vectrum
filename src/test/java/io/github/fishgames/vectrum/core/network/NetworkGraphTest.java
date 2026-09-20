@@ -32,7 +32,7 @@ class NetworkGraphTest {
         return new BlockCoord(DIM, x, y, z);
     }
 
-    /** Kabelreihe entlang der X-Achse von {@code from} bis {@code to} (einschließlich). */
+    /** Cable row along the X axis from {@code from} to {@code to} (inclusive). */
     private void line(int from, int to) {
         for (int x = from; x <= to; x++) {
             graph.add(at(x, 0, 0), NodeKind.CABLE, ALL);
@@ -116,7 +116,7 @@ class NetworkGraphTest {
 
         assertSame(large, graph.networkAt(at(6, 0, 0)));
         assertEquals(large.id(), graph.networkAt(at(6, 0, 0)).id());
-        assertEquals(0, small.size(), "das aufgenommene Netz ist leer");
+        assertEquals(0, small.size(), "absorbed network is empty");
         assertEquals(large, events.lastSurvivor);
         assertEquals(small, events.lastAbsorbed);
     }
@@ -180,7 +180,7 @@ class NetworkGraphTest {
 
         assertEquals(List.of(3, 3, 3, 3, 3, 3), sizes(graph));
         assertEquals(1, events.splits);
-        assertEquals(5, events.splitParts, "fünf neue Netze, das sechste behält die alte Identität");
+        assertEquals(5, events.splitParts, "five new networks");
         assertHealthy();
     }
 
@@ -194,13 +194,13 @@ class NetworkGraphTest {
         assertEquals(0, graph.nodeCount());
         assertEquals(1, events.dissolved);
         assertNull(graph.networkAt(at(0, 0, 0)));
-        assertFalse(graph.remove(at(0, 0, 0)), "zweites Entfernen ist wirkungslos");
+        assertFalse(graph.remove(at(0, 0, 0)), "second removal has no effect");
     }
 
     @Test
     void bothNeighboursMustAllowTheConnection() {
         graph.add(at(0, 0, 0), NodeKind.CABLE, ALL);
-        graph.add(at(1, 0, 0), NodeKind.CABLE, ALL & ~Direction.WEST.bit()); // B sperrt die Seite zu A
+        graph.add(at(1, 0, 0), NodeKind.CABLE, ALL & ~Direction.WEST.bit()); // B blocks the side facing A
 
         assertEquals(2, graph.networkCount());
         assertHealthy();
@@ -221,17 +221,17 @@ class NetworkGraphTest {
         assertHealthy();
     }
 
-    /** Regression: Seite A sperren und gleichzeitig Seite B freigeben darf keine Knoten fremder Netze umhängen. */
+    /** Swapping one blocked side for another in a single call. */
     @Test
     void swappingOneConnectionForAnotherInOneStepKeepsNetworksConsistent() {
         for (int x = -5; x <= -1; x++) {
-            graph.add(at(x, 0, 0), NodeKind.CABLE, ALL);          // lange Kette links
+            graph.add(at(x, 0, 0), NodeKind.CABLE, ALL);          // long chain on the left
         }
-        graph.add(at(0, 0, 0), NodeKind.CABLE, ALL & ~Direction.EAST.bit()); // verbunden nach links, nicht nach rechts
-        graph.add(at(1, 0, 0), NodeKind.CABLE, ALL);              // einzelner Knoten rechts
+        graph.add(at(0, 0, 0), NodeKind.CABLE, ALL & ~Direction.EAST.bit()); // linked left, not right
+        graph.add(at(1, 0, 0), NodeKind.CABLE, ALL);              // single node on the right
         assertEquals(List.of(1, 6), sizes(graph));
 
-        graph.setSides(at(0, 0, 0), ALL & ~Direction.WEST.bit()); // links kappen, rechts verbinden
+        graph.setSides(at(0, 0, 0), ALL & ~Direction.WEST.bit()); // cut left, link right
 
         assertEquals(List.of(2, 5), sizes(graph));
         assertSame(graph.networkAt(at(0, 0, 0)), graph.networkAt(at(1, 0, 0)));
@@ -249,7 +249,7 @@ class NetworkGraphTest {
             }
         }
 
-        graph.setSides(at(0, 0, 0), ALL & ~Direction.SOUTH.bit()); // trennt nur eine Kante des Rings
+        graph.setSides(at(0, 0, 0), ALL & ~Direction.SOUTH.bit()); // cuts one ring edge
 
         assertEquals(List.of(8), sizes(graph));
         assertEquals(0, events.splits);
@@ -286,7 +286,7 @@ class NetworkGraphTest {
         assertEquals(1, graph.networkAt(at(6, 0, 0)).endpointCount());
 
         graph.remove(at(6, 0, 0));
-        assertEquals(0, graph.networkAt(at(5, 0, 0)).endpointCount(), "ein Netz ohne Endpunkte bleibt bestehen, bleibt aber leer");
+        assertEquals(0, graph.networkAt(at(5, 0, 0)).endpointCount(), "network without endpoints keeps existing with zero endpoints");
         assertHealthy();
     }
 
@@ -299,16 +299,16 @@ class NetworkGraphTest {
         graph.setKind(at(1, 0, 0), NodeKind.ENDPOINT);
         graph.setKind(at(3, 0, 0), NodeKind.ENDPOINT);
         assertEquals(2, graph.networkAt(at(2, 0, 0)).endpointCount());
-        assertEquals(1, graph.networkCount(), "die Art zu wechseln verbindet oder trennt nichts");
+        assertEquals(1, graph.networkCount(), "changing the kind neither joins nor splits");
 
-        graph.setKind(at(1, 0, 0), NodeKind.ENDPOINT); // gleiche Art: nichts ändert sich
+        graph.setKind(at(1, 0, 0), NodeKind.ENDPOINT); // same kind
         assertEquals(2, graph.networkAt(at(2, 0, 0)).endpointCount());
 
         graph.setKind(at(1, 0, 0), NodeKind.CABLE);
         assertEquals(1, graph.networkAt(at(2, 0, 0)).endpointCount());
         assertEquals(List.of(at(3, 0, 0)), graph.networkAt(at(2, 0, 0)).endpointPositions());
 
-        graph.remove(at(2, 0, 0)); // Zähler bleibt nach dem Teilen richtig
+        graph.remove(at(2, 0, 0)); // count after split
         assertEquals(1, graph.networkAt(at(3, 0, 0)).endpointCount());
         assertEquals(0, graph.networkAt(at(0, 0, 0)).endpointCount());
         assertHealthy();
@@ -360,7 +360,7 @@ class NetworkGraphTest {
         NetworkGraph items = registry.graph(TransportType.ITEM.id());
         NetworkGraph fluids = registry.graph(TransportType.FLUID.id());
 
-        // Universalkabel: dieselben Positionen in beiden Ebenen, plus ein reines Item-Kabel
+        // universal cable: same positions in both layers, plus an item-only cable
         for (int x = 0; x < 3; x++) {
             items.add(at(x, 0, 0), NodeKind.CABLE, ALL);
             fluids.add(at(x, 0, 0), NodeKind.CABLE, ALL);
@@ -374,7 +374,7 @@ class NetworkGraphTest {
         assertNotSame(registry.networkAt(TransportType.ITEM.id(), at(0, 0, 0)), registry.networkAt(TransportType.FLUID.id(), at(0, 0, 0)));
 
         items.remove(at(1, 0, 0));
-        assertEquals(1, fluids.networkCount(), "das Fluid-Netz bleibt vom Item-Netz unberührt");
+        assertEquals(1, fluids.networkCount(), "fluid network is unaffected by the item network");
     }
 
     @Test
@@ -385,7 +385,7 @@ class NetworkGraphTest {
         }
     }
 
-    // ------------------------------------------------------------------------------------------ Hilfsmittel
+    // Helpers
 
     static Set<Set<BlockCoord>> partition(NetworkGraph graph) {
         Set<Set<BlockCoord>> result = new HashSet<>();
@@ -395,7 +395,7 @@ class NetworkGraphTest {
         return result;
     }
 
-    /** Zählt Ereignisse mit, damit Tests das Verhalten des Graphen beobachten können. */
+    /** Counts network events. */
     static final class Recorder implements NetworkListener {
         int created;
         int merged;

@@ -1,6 +1,7 @@
 package io.github.fishgames.vectrum.item;
 
 import io.github.fishgames.vectrum.block.ConduitBlock;
+import io.github.fishgames.vectrum.block.WirelessBlock;
 import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
 import io.github.fishgames.vectrum.core.upgrade.Upgrades;
 import io.github.fishgames.vectrum.registry.ModItems;
@@ -17,9 +18,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Das Wrench-Werkzeug zum Einstellen. Rechtsklick auf ein Kabel oder einen Endpunkt neben einem Inventar schaltet die
- * Rolle dieser Seite um (Ausgang, Eingang, Aus); mit Schleichen (Shift) nimmt er alle Upgrades des Bausteins heraus. Weitere Funktionen (Verbindungen abschalten, Einstellungen kopieren)
- * folgen in Etappe 12. Zum Ansehen von Netzen dient das {@link DiagnosticItem}.
+ * Wrench. Right click on a cable, endpoint or wireless port cycles the side role (output, input, off); sneaking
+ * removes all upgrades of the block.
  */
 public class WrenchItem extends Item {
     public WrenchItem(Properties properties) {
@@ -35,17 +35,31 @@ public class WrenchItem extends Item {
 
         if (state.getBlock() instanceof ConduitBlock conduit) {
             if (!level.isClientSide && player != null && player.isSecondaryUseActive()) {
-                returnUpgrades(level, pos, conduit, player);
+                if (conduit.acceptsUpgrades()) {
+                    returnUpgrades(level, pos, conduit, player);
+                } else {
+                    conduit.onWrenchSneak(level, pos, player);
+                }
             } else if (!level.isClientSide && player != null) {
                 conduit.onWrench(level, pos, player,
                         conduit.pickSide(level, pos, state, context.getClickLocation(), context.getClickedFace()));
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
+        if (state.getBlock() instanceof WirelessBlock wireless) {
+            if (!level.isClientSide && player != null) {
+                if (player.isSecondaryUseActive()) {
+                    wireless.onWrenchSneak(level, pos, player);
+                } else {
+                    wireless.onWrench(level, pos, player);
+                }
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         return InteractionResult.PASS;
     }
 
-    /** Schleichen + Rechtsklick: alle Upgrades dieses Bausteins herausnehmen und dem Spieler geben. */
+    /** Gives all upgrades of the block to the player. */
     private static void returnUpgrades(Level level, BlockPos pos, ConduitBlock conduit, Player player) {
         if (!(level instanceof ServerLevel server)) {
             return;

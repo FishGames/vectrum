@@ -1,51 +1,81 @@
 # Changelog
 
-Alle wichtigen Änderungen an Vectrum. Neueste zuerst.
+All notable changes to Vectrum. Newest first.
 
-## Unveröffentlicht
+## Unreleased
 
-### Hinzugefügt
-- Redstone-Kabel (Etappe 8): überträgt Signalstärken (0–15) zwischen Eingängen und Ausgängen eines Netzes. Der Wert
-  ist die größte Signalstärke an einem Eingang; jeder Ausgang gibt ihn ab. Neben Hebel, Redstone-Block, Staub usw.
-  wird eine Seite von selbst zum Eingang; einen Ausgang stellt man mit dem Schlüssel (oder
-  `/vectrum port <pos> <seite> role in|out|off`) ein. Reagiert sofort auf Änderungen, kein Dauer-Polling. Rezept:
-  2 Redstone + 1 Eisenbarren ergeben 6 Kabel. Das Diagnosewerkzeug zeigt die Signalstärke.
-- Universalkabel (Etappe 7, Stufe 2): ein Kabel, das Items, Fluide und Energie gleichzeitig führt. Jeder Typ bildet
-  darin sein eigenes Netz, die Typen vermischen sich nicht. Rezept: je 1 Item-, Fluid- und Energie-Kabel + 1 Goldbarren
-  ergeben 2 Universalkabel. Filter wirken nur auf den Typ, für den sie Einträge haben. Das Durchsatzlimit gibt es je
-  Typ (`/vectrum throughput <pos> type <item|fluid|energy>`).
-- Upgrade-System (Etappe 6): fünf Upgrade-Items (Durchsatz, Tempo, Sorten, Filter, Priorität). Sie werden mit
-  Rechtsklick in einen Kabelanschluss gesteckt, mit Schlüssel + Schleichen + Rechtsklick wieder herausgenommen und
-  fallen beim Abbauen zurück. Durchsatz vervierfacht das Limit pro Upgrade, Tempo halbiert das Intervall, Sorten
-  erlauben eine Item-Sorte mehr pro Übergabe, Filter und Priorität schalten die gleichnamigen Einstellungen frei.
-- Befehl `/vectrum upgrade <pos> [add|remove <sorte> [n]|clear]` (nur Operatoren).
-- Filter, Priorität und Verteilmodi (Etappe 5): Jede Anschlussseite hat eine Priorität (höhere Zahl wird zuerst
-  beliefert), einen Verteilmodus (der Reihe nach, reihum, ausgleichen) und einen Filter (Positiv- oder Negativliste
-  für Items und Fluide). Einstellbar mit `/vectrum port <pos> <seite> ...` (nur Operatoren, bis Upgrades und Oberfläche
-  folgen); die Einstellungen werden mit der Welt gespeichert. Volle Ziele werden zeitweise seltener gefragt.
-- Vanilla-Kessel lassen sich auf Forge und NeoForge mit Fluid-Kabeln befüllen und leeren (voller Eimer), wie auf Fabric.
-- Fluide und Energie (Etappe 4): Fluid-Kabel und Energie-Kabel, die wie das Item-Kabel funktionieren (Kabel legen,
-  Enden schalten mit dem Schlüssel um). Grundlimits: 1000 mB bzw. 2000 FE pro Übergabe und Quellseite. Auf Fabric wird
-  Team Reborn Energy (MIT) mitgeliefert.
-- Durchsatzlimit (Etappe 3): Jeder Kabel-Anschluss hat ein gespeichertes Limit (Grundwert 4 Items pro Übergabe und
-  Quellseite). Es wird beim Übergeben nur nachgeschlagen, nie über das Netz berechnet, und mit der Welt gespeichert.
-- Befehl `/vectrum throughput <pos> [<wert>|reset]` (nur Operatoren) zum Anzeigen und Setzen des Limits.
-- Das Diagnosewerkzeug zeigt das Durchsatzlimit des angeklickten Bausteins.
-- Rezept-Advancements (Ergebnis des ersten echten Datagen-Laufs).
+### Added
+- Gas module (Forge and NeoForge, with Mekanism): gas cable, plus gas in the universal cable, the coder and the wireless
+  port. 1000 mB per transfer, filter with gas identifiers (`mekanism:hydrogen`), priority, modes and upgrades as with
+  fluids. Without Mekanism (and on Fabric) the module stays off. Integrated through a compile-only Mekanism API
+  dependency. Tested with real Mekanism 10.4.16.80 on a Forge and a NeoForge server. Recipe: 2 iron ingots + 1 fluid
+  cable yield 2 gas cables. Universal cables and coders placed before Mekanism was installed have to be placed once more.
+- Dimension upgrade for the wireless port (max. 1 per port). A wireless link between different dimensions works only
+  if both the sending and the receiving port carry it; links within one dimension need no upgrade. Right click
+  installs it, sneak + right click with the item removes it, breaking the port returns it; also
+  `/vectrum upgrade <pos> add|remove dimension`. Receivers in unloaded chunks are skipped.
+- Wireless port (stage 10, tier 4): a block directly at the storage (cables optional). All blocks with the same
+  frequency belong together. Per type (items, fluids, energy) it can be set whether the block sends, receives, both
+  or nothing (default: receive). No throughput limit, no operating cost (expensive recipe); filter, priority and
+  distribution mode per side without an upgrade. Wrench: right click cycles the mode, sneak + right click raises the
+  frequency. Command `/vectrum wireless <pos> [mode <type> <mode>]`.
+- Digital cable and coder (stage 9, tier 3): coders with the same frequency in the same digital network couple their
+  transport networks; goods from a source thereby also reach targets in other networks (items, fluids, energy).
+  Frequencies are unbounded integers; wrench: right click +1, sneak + right click -1. Command
+  `/vectrum frequency <pos> [<value>]`. No relaying across several coders. The diagnostic tool shows the digital
+  network, the frequency and the coupling.
+- Redstone cable (stage 8): transmits signal strengths (0-15) between inputs and outputs of a network. The value is
+  the greatest signal strength at an input; every output emits it. Next to levers, redstone blocks, dust etc. a side
+  becomes an input by itself; an output is set with the wrench (or `/vectrum port <pos> <side> role in|out|off`).
+  Reacts immediately to changes, no constant polling. Recipe: 2 redstone + 1 iron ingot yield 6 cables. The
+  diagnostic tool shows the signal strength.
+- Universal cable (stage 7, tier 2): one cable that carries items, fluids and energy at the same time. Each type forms
+  its own network within it; the types do not mix. Recipe: 1 item, 1 fluid and 1 energy cable + 1 gold ingot yield
+  2 universal cables. Filters only act on the type for which they have entries. The throughput limit exists per type
+  (`/vectrum throughput <pos> type <item|fluid|energy>`).
+- Upgrade system (stage 6): five upgrade items (throughput, speed, types, filter, priority). They are inserted into a
+  cable port with a right click, removed again with wrench + sneak + right click, and drop when the block is broken.
+  Throughput quadruples the limit per upgrade, speed halves the interval, types allow one more item type per
+  transfer, filter and priority unlock the settings of the same name.
+- Command `/vectrum upgrade <pos> [add|remove <kind> [n]|clear]` (operators only).
+- Filter, priority and distribution modes (stage 5): every port side has a priority (higher number is supplied first),
+  a distribution mode (sequential, round robin, balanced) and a filter (whitelist or blacklist for items and fluids).
+  Configurable with `/vectrum port <pos> <side> ...` (operators only, until upgrades and interface follow); the
+  settings are saved with the world. Full targets are asked less often for a while.
+- Vanilla cauldrons can be filled and emptied with fluid cables on Forge and NeoForge (full bucket), as on Fabric.
+- Fluids and energy (stage 4): fluid cable and energy cable that work like the item cable (lay cables, switch ends with
+  the wrench). Base limits: 1000 mB and 2000 FE per transfer and source side. On Fabric, Team Reborn Energy (MIT) is
+  bundled.
+- Throughput limit (stage 3): every cable port has a stored limit (base value 4 items per transfer and source side).
+  It is only looked up on transfer, never computed across the network, and is saved with the world.
+- Command `/vectrum throughput <pos> [<value>|reset]` (operators only) to show and set the limit.
+- The diagnostic tool shows the throughput limit of the clicked block.
+- Recipe advancements (result of the first real datagen run).
 
-### Geändert
-- Die Rolle einer Kabelseite ist nun „nicht gewählt“, bis der Spieler sie umschaltet (Mengen-Typen: weiterhin Ausgang,
-  Redstone: Eingang neben Signalquellen). Bestehende Welten behalten ihre Rollen.
-- Fix: `/vectrum throughput <pos> <wert>` funktionierte seit Etappe 7 nicht mehr (nur `... reset <wert>`).
-- Ohne Sorten-Upgrade wird pro Übergabe an ein Ziel nur noch eine Item-Sorte bewegt.
-- Filter und Priorität wirken nur noch mit dem passenden Upgrade; `/vectrum port` verweigert das Setzen ohne.
-- `Port.moveTo` nimmt jetzt einen Filter entgegen und `Port` kennt den Füllstand; `ItemPort` hat keine eigene Filter-Methode mehr.
-- Der Transport ist jetzt für alle Typen derselbe Code (`Transport`, `Port`); die alten Item-Klassen entfallen.
-- Kabelenden übernehmen die Funktion der bisherigen Endpunkte, ein Item-Kabel reicht für Stufe 1 und 2.
-- Grunddurchsatz auf 4 Items alle 0,5 Sekunden gesenkt.
-- Das Diagnosewerkzeug ist ein eigenes Item (vorher Teil des Schlüssels).
-- Kabel-Blockstate geändert: Welten aus früheren Testständen sind nicht kompatibel.
+### Changed
+- Digital cable is 6 px thick in model, selection box and collision box (it could not be mined at its visible edges).
+- The coder is a full block.
+- The wireless port connects to cables and coders. A sending port passes the goods of its cable network to all
+  receivers of its frequency; a receiving port offers the targets of its cable network to all senders. No relaying
+  across several ports. Wireless ports placed earlier link after the next neighbour update (or re-place them).
+- Redstone cables connect by default to blocks that read redstone signals (lamps, doors, trapdoors, pistons, rails,
+  dispensers, hoppers, note blocks, bells, repeaters, comparators, TNT, command blocks); the wrench and
+  `/vectrum port <pos> <side> role in|out|off` still override.
+- Texts and comments switched to English (code comments, log and exception messages, README, CHANGELOG, decision log
+  `docs/decisions.md`).
+- The role of a cable side is now "not chosen" until the player switches it (quantity types: still output,
+  redstone: input next to signal sources). Existing worlds keep their roles.
+- Fix: `/vectrum throughput <pos> <value>` had not worked since stage 7 (only `... reset <value>`).
+- The diagnostic tool and the wrench know the new blocks (coder, digital cable, wireless port).
+- Without a types upgrade, only one item type is moved per transfer to a target.
+- Filter and priority only act with the matching upgrade; `/vectrum port` refuses to set them without it.
+- `Port.moveTo` now accepts a filter and `Port` knows the fill level; `ItemPort` no longer has its own filter method.
+- Transport is now the same code for all types (`Transport`, `Port`); the old item classes are gone.
+- Cable ends take over the function of the former endpoints; an item cable suffices for tiers 1 and 2.
+- Base throughput lowered to 4 items every 0.5 seconds.
+- The diagnostic tool is its own item (previously part of the wrench).
+- Cable blockstate changed: worlds from earlier test builds are not compatible.
 
-### Erstes Grundgerüst
-- Projekt für Fabric, Forge und NeoForge (Minecraft 1.20.1), Netzwerk-Kern mit Tests, Item-Kabel mit Transport von
-  Kiste zu Kiste, Schlüssel, Rezepte, Datagen, Sprachdateien (DE und EN).
+### First skeleton
+- Project for Fabric, Forge and NeoForge (Minecraft 1.20.1), network core with tests, item cable with chest-to-chest
+  transport, wrench, recipes, datagen, language files (DE and EN).

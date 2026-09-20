@@ -25,24 +25,26 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * Transport fuer alle Mengen-Typen (Items, Fluide, Energie): Die Ware reist nicht, es gibt nur eine direkte Uebergabe
- * von der Quelle (Anschlussseite mit Eingang) an die Ziele (Anschlussseiten mit Ausgang) im selben Netz. Der Typ ergibt
- * sich aus dem Block; nur der Zugang zum Speicher ({@link Ports}) unterscheidet sich.
- *
- * <p>Die Routing-Kaskade ist <b>Filter -> Prioritaet -> Modus</b> ({@link Router}). Der Filter der Quelle und der des
- * Ziels muessen die Ware beide durchlassen; Prioritaet steht am Ziel, der Verteilmodus an der Quelle.
- *
- * <p>Ein Ziel, das trotz Angebot nichts annimmt, waehrend die Quelle an andere liefert (also voll ist), wird eine
- * Weile nicht mehr gefragt ({@link LevelNetworks#noteMiss}). Jede Aenderung am Netz oder an Einstellungen hebt das auf.
+ * Quantity transport (items, fluids, energy, gas): direct hand-over from source sides (input) to target sides (output)
+ * of the same network; storage access goes through {@link Ports}.
+ * <ul>
+ * <li>Routing cascade: filter, priority, distribution mode ({@link Router}).</li>
+ * <li>Source filter and target filter must both match; priority is a target setting, distribution mode a source
+ * setting.</li>
+ * <li>A target that accepts nothing while the source delivers elsewhere is skipped for a while
+ * ({@link LevelNetworks#noteMiss}).</li>
+ * </ul>
  */
 public final class Transport {
     private Transport() {
     }
 
     /**
-     * Eine Uebergaberunde fuer einen Baustein: fuer jeden Typ, den er fuehrt, und jede Quellseite bis zum
-     * Durchsatzlimit des Bausteins verteilen. Einzelkabel fuehren einen Typ, das Universalkabel mehrere; jeder Typ hat
-     * sein eigenes Netz, sein eigenes Limit und seine eigene Zielliste.
+     * One hand-over round for a block.
+     * <ul>
+     * <li>1. for each quantity type of the block: look up network, throughput and target list</li>
+     * <li>2. for each source side: distribute up to the throughput</li>
+     * </ul>
      */
     public static void run(ServerLevel level, BlockPos pos, BlockState state, ConduitBlock block) {
         if (!block.hasSource(state)) {
@@ -51,7 +53,7 @@ public final class Transport {
         LevelNetworks networks = LevelNetworks.get(level);
         for (TransportType type : block.transportTypes()) {
             if (type.behavior() != TransportType.Behavior.QUANTITY) {
-                continue; // Signale (Redstone) laufen ueber Signals, nicht ueber Mengenuebergaben
+                continue;
             }
             run(level, networks, type, pos, state, block);
         }
@@ -63,17 +65,17 @@ public final class Transport {
         if (network == null) {
             return;
         }
-        // Limit des Quellbausteins: ein gespeicherter Wert, hier nur nachgeschlagen (K3).
+        // Throughput of the source block
         long budget = networks.throughput(type, pos);
         if (budget <= 0) {
             return;
         }
-        List<Target> targets = networks.targets(level, type, network);
+        List<Target> targets = networks.reachableTargets(level, type, network);
         if (targets.isEmpty()) {
             return;
         }
 
-        // Ziel-Speicher werden je Uebergaberunde nur einmal gesucht (auch fuer den Fuellstand).
+        // Destination ports
         Map<Target, Port> destinations = new HashMap<>();
         for (Direction side : Sides.ALL) {
             if (block.connection(state, side) != Connection.INPUT) {
@@ -87,15 +89,25 @@ public final class Transport {
             if (source == null) {
                 continue;
             }
-            distribute(level, networks, type, pos, side, source, sourcePos, targets, budget, destinations);
+            distribute(level, networks, type, pos, side, source, sourcePos, targets, budget, destinations,
+                    networks.effectiveSettings(pos, side), networks.maxTypes(pos));
         }
     }
 
-    private static void distribute(ServerLevel level, LevelNetworks networks, TransportType type, BlockPos pos,
-                                   Direction side, Port source, BlockPos sourcePos, List<Target> targets,
-                                   long budget, Map<Target, Port> destinations) {
-        PortSettings own = networks.effectiveSettings(pos, side);
-        int maxTypes = networks.maxTypes(pos);
+    /**
+     * Distributes the goods of one source side to the targets (also used by wireless blocks).
+     * <ul>
+     * <li>1. run the routing cascade over the targets</li>
+     * <li>2. per target: skip same storage, unloaded chunks and sleeping targets, then move</li>
+     * <li>3. record hits and misses</li>
+     * </ul>
+     *
+     * @param own      effective settings of the source side (filter, distribution mode)
+     * @param maxTypes item types per target
+     */
+    static void distribute(ServerLevel level, LevelNetworks networks, TransportType type, BlockPos pos,
+                           Direction side, Port source, BlockPos sourcePos, List<Target> targets,
+                           long budget, Map<Target, Port> destinations, PortSettings own, int maxTypes) {
         ResourceFilter sourceFilter = forType(type, own.filter());
         long now = level.getGameTime();
 
@@ -119,9 +131,9 @@ public final class Transport {
                 target -> fillLevel(level, type, target, destinations),
                 own.mode(), pointer,
                 (target, max) -> {
-                    // Ein Speicher, der gleichzeitig Quelle und Ziel ist, ueberspringen; ebenso Ziele in nicht
-                    // geladenen Chunks und Ziele, die gerade Wartezeit haben.
-                    if (target.inventory().equals(sourcePos) || !level.hasChunkAt(target.inventory())
+                    // 2. skip check
+                    if ((target.level() == level && target.inventory().equals(sourcePos))
+                            || !target.level().hasChunkAt(target.inventory())
                             || networks.isSleeping(pos, side, target, now)) {
                         return 0;
                     }
@@ -137,8 +149,7 @@ public final class Transport {
                     return result;
                 });
 
-        // Nur wenn die Quelle etwas hergegeben hat, sagt ein leeres Ziel etwas ueber dieses Ziel aus (voll oder
-        // lehnt die Ware ab). Ist die Quelle leer, geht sonst jedes Ziel zu Unrecht schlafen.
+        // 3. hits and misses
         if (moved > 0) {
             for (Target target : asked) {
                 if (accepted.contains(target)) {
@@ -150,12 +161,12 @@ public final class Transport {
         }
     }
 
-    /** Nur die Eintraege des Filters, die diesen Typ betreffen (siehe {@link ResourceFilter#restrictedTo}). */
+    /** Filter entries of this type only ({@link ResourceFilter#restrictedTo}). */
     private static ResourceFilter forType(TransportType type, ResourceFilter filter) {
         return filter.isEmpty() ? filter : filter.restrictedTo(id -> ResourceIds.belongsTo(type, id));
     }
 
-    /** Beide Filter muessen passen. Sind beide leer, gibt es den schnellen Weg ohne Nachfrage je Ware. */
+    /** Combined source and target filter. */
     private static Predicate<String> combine(ResourceFilter source, ResourceFilter target) {
         if (source.isEmpty() && target.isEmpty()) {
             return Port.ALL;
@@ -168,8 +179,8 @@ public final class Transport {
         if (destinations.containsKey(target)) {
             return destinations.get(target);
         }
-        Port port = level.hasChunkAt(target.inventory())
-                ? Ports.find(type, level, target.inventory(), target.side().getOpposite())
+        Port port = target.level().hasChunkAt(target.inventory())
+                ? Ports.find(type, target.level(), target.inventory(), target.side().getOpposite())
                 : null;
         destinations.put(target, port);
         return port;

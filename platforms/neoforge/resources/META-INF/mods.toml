@@ -1,6 +1,4 @@
-# NeoForge 1.20.1 liest noch META-INF/mods.toml (die Umbenennung in neoforge.mods.toml kam erst mit 1.20.2+).
-# Die Abhaengigkeit auf "forge"/"neoforge" ist hier bewusst weggelassen, damit der Mod-Id-Name des Loaders
-# (in 1.20.1 noch "forge") keine Ladefehler verursacht.
+# NeoForge 1.20.1 mod metadata (META-INF/mods.toml)
 modLoader="javafml"
 loaderVersion="[47,)"
 license="${mod_license}"
@@ -17,4 +15,12 @@ description='''${mod_description}'''
     mandatory=true
     versionRange="[${minecraft_version}]"
     ordering="NONE"
+    side="BOTH"
+
+# Optional dependency: Mekanism (gas module)
+[[dependencies.${mod_id}]]
+    modId="mekanism"
+    mandatory=false
+    versionRange="[10.0,)"
+    ordering="AFTER"
     side="BOTH"

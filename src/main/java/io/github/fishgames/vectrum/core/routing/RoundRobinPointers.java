@@ -6,10 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Rundlaufzeiger je Quelle: Jede Quelle führt ihren eigenen Zeiger, mehrere Quellen im selben Netz beeinflussen
- * sich nicht. Nur Zeiger ungleich 0 werden gespeichert.
- */
+/** Round-robin pointer per source port; only non-zero pointers are stored. */
 public final class RoundRobinPointers {
     private final Map<PortKey, Integer> pointers = new HashMap<>();
 
@@ -25,7 +22,7 @@ public final class RoundRobinPointers {
         }
     }
 
-    /** Vergisst die Zeiger aller Seiten dieses Bausteins (beim Abbauen). */
+    /** Removes the pointers of all sides of the block at {@code pos}. */
     public boolean clear(BlockCoord pos) {
         return pointers.keySet().removeIf(key -> key.pos().equals(pos));
     }

@@ -13,7 +13,7 @@ import net.minecraft.data.PackOutput;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
-/** Schreibt {@code assets/vectrum/lang/<locale>.json}. Unterstuetzt "en_us" und "de_de". */
+/** Writes {@code assets/vectrum/lang/<locale>.json} for "en_us" and "de_de". */
 public final class ModLanguageProvider implements DataProvider {
     private final PackOutput.PathProvider paths;
     private final String locale;
@@ -45,6 +45,42 @@ public final class ModLanguageProvider implements DataProvider {
                 german ? "Fluid-Kabel" : "Fluid Cable");
         out.accept(Util.makeDescriptionId("block", ModBlocks.ENERGY_CABLE.id()),
                 german ? "Energie-Kabel" : "Energy Cable");
+        out.accept(Util.makeDescriptionId("block", ModBlocks.DIGITAL_CABLE.id()),
+                german ? "Digitales Kabel" : "Digital Cable");
+        out.accept(Util.makeDescriptionId("block", ModBlocks.CODER.id()), "Coder");
+        out.accept("type." + Vectrum.MOD_ID + ".digital", german ? "Digital" : "Digital");
+        out.accept("message." + Vectrum.MOD_ID + ".coder_frequency",
+                german ? "Frequenz %s" : "Frequency %s");
+        out.accept("message." + Vectrum.MOD_ID + ".network_digital",
+                german ? "Digitales Netz #%s: %s Bausteine, %s Coder, Frequenzen: %s"
+                        : "Digital network #%s: %s blocks, %s coders, frequencies: %s");
+        out.accept("command." + Vectrum.MOD_ID + ".frequency.show",
+                german ? "Frequenz bei %s: %s" : "Frequency at %s: %s");
+        out.accept("command." + Vectrum.MOD_ID + ".frequency.set",
+                german ? "Frequenz bei %s auf %s gesetzt" : "Set the frequency at %s to %s");
+        out.accept("command." + Vectrum.MOD_ID + ".frequency.not_a_coder",
+                german ? "Bei %s steht weder ein Coder noch ein Funk-Anschluss." : "There is no coder or wireless port at %s.");
+        out.accept(Util.makeDescriptionId("block", ModBlocks.WIRELESS_PORT.id()),
+                german ? "Funk-Anschluss" : "Wireless Port");
+        out.accept("link." + Vectrum.MOD_ID + ".off", german ? "Aus" : "Off");
+        out.accept("link." + Vectrum.MOD_ID + ".receive", german ? "Empfangen" : "Receive");
+        out.accept("link." + Vectrum.MOD_ID + ".send", german ? "Senden" : "Send");
+        out.accept("link." + Vectrum.MOD_ID + ".both", german ? "Senden und empfangen" : "Send and receive");
+        out.accept("message." + Vectrum.MOD_ID + ".wireless_mode",
+                german ? "Funk-Anschluss: %s (alle Typen)" : "Wireless port: %s (all types)");
+        out.accept("message." + Vectrum.MOD_ID + ".wireless_info",
+                german ? "Funk: Frequenz %s, %s Bl\u00f6cke | Items: %s, Fluide: %s, Energie: %s%s"
+                        : "Wireless: frequency %s, %s blocks | items: %s, fluids: %s, energy: %s%s");
+        out.accept("command." + Vectrum.MOD_ID + ".wireless.show",
+                german ? "Funk-Anschluss bei %s: Frequenz %s (%s Bl\u00f6cke), Items: %s, Fluide: %s, Energie: %s%s"
+                        : "Wireless port at %s: frequency %s (%s blocks), items: %s, fluids: %s, energy: %s%s");
+        out.accept("command." + Vectrum.MOD_ID + ".wireless.set",
+                german ? "Funk-Anschluss bei %s: %s auf \"%s\" gestellt" : "Wireless port at %s: %s set to \"%s\"");
+        out.accept("command." + Vectrum.MOD_ID + ".wireless.not_wireless",
+                german ? "Bei %s steht kein Funk-Anschluss." : "There is no wireless port at %s.");
+        out.accept("command." + Vectrum.MOD_ID + ".wireless.bad_argument",
+                german ? "Typ (all, item, fluid, energy) oder Modus (off, receive, send, both) unbekannt."
+                        : "Unknown type (all, item, fluid, energy) or mode (off, receive, send, both).");
         out.accept(Util.makeDescriptionId("block", ModBlocks.REDSTONE_CABLE.id()),
                 german ? "Redstone-Kabel" : "Redstone Cable");
         out.accept("message." + Vectrum.MOD_ID + ".upgrade_not_supported",
@@ -53,8 +89,8 @@ public final class ModLanguageProvider implements DataProvider {
                 german ? "Redstone-Netz #%s: %s Bausteine, %s Eing\u00e4nge/Ausg\u00e4nge, Signalst\u00e4rke %s"
                         : "Redstone network #%s: %s blocks, %s inputs/outputs, signal strength %s");
         out.accept("command." + Vectrum.MOD_ID + ".signal_unsupported",
-                german ? "%s: Redstone-Bausteine haben weder Upgrades noch ein Durchsatzlimit."
-                        : "%s: Redstone blocks have neither upgrades nor a throughput limit.");
+                german ? "%s: Dieser Baustein hat weder Upgrades noch ein Durchsatzlimit."
+                        : "%s: This block has neither upgrades nor a throughput limit.");
         out.accept("command." + Vectrum.MOD_ID + ".port.role",
                 german ? "%s, Seite %s: Rolle %s" : "%s, side %s: role %s");
         out.accept(Util.makeDescriptionId("block", ModBlocks.UNIVERSAL_CABLE.id()),
@@ -62,6 +98,9 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("type." + Vectrum.MOD_ID + ".item", german ? "Items" : "Items");
         out.accept("type." + Vectrum.MOD_ID + ".fluid", german ? "Fluide" : "Fluids");
         out.accept("type." + Vectrum.MOD_ID + ".energy", german ? "Energie" : "Energy");
+        // Gas module (Mekanism)
+        out.accept("type." + Vectrum.MOD_ID + ".gas", german ? "Gase" : "Gases");
+        out.accept("block." + Vectrum.MOD_ID + ".gas_cable", german ? "Gas-Kabel" : "Gas Cable");
         out.accept("command." + Vectrum.MOD_ID + ".throughput.bad_type",
                 german ? "\"%s\" gibt es bei %s nicht (item, fluid oder energy, je nach Baustein)."
                         : "\"%s\" is not available at %s (item, fluid or energy, depending on the block).");
@@ -72,7 +111,7 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept(Util.makeDescriptionId("item", ModItems.DIAGNOSTIC_TOOL.id()),
                 german ? "Diagnosewerkzeug" : "Diagnostic Tool");
 
-        // Meldungen in der Aktionsleiste
+        // Action bar messages
         out.accept("message." + Vectrum.MOD_ID + ".endpoint_mode",
                 german ? "Seite %s: %s" : "Side %s: %s");
         out.accept("message." + Vectrum.MOD_ID + ".endpoint_link",
@@ -104,8 +143,8 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("message." + Vectrum.MOD_ID + ".upgrades_none",
                 german ? "Hier stecken keine Upgrades." : "There are no upgrades installed here.");
         out.accept("command." + Vectrum.MOD_ID + ".upgrade.list",
-                german ? "Durchsatz %s, Tempo %s, Sorten %s, Filter %s, Priorit\u00e4t %s"
-                        : "throughput %s, speed %s, types %s, filter %s, priority %s");
+                german ? "Durchsatz %s, Tempo %s, Sorten %s, Filter %s, Priorit\u00e4t %s, Dimension %s"
+                        : "throughput %s, speed %s, types %s, filter %s, priority %s, dimension %s");
         out.accept("command." + Vectrum.MOD_ID + ".upgrade.show",
                 german ? "Upgrades bei %s: %s" : "Upgrades at %s: %s");
         out.accept("command." + Vectrum.MOD_ID + ".upgrade.changed",
@@ -113,8 +152,14 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("command." + Vectrum.MOD_ID + ".upgrade.cleared",
                 german ? "Alle Upgrades bei %s entfernt" : "Removed all upgrades at %s");
         out.accept("command." + Vectrum.MOD_ID + ".upgrade.unknown_type",
-                german ? "\"%s\" ist keine Upgrade-Sorte (throughput, speed, types, filter, priority)."
-                        : "\"%s\" is not an upgrade type (throughput, speed, types, filter, priority).");
+                german ? "\"%s\" ist keine Upgrade-Sorte (throughput, speed, types, filter, priority, dimension)."
+                        : "\"%s\" is not an upgrade type (throughput, speed, types, filter, priority, dimension).");
+        out.accept("message." + Vectrum.MOD_ID + ".upgrade_wireless_only",
+                german ? "%s passt nur in den Funk-Anschluss." : "%s only fits the wireless port.");
+        out.accept("command." + Vectrum.MOD_ID + ".upgrade.wireless_only",
+                german ? "Bei %s: Dieses Upgrade passt nur in den Funk-Anschluss." : "At %s: this upgrade only fits the wireless port.");
+        out.accept("command." + Vectrum.MOD_ID + ".upgrade.not_for_wireless",
+                german ? "Bei %s: Der Funk-Anschluss nimmt nur das Dimensions-Upgrade." : "At %s: the wireless port only accepts the dimension upgrade.");
         out.accept("command." + Vectrum.MOD_ID + ".port.locked",
                 german ? "Bei %s fehlt das Upgrade \"%s\". Erst einsetzen, dann einstellen."
                         : "Block at %s needs the \"%s\" upgrade first.");
@@ -122,12 +167,13 @@ public final class ModLanguageProvider implements DataProvider {
                 german ? "Hinweis: Gespeicherte Priorit\u00e4t oder Filter wirken erst, wenn das passende Upgrade steckt."
                         : "Note: stored priority or filter only take effect once the matching upgrade is installed.");
 
-        // Einheiten
+        // Units
         out.accept("unit." + Vectrum.MOD_ID + ".item", german ? "Items" : "items");
         out.accept("unit." + Vectrum.MOD_ID + ".fluid", "mB");
         out.accept("unit." + Vectrum.MOD_ID + ".energy", "FE");
+        out.accept("unit." + Vectrum.MOD_ID + ".gas", "mB");
 
-        // Befehle
+        // Commands
         out.accept("command." + Vectrum.MOD_ID + ".throughput.show",
                 german ? "Durchsatzlimit bei %s: %s pro \u00dcbergabe" : "Throughput limit at %s: %s per transfer");
         out.accept("command." + Vectrum.MOD_ID + ".throughput.set",
@@ -146,13 +192,13 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("command." + Vectrum.MOD_ID + ".port.reset",
                 german ? "Einstellungen bei %s, Seite %s zur\u00fcckgesetzt" : "Reset settings at %s, side %s");
         out.accept("command." + Vectrum.MOD_ID + ".port.unknown_resource",
-                german ? "\"%s\" ist weder ein bekanntes Item noch ein bekanntes Fluid."
-                        : "\"%s\" is neither a known item nor a known fluid.");
+                german ? "\"%s\" ist weder ein bekanntes Item, Fluid noch Gas (Gase nur mit Mekanism)."
+                        : "\"%s\" is not a known item, fluid or gas (gases need Mekanism).");
         out.accept("command." + Vectrum.MOD_ID + ".port.bad_side",
                 german ? "\"%s\" ist keine Seite (down, up, north, south, west, east)."
                         : "\"%s\" is not a side (down, up, north, south, west, east).");
 
-        // Verteilmodi und Filterbeschreibung
+        // Distribution modes and filter descriptions
         out.accept("distribution." + Vectrum.MOD_ID + ".sequential",
                 german ? "der Reihe nach (erstes Ziel zuerst f\u00fcllen)" : "sequential (fill the first target first)");
         out.accept("distribution." + Vectrum.MOD_ID + ".round_robin",
@@ -170,7 +216,7 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("command." + Vectrum.MOD_ID + ".not_a_network_block",
                 german ? "Bei %s steht kein Kabel oder Endpunkt." : "There is no cable or endpoint at %s.");
 
-        // Seitennamen und Rollen
+        // Side names and roles
         out.accept("direction." + Vectrum.MOD_ID + ".down", german ? "unten" : "bottom");
         out.accept("direction." + Vectrum.MOD_ID + ".up", german ? "oben" : "top");
         out.accept("direction." + Vectrum.MOD_ID + ".north", german ? "Nord" : "north");
@@ -191,6 +237,7 @@ public final class ModLanguageProvider implements DataProvider {
             case TYPES -> german ? "Sorten-Upgrade" : "Types Upgrade";
             case FILTER -> german ? "Filter-Upgrade" : "Filter Upgrade";
             case PRIORITY -> german ? "Priorit\u00e4ts-Upgrade" : "Priority Upgrade";
+            case DIMENSION -> german ? "Dimensions-Upgrade" : "Dimension Upgrade";
         };
     }
 
@@ -204,6 +251,8 @@ public final class ModLanguageProvider implements DataProvider {
                     : "Allows one more item type per transfer (one without upgrades).";
             case FILTER -> german ? "Schaltet den Filter frei." : "Unlocks the filter.";
             case PRIORITY -> german ? "Schaltet die Priorit\u00e4t frei." : "Unlocks priority.";
+            case DIMENSION -> german ? "Funk-Anschluss: erlaubt Verbindungen in andere Dimensionen (beide Seiten brauchen es). Schleichen + Rechtsklick nimmt es heraus."
+                    : "Wireless port: allows links to other dimensions (both ends need it). Sneak + right click removes it.";
         };
     }
 

@@ -49,7 +49,7 @@ class SaturatedMathTest {
         assertEquals(Long.MAX_VALUE, SaturatedMath.multiplySaturated(-3_000_000_000_000L, -4_000_000_000_000L));
         assertEquals(Long.MIN_VALUE, SaturatedMath.multiplySaturated(Long.MAX_VALUE, -2));
         assertEquals(Long.MIN_VALUE, SaturatedMath.multiplySaturated(Long.MIN_VALUE, 5));
-        // Zwischenergebnis Basis * Faktor würde überlaufen, obwohl das Endergebnis eines Upgrade-Aufrufs sinnvoll ist
+        // large intermediate product
         assertEquals(1_000_000_000_000L, SaturatedMath.multiplySaturated(1_000_000L, 1_000_000L));
     }
 }

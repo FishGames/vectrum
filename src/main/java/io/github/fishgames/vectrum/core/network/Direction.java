@@ -1,8 +1,6 @@
 package io.github.fishgames.vectrum.core.network;
 
-/**
- * Die sechs Blockrichtungen. Reihenfolge und Achsen entsprechen Minecraft (unten, oben, Norden, Süden, Westen, Osten).
- */
+/** The six block directions in Minecraft order: down, up, north, south, west, east. */
 public enum Direction {
     DOWN(0, -1, 0),
     UP(0, 1, 0),
@@ -11,10 +9,10 @@ public enum Direction {
     WEST(-1, 0, 0),
     EAST(1, 0, 0);
 
-    /** Alle Richtungen, einmal angelegt (vermeidet das Kopieren bei {@code values()}). */
+    /** All directions. */
     public static final Direction[] VALUES = values();
 
-    /** Bitmaske mit allen sechs Richtungen. */
+    /** Bit mask with all six directions. */
     public static final int ALL_MASK = (1 << VALUES.length) - 1;
 
     private final int dx;
@@ -40,10 +38,10 @@ public enum Direction {
     }
 
     public Direction opposite() {
-        return VALUES[ordinal() ^ 1]; // Paare (0,1), (2,3), (4,5) liegen nebeneinander
+        return VALUES[ordinal() ^ 1];
     }
 
-    /** Das Bit dieser Richtung in einer Seitenmaske. */
+    /** Bit of this direction in a side mask. */
     public int bit() {
         return 1 << ordinal();
     }

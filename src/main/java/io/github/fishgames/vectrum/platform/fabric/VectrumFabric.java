@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 
+/** Fabric entry point. */
 public final class VectrumFabric implements ModInitializer {
     @Override
     public void onInitialize() {
@@ -18,7 +19,7 @@ public final class VectrumFabric implements ModInitializer {
         Ports.setFinder(TransportType.ENERGY, FabricEnergyPorts::find);
         Vectrum.init();
 
-        // Reihenfolge: erst Bloecke, dann Items (Block-Items), zuletzt Creative-Tabs.
+        // Registries: blocks, items, creative tabs
         Registration.applyTo(Registries.BLOCK, BuiltInRegistries.BLOCK);
         Registration.applyTo(Registries.ITEM, BuiltInRegistries.ITEM);
         Registration.applyTo(Registries.CREATIVE_MODE_TAB, BuiltInRegistries.CREATIVE_MODE_TAB);

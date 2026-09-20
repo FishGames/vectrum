@@ -2,10 +2,7 @@ package io.github.fishgames.vectrum.core.upgrade;
 
 import java.util.Arrays;
 
-/**
- * Die Upgrades, die in einem Baustein stecken: je Sorte eine Anzahl von 0 bis {@link UpgradeType#maxCount()}.
- * Unveränderlich; Änderungen liefern eine neue Instanz.
- */
+/** Upgrade counts of a block, 0 to {@link UpgradeType#maxCount()} per type. Immutable. */
 public final class Upgrades {
     public static final Upgrades EMPTY = new Upgrades(new int[UpgradeType.VALUES.length]);
 
@@ -15,7 +12,7 @@ public final class Upgrades {
         this.counts = counts;
     }
 
-    /** Baut aus gespeicherten Zahlen (z. B. NBT). Zu kurze Felder werden mit 0 aufgefüllt, ungültige Werte geklemmt. */
+    /** Builds from stored counts; missing entries are 0, values are clamped to 0..max. */
     public static Upgrades of(int[] stored) {
         int[] counts = new int[UpgradeType.VALUES.length];
         for (int i = 0; i < counts.length && i < stored.length; i++) {
@@ -44,19 +41,19 @@ public final class Upgrades {
         return sum;
     }
 
-    /** Setzt die Anzahl einer Sorte, geklemmt auf 0 bis Höchstzahl. */
+    /** Copy with the count of one type set, clamped to 0..max. */
     public Upgrades with(UpgradeType type, int count) {
         int[] copy = counts.clone();
         copy[type.ordinal()] = Math.max(0, Math.min(count, type.maxCount()));
         return isAllZero(copy) ? EMPTY : new Upgrades(copy);
     }
 
-    /** Wie viele weitere Upgrades dieser Sorte noch hineinpassen. */
+    /** Remaining slots for the type. */
     public int freeSlots(UpgradeType type) {
         return type.maxCount() - count(type);
     }
 
-    /** Für die Speicherung: eine Zahl je Sorte in der Reihenfolge von {@link UpgradeType}. */
+    /** One count per type in {@link UpgradeType} order. */
     public int[] toArray() {
         return counts.clone();
     }

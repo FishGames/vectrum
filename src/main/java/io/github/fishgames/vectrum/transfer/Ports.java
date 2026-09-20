@@ -8,7 +8,7 @@ import net.minecraft.world.level.Level;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Zentraler Zugang für den gemeinsamen Code. Der Loader trägt beim Start je Transporttyp seine Umsetzung ein. */
+/** Port finder registry: one {@link PortFinder} per transport type. */
 public final class Ports {
     private static final Map<String, PortFinder> FINDERS = new HashMap<>();
 
@@ -20,8 +20,8 @@ public final class Ports {
     }
 
     /**
-     * Der Speicher dieses Typs an {@code pos}, angesprochen von der Seite {@code side} dieses Blocks, oder
-     * {@code null}. Der Chunk an {@code pos} muss geladen sein.
+     * Storage of this type at {@code pos}, accessed from {@code side}; {@code null} when none. The chunk at
+     * {@code pos} must be loaded.
      */
     public static Port find(TransportType type, Level level, BlockPos pos, Direction side) {
         PortFinder finder = FINDERS.get(type.id());

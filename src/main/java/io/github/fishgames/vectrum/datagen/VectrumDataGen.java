@@ -10,20 +10,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Loaderunabhaengige Liste aller Datagen-Provider. Sie basiert nur auf Vanilla-Klassen;
- * Fabric ({@code VectrumFabricDataGenerator}) und Forge/NeoForge ({@code VectrumForge}) hängen sie
- * lediglich an ihren jeweiligen Generator an.
- *
- * <p>Ausgabe: {@code generated/<minecraft-version>/} im Projektstamm (wird als Ressourcenordner eingebunden).
- */
+/** Loader-independent list of all data generation providers. */
 public final class VectrumDataGen {
     @FunctionalInterface
     public interface ProviderFactory {
         DataProvider create(PackOutput output, CompletableFuture<HolderLookup.Provider> registries);
     }
 
-    /** @param client true = Client-Ressourcen (assets), false = Serverdaten (data) */
+    /** @param client true for client assets, false for server data */
     public record Entry(boolean client, ProviderFactory factory) {
     }
 

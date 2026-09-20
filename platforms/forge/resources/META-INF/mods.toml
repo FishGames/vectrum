@@ -22,3 +22,11 @@ description='''${mod_description}'''
     versionRange="[${minecraft_version}]"
     ordering="NONE"
     side="BOTH"
+
+# Optional dependency: Mekanism (gas module)
+[[dependencies.${mod_id}]]
+    modId="mekanism"
+    mandatory=false
+    versionRange="[10.0,)"
+    ordering="AFTER"
+    side="BOTH"

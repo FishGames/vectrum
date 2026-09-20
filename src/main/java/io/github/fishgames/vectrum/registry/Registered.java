@@ -4,10 +4,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.Supplier;
 
-/**
- * Ein noch nicht (oder bereits) registriertes Objekt. {@link #get()} erzeugt das Objekt beim ersten Aufruf
- * und liefert danach immer dieselbe Instanz - egal ob der Zugriff vor oder waehrend der Registrierung passiert.
- */
+/** Lazily created registry entry; {@link #get()} returns the same instance on every call. */
 public final class Registered<T> implements Supplier<T> {
     private final ResourceLocation id;
     private final Supplier<? extends T> factory;

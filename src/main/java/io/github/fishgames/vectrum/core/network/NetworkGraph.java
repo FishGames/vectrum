@@ -13,19 +13,15 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Graph aller Kabel- und Endpunkt-Positionen einer Ebene (ein Transporttyp oder das digitale Netz), im Speicher.
+ * In-memory graph of the cable and endpoint positions of one layer (a transport type or the digital network).
  *
- * <p>Änderungen sind <b>inkrementell</b>:
+ * <p>Two adjacent nodes are linked when both have the facing side enabled. Updates are incremental:
  * <ul>
- *   <li>Setzen eines Knotens verschmilzt angrenzende Netze, immer das kleinere in das größere.</li>
- *   <li>Entfernen eines Knotens (oder Sperren einer Seite) prüft nur die unmittelbar betroffenen Nachbarn. Dazu laufen
- *       Suchen gleichzeitig los; sobald sich zwei treffen, sind sie verbunden, und sobald eine Suche nichts mehr
- *       Neues findet, ist ihr Teil ein abgetrenntes Netz. Der Aufwand hängt vom <i>kleineren</i> Teil ab, nicht von
- *       der Größe des ganzen Netzes.</li>
+ *   <li>Adding a node merges adjacent networks, smaller into larger.</li>
+ *   <li>Removing a node or disabling a side runs simultaneous searches from the affected neighbours; searches that
+ *       meet are united, a search that runs out of nodes becomes a separate network.</li>
  * </ul>
- *
- * <p>Zwei benachbarte Knoten sind verbunden, wenn beide die jeweils zugewandte Seite freigegeben haben. Die Klasse
- * ist nicht thread-sicher; Minecraft ruft sie ausschließlich aus dem Server-Thread auf.
+ * Not thread-safe.
  */
 public final class NetworkGraph {
     private final String layer;
@@ -46,13 +42,13 @@ public final class NetworkGraph {
         listeners.add(Objects.requireNonNull(listener, "listener"));
     }
 
-    // ------------------------------------------------------------------------------------------ Abfragen
+    // Queries
 
     public boolean contains(BlockCoord pos) {
         return nodes.containsKey(pos);
     }
 
-    /** Das Netz an dieser Position oder {@code null}, wenn dort kein Knoten steht. */
+    /** Network at the position, or {@code null}. */
     public Network networkAt(BlockCoord pos) {
         Node node = nodes.get(pos);
         return node == null ? null : node.network;
@@ -70,13 +66,13 @@ public final class NetworkGraph {
         return Collections.unmodifiableCollection(networks);
     }
 
-    /** Zustand aller Knoten zum Speichern. Wiederherstellen: alle Einträge der Reihe nach mit {@link #add} setzen. */
-    /** Art und freigegebene Seiten des Knotens an dieser Position oder {@code null}, wenn dort keiner steht. */
+    /** Kind and enabled sides of the node at the position, or {@code null}. */
     public NodeInfo info(BlockCoord pos) {
         Node node = nodes.get(pos);
         return node == null ? null : new NodeInfo(node.pos, node.kind, node.sideMask);
     }
 
+    /** State of all nodes. */
     public List<NodeInfo> snapshot() {
         List<NodeInfo> result = new ArrayList<>(nodes.size());
         for (Node node : nodes.values()) {
@@ -85,20 +81,26 @@ public final class NetworkGraph {
         return result;
     }
 
-    // ------------------------------------------------------------------------------------------ Änderungen
+    // Mutations
 
     /**
-     * Setzt einen Knoten und verbindet ihn mit passenden Nachbarn.
+     * Adds a node and links it to matching neighbours.
      *
-     * @param sideMask Bit pro {@link Direction}; {@link Direction#ALL_MASK} = alle Seiten offen
-     * @return das Netz, zu dem der Knoten danach gehört
-     * @throws IllegalStateException wenn an der Position schon ein Knoten steht
+     * <ul>
+     * <li>1. link each enabled side to the neighbour when that neighbour faces back</li>
+     * <li>2. no adjacent network: create a new network</li>
+     * <li>3. otherwise: join the largest adjacent network and absorb the other adjacent networks</li>
+     * </ul>
+     *
+     * @param sideMask bit per {@link Direction}; {@link Direction#ALL_MASK} = all sides enabled
+     * @return the network the node belongs to
+     * @throws IllegalStateException when the position is occupied
      */
     public Network add(BlockCoord pos, NodeKind kind, int sideMask) {
         Objects.requireNonNull(pos, "pos");
         Objects.requireNonNull(kind, "kind");
         if (nodes.containsKey(pos)) {
-            throw new IllegalStateException("Position ist bereits belegt: " + pos);
+            throw new IllegalStateException("Position already occupied: " + pos);
         }
 
         Node node = new Node(pos, kind, sideMask & Direction.ALL_MASK);
@@ -139,9 +141,15 @@ public final class NetworkGraph {
     }
 
     /**
-     * Entfernt den Knoten an dieser Position. Kann das Netz aufspalten.
+     * Removes the node at the position.
      *
-     * @return {@code true}, wenn dort ein Knoten stand
+     * <ul>
+     * <li>1. unlink all neighbours</li>
+     * <li>2. empty network: dissolve it</li>
+     * <li>3. two or more neighbours: run the split check from them</li>
+     * </ul>
+     *
+     * @return {@code true} when a node was removed
      */
     public boolean remove(BlockCoord pos) {
         Node node = nodes.remove(pos);
@@ -173,24 +181,22 @@ public final class NetworkGraph {
             }
             return true;
         }
-        if (seeds.size() > 1) { // mit höchstens einem Nachbarn kann ein Knoten nichts auftrennen
+        if (seeds.size() > 1) {
             resolveSplit(network, seeds);
         }
         return true;
     }
 
     /**
-     * Ändert die Art eines Knotens, ohne ihn zu entfernen. Ein Kabel, das an ein Inventar grenzt, wird so zum
-     * Endpunkt (und wieder zum Kabel, wenn das Inventar wegfällt). Netze verschmelzen oder teilen sich dabei nicht;
-     * nur der Endpunkt-Zähler des Netzes wird angepasst.
+     * Changes the kind of a node in place and updates the endpoint count of its network.
      *
-     * @throws IllegalArgumentException wenn an der Position kein Knoten steht
+     * @throws IllegalArgumentException when there is no node at the position
      */
     public void setKind(BlockCoord pos, NodeKind kind) {
         Objects.requireNonNull(kind, "kind");
         Node node = nodes.get(pos);
         if (node == null) {
-            throw new IllegalArgumentException("Kein Knoten an Position " + pos);
+            throw new IllegalArgumentException("No node at position " + pos);
         }
         if (node.kind == kind) {
             return;
@@ -205,15 +211,20 @@ public final class NetworkGraph {
     }
 
     /**
-     * Ändert, welche Seiten eines Knotens verbunden sein dürfen (z. B. per Wrench). Kann Netze auftrennen oder
-     * verschmelzen.
+     * Changes the enabled sides of a node; may split or merge networks.
      *
-     * @throws IllegalArgumentException wenn an der Position kein Knoten steht
+     * <ul>
+     * <li>1. drop links of disabled sides and run the split check from the node and the lost neighbours</li>
+     * <li>2. link newly enabled sides</li>
+     * <li>3. merge the networks reached through new links, smaller into larger</li>
+     * </ul>
+     *
+     * @throws IllegalArgumentException when there is no node at the position
      */
     public void setSides(BlockCoord pos, int sideMask) {
         Node node = nodes.get(pos);
         if (node == null) {
-            throw new IllegalArgumentException("Kein Knoten an Position " + pos);
+            throw new IllegalArgumentException("No node at position " + pos);
         }
         int newMask = sideMask & Direction.ALL_MASK;
         if (node.sideMask == newMask) {
@@ -221,8 +232,7 @@ public final class NetworkGraph {
         }
         node.sideMask = newMask;
 
-        // Phase 1: nur wegfallende Verbindungen kappen und prüfen, ob dadurch etwas abgetrennt wird.
-        // Neue Verbindungen dürfen erst danach geknüpft werden, sonst würde die Suche in fremde Netze laufen.
+        // Phase 1: lost links
         List<Node> lost = new ArrayList<>(Direction.VALUES.length);
         for (Direction direction : Direction.VALUES) {
             Node before = node.links[direction.ordinal()];
@@ -238,7 +248,7 @@ public final class NetworkGraph {
             resolveSplit(node.network, seeds);
         }
 
-        // Phase 2: neu freigegebene Seiten verbinden und die betroffenen Netze verschmelzen.
+        // Phase 2: gained links
         List<Node> gained = new ArrayList<>(Direction.VALUES.length);
         for (Direction direction : Direction.VALUES) {
             if (node.links[direction.ordinal()] == null && node.enabled(direction)) {
@@ -258,9 +268,9 @@ public final class NetworkGraph {
         }
     }
 
-    // ------------------------------------------------------------------------------------------ Innenleben
+    // Internals
 
-    /** Stellt die Verbindung zwischen {@code node} und seinem Nachbarn in einer Richtung passend zu den Seitenmasken her. */
+    /** Sets or clears the link between {@code node} and its neighbour in one direction according to the side masks. */
     private void updateLink(Node node, Direction direction) {
         int index = direction.ordinal();
         int opposite = direction.opposite().ordinal();
@@ -291,7 +301,7 @@ public final class NetworkGraph {
         }
     }
 
-    /** Nimmt alle Knoten von {@code smaller} in {@code larger} auf. */
+    /** Moves all nodes of {@code smaller} into {@code larger}. */
     private void absorb(Network larger, Network smaller) {
         for (Node node : smaller.nodes) {
             node.network = larger;
@@ -306,7 +316,7 @@ public final class NetworkGraph {
         }
     }
 
-    /** Suchlauf von einem Startknoten aus. Mehrere Läufe, die sich treffen, werden zu einem zusammengelegt. */
+    /** Breadth-first search state started from one seed node. */
     private static final class Group {
         final ArrayDeque<Node> queue = new ArrayDeque<>();
         final Set<Node> visited = new HashSet<>();
@@ -319,13 +329,16 @@ public final class NetworkGraph {
     }
 
     /**
-     * Prüft nach dem Wegfall einer oder mehrerer Verbindungen, ob {@code network} noch zusammenhängt.
+     * Split check of {@code network} after links were removed; {@code seeds} are the nodes at the removed links.
      *
-     * <p>{@code seeds} sind alle Knoten, die an einer weggefallenen Verbindung lagen. Jeder Teil, der nach dem Wegfall
-     * übrig bleibt, enthält mindestens einen davon. Von jedem startet eine Suche, alle laufen reihum je einen Schritt.
-     * Trifft eine Suche auf das Gebiet einer anderen, sind beide verbunden und werden vereint. Ist die Warteschlange
-     * einer Suche leer, hat sie ihren Teil vollständig gesehen: Er ist abgetrennt und wird zu einem neuen Netz. Bleibt
-     * nur noch eine Suche übrig, ist der Rest das ursprüngliche Netz und muss nicht mehr durchsucht werden.
+     * <ul>
+     * <li>1. start one breadth-first search per seed</li>
+     * <li>2. advance all searches round-robin, one node each per round</li>
+     * <li>3. a search that reaches the area of another is merged with it (smaller into larger)</li>
+     * <li>4. a search with an empty queue has visited a whole part: it becomes a new network</li>
+     * <li>5. stop when one search remains; its part stays in the original network</li>
+     * <li>6. notify listeners with {@code onSplit} when new networks were created</li>
+     * </ul>
      */
     private void resolveSplit(Network network, List<Node> seeds) {
         Map<Node, Group> owner = new HashMap<>();
@@ -376,7 +389,7 @@ public final class NetworkGraph {
         }
     }
 
-    /** Vereint zwei Suchläufe; der kleinere wird in den größeren übernommen. */
+    /** Merges two searches, the smaller into the larger. */
     private static Group merge(Group a, Group b, Map<Node, Group> owner, List<Group> groups) {
         Group big = a.visited.size() >= b.visited.size() ? a : b;
         Group small = big == a ? b : a;
@@ -390,7 +403,7 @@ public final class NetworkGraph {
         return big;
     }
 
-    /** Macht aus dem vollständig durchsuchten Teil ein eigenes Netz. */
+    /** Moves the nodes visited by the search into a new network. */
     private Network splitOff(Network from, Group group) {
         Network part = createNetwork();
         for (Node node : group.visited) {
@@ -403,13 +416,13 @@ public final class NetworkGraph {
         return part;
     }
 
-    // ------------------------------------------------------------------------------------------ Selbstprüfung
+    // Validation
 
     /**
-     * Prüft alle inneren Annahmen (Zugehörigkeit, symmetrische Verbindungen, Zusammenhang jedes Netzes, Zähler).
-     * Kostet Zeit proportional zur Gesamtgröße und ist für Tests und Debug-Befehle gedacht, nicht für den Spielbetrieb.
+     * Checks membership, link symmetry, connectivity of each network and endpoint counts. Runs in time proportional
+     * to the graph size.
      *
-     * @return Liste der gefundenen Probleme, leer wenn alles stimmt
+     * @return problem descriptions, empty when consistent
      */
     public List<String> validate() {
         List<String> problems = new ArrayList<>();
@@ -418,29 +431,29 @@ public final class NetworkGraph {
         for (Network network : networks) {
             counted += network.nodes.size();
             if (network.nodes.isEmpty()) {
-                problems.add(network + " ist leer, existiert aber noch");
+                problems.add(network + " is empty but still registered");
             }
             int endpoints = 0;
             for (Node node : network.nodes) {
                 if (node.network != network) {
-                    problems.add(node + " steht in " + network + " hat aber " + node.network);
+                    problems.add(node + " is in " + network + " but has " + node.network);
                 }
                 if (nodes.get(node.pos) != node) {
-                    problems.add(node + " fehlt in der Positionstabelle");
+                    problems.add(node + " is missing from the position table");
                 }
                 if (node.kind == NodeKind.ENDPOINT) {
                     endpoints++;
                 }
             }
             if (endpoints != network.endpointCount) {
-                problems.add(network + " zählt " + network.endpointCount + " Endpunkte, es sind " + endpoints);
+                problems.add(network + " counts " + network.endpointCount + " endpoints, actual " + endpoints);
             }
             if (!network.nodes.isEmpty() && !isConnected(network)) {
-                problems.add(network + " ist nicht zusammenhängend");
+                problems.add(network + " is not connected");
             }
         }
         if (counted != nodes.size()) {
-            problems.add("Netze enthalten " + counted + " Knoten, die Positionstabelle " + nodes.size());
+            problems.add("Networks contain " + counted + " nodes, position table " + nodes.size());
         }
 
         for (Node node : nodes.values()) {
@@ -449,13 +462,13 @@ public final class NetworkGraph {
                 boolean expected = other != null && node.enabled(direction) && other.enabled(direction.opposite());
                 Node actual = node.links[direction.ordinal()];
                 if (expected != (actual != null) || (expected && actual != other)) {
-                    problems.add("Verbindung von " + node + " Richtung " + direction + " ist falsch");
+                    problems.add("Link of " + node + " direction " + direction + " is wrong");
                 }
                 if (actual != null && actual.links[direction.opposite().ordinal()] != node) {
-                    problems.add("Verbindung von " + node + " Richtung " + direction + " ist nicht symmetrisch");
+                    problems.add("Link of " + node + " direction " + direction + " is not symmetric");
                 }
                 if (actual != null && actual.network != node.network) {
-                    problems.add(node + " ist mit " + actual + " verbunden, liegt aber in einem anderen Netz");
+                    problems.add(node + " is linked to " + actual + " but is in a different network");
                 }
             }
         }

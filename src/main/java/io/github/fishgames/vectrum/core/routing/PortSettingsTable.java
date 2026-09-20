@@ -7,10 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Dünn besetzte Tabelle der Anschluss-Einstellungen: nur Seiten, die vom Standard abweichen, stehen darin. Für alle
- * anderen liefert {@link #get} {@link PortSettings#DEFAULT}. Nicht thread-sicher (Server-Thread).
- */
+/** Sparse table of port settings; {@link #get} returns {@link PortSettings#DEFAULT} for absent sides. */
 public final class PortSettingsTable {
     private final Map<PortKey, PortSettings> entries = new HashMap<>();
 
@@ -19,9 +16,9 @@ public final class PortSettingsTable {
     }
 
     /**
-     * Setzt die Einstellungen; Standardwerte werden nicht gespeichert.
+     * Stores the settings; default settings remove the entry.
      *
-     * @return {@code true}, wenn sich dadurch etwas geändert hat
+     * @return {@code true} when the stored value changed
      */
     public boolean set(PortKey key, PortSettings settings) {
         Objects.requireNonNull(settings, "settings");
@@ -34,7 +31,7 @@ public final class PortSettingsTable {
         return !before.equals(settings);
     }
 
-    /** Vergisst alle Einstellungen aller Seiten dieses Bausteins (beim Abbauen). */
+    /** Removes the settings of all sides of the block at {@code pos}. */
     public boolean clear(BlockCoord pos) {
         return entries.keySet().removeIf(key -> key.pos().equals(pos));
     }
@@ -43,7 +40,7 @@ public final class PortSettingsTable {
         return entries.size();
     }
 
-    /** Alle abweichenden Einstellungen, zum Speichern. */
+    /** All non-default settings. */
     public Map<PortKey, PortSettings> entries() {
         return Collections.unmodifiableMap(entries);
     }

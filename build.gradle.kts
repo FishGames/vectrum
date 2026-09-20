@@ -2,6 +2,8 @@
 // ("1.20.1-fabric", "1.20.1-forge", "1.20.1-neoforge", ...).
 // Eigenschaften kommen aus /gradle.properties und versions/<projekt>/gradle.properties.
 
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+
 plugins {
     id("java")
     id("dev.architectury.loom")
@@ -56,6 +58,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 repositories {
+    mavenCentral() // fuer JUnit
     maven("https://maven.parchmentmc.org") { name = "ParchmentMC" }
     maven("https://maven.minecraftforge.net/") { name = "MinecraftForge" }
     maven("https://maven.neoforged.net/releases/") { name = "NeoForged" }
@@ -116,6 +119,11 @@ dependencies {
 
         else -> error("Unbekannter Loader: $loader")
     }
+
+    // Tests fuer den Minecraft-freien Kern (Paket "core")
+    "testImplementation"(platform("org.junit:junit-bom:5.14.4"))
+    "testImplementation"("org.junit.jupiter:junit-jupiter")
+    "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
 }
 
 sourceSets {
@@ -127,6 +135,18 @@ sourceSets {
 
         resources.srcDir(rootProject.file("platforms/$loader/resources")) // fabric.mod.json bzw. META-INF/mods.toml
         resources.srcDir(generatedDir)                                     // Ausgabe des Datagens
+    }
+    // Hinweis: Stonecutter nutzt fuer alle Versionsprojekte denselben Ordner "src" im Projektstamm,
+    // also auch "src/test/java". Ein zusaetzliches srcDir waere doppelt (-> "duplicate class").
+}
+
+tasks.test {
+    useJUnitPlatform()
+    systemProperty("vectrum.coreDir", rootProject.file("src/main/java/io/github/fishgames/vectrum/core").absolutePath)
+    testLogging {
+        events("passed", "failed")
+        exceptionFormat = TestExceptionFormat.FULL
+        showStandardStreams = true // zeigt u.a. die Leistungsmessungen an
     }
 }
 

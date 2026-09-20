@@ -19,6 +19,9 @@ versions/<mc>-<loader>/       Versionen der Abhängigkeiten je Projekt (Loader, 
 src/main/java/.../Vectrum.java          gemeinsamer Einstieg
 src/main/java/.../registry/             loaderunabhängige Registrierung (Blöcke, Items, Creative-Tab)
 src/main/java/.../datagen/              loaderunabhängige Datengenerierung (nur Vanilla-Klassen)
+src/main/java/.../core/                 Netzwerk-Kern OHNE Minecraft-Klassen (Graph, Transportarten, Hilfsmathe)
+src/test/java/.../core/                 automatische Tests für den Kern
+docs/                                   Konzept, Implementierungs-Prompt, Entscheidungsliste
 src/main/java/.../platform/fabric/      Fabric-Einstieg + Fabric-Datagen-Einstieg
 src/main/java/.../platform/forge/       Forge-Einstieg (nutzt auch NeoForge 1.20.1)
 platforms/<loader>/resources/           fabric.mod.json bzw. META-INF/mods.toml
@@ -55,10 +58,21 @@ In IntelliJ lässt sie sich über die Gradle-Tasks `Set active project to ...` (
 | `./gradlew :1.20.1-fabric:runDatagen` | Datagen über Fabric ausführen, schreibt nach `generated/1.20.1/` |
 | `./gradlew :1.20.1-forge:runData` | Datagen über Forge (oder `-neoforge`) |
 | `./gradlew :1.20.1-forge:build` | Nur diesen Loader bauen (Jar in `versions/1.20.1-forge/build/libs`) |
+| `./gradlew :1.20.1-forge:test` | Automatische Tests des Kerns ausführen |
 | `./gradlew buildAll` | Alle Loader und Versionen bauen |
 
 Unter Windows `gradlew.bat` statt `./gradlew` verwenden. Beim ersten Start lädt Loom Minecraft und die
 Mappings herunter, das dauert einige Minuten.
+
+## Kern und Tests
+
+Im Paket `core` liegt die Logik, die kein Minecraft braucht: der Netzwerk-Graph (Kabel und Endpunkte, Verschmelzen
+und Teilen von Netzen), die Transportarten und die Hilfsmathe. Weil der Kern ohne Minecraft läuft, lässt er sich
+mit normalen JUnit-Tests prüfen (`src/test/java`), auch mit Zufallstests gegen eine einfache Referenzlösung und
+Leistungsmessungen. Der Test `CoreIsolationTest` schlägt fehl, sobald jemand im Kern Minecraft- oder Loader-Klassen
+importiert. Die Tests laufen mit jedem Loader-Projekt, z. B. `./gradlew :1.20.1-forge:test`.
+
+Konzept, Aufgabenstellung und getroffene Entscheidungen stehen im Ordner `docs/`.
 
 ## Datagen
 

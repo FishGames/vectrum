@@ -2,6 +2,7 @@ package io.github.fishgames.vectrum.item;
 
 import io.github.fishgames.vectrum.block.NetworkBlock;
 import io.github.fishgames.vectrum.core.network.Network;
+import io.github.fishgames.vectrum.logistics.TransportDefaults;
 import io.github.fishgames.vectrum.world.LevelNetworks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -41,7 +42,8 @@ public class DiagnosticItem extends Item {
                     int[] ports = networks.countPorts(server, found);
                     message = Component.translatable("message.vectrum.network",
                             found.id(), found.size(), ports[0], ports[1],
-                            networks.throughput(network.transportType(), pos));
+                            networks.throughput(network.transportType(), pos),
+                            Component.translatable(TransportDefaults.unitKey(network.transportType())));
                 }
                 player.displayClientMessage(message, true);
             }

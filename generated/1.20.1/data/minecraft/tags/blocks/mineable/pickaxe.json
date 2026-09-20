@@ -3,6 +3,8 @@
   "values": [
     "vectrum:example_block",
     "vectrum:item_cable",
+    "vectrum:fluid_cable",
+    "vectrum:energy_cable",
     "vectrum:item_endpoint"
   ]
 }

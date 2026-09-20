@@ -50,6 +50,22 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(Items.COPPER_INGOT), has(Items.COPPER_INGOT))
                 .save(writer);
 
+        // Fluid-Kabel: 2 Eisen + 1 Glas -> 6 Kabel
+        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.FLUID_CABLE.get(), 6)
+                .pattern("IGI")
+                .define('I', Items.IRON_INGOT)
+                .define('G', Items.GLASS)
+                .unlockedBy(getHasName(Items.GLASS), has(Items.GLASS))
+                .save(writer);
+
+        // Energie-Kabel: 2 Kupfer + 1 Redstone -> 6 Kabel
+        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.ENERGY_CABLE.get(), 6)
+                .pattern("CRC")
+                .define('C', Items.COPPER_INGOT)
+                .define('R', Items.REDSTONE)
+                .unlockedBy(getHasName(Items.REDSTONE), has(Items.REDSTONE))
+                .save(writer);
+
         // Item-Endpunkt: Trichter + Item-Kabel + Eisen
         ShapelessRecipeBuilder.shapeless(RecipeCategory.REDSTONE, ModItems.ITEM_ENDPOINT.get())
                 .requires(Items.HOPPER)

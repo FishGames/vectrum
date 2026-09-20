@@ -2,8 +2,8 @@ package io.github.fishgames.vectrum.block;
 
 import io.github.fishgames.vectrum.core.network.NodeKind;
 import io.github.fishgames.vectrum.core.transport.TransportType;
-import io.github.fishgames.vectrum.logistics.ItemTransport;
-import io.github.fishgames.vectrum.transfer.ItemPorts;
+import io.github.fishgames.vectrum.logistics.Transport;
+import io.github.fishgames.vectrum.transfer.Ports;
 import io.github.fishgames.vectrum.world.LevelNetworks;
 import io.github.fishgames.vectrum.world.Sides;
 import net.minecraft.core.BlockPos;
@@ -50,11 +50,6 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
 
     /** Ticks zwischen zwei Übergaben einer Quelle. */
     public static final int INTERVAL = 10;
-    /**
-     * Grundlimit: Höchstmenge Items pro Übergabe und Quellseite ohne Upgrades. Der tatsächliche Wert je Baustein steht
-     * in {@link LevelNetworks#throughput} (Durchsatz-Upgrades setzen ihn dort).
-     */
-    public static final int BASE_THROUGHPUT = 4;
 
     /** Maße in Pixeln (16 = ein Block), siehe {@link CableShapes#build}. */
     public record ShapeSpec(double coreLo, double coreHi, double armLo, double armHi,
@@ -155,7 +150,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
                 connection = Connection.LINK;
             } else if (networks != null) {
                 EndpointMode mode = networks.mode(pos, side);
-                if (mode != EndpointMode.OFF && ItemPorts.find(level, neighbourPos, side.getOpposite()) != null) {
+                if (mode != EndpointMode.OFF && Ports.find(type, level, neighbourPos, side.getOpposite()) != null) {
                     connection = mode == EndpointMode.IN ? Connection.INPUT : Connection.OUTPUT;
                 }
             }
@@ -237,7 +232,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
         if (!hasSource(current)) {
             return;
         }
-        ItemTransport.run(level, pos, current, this);
+        Transport.run(level, pos, current, this);
         level.scheduleTick(pos, this, INTERVAL);
     }
 
@@ -273,7 +268,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
             return connection(state, side) != Connection.LINK;
         }
         BlockPos neighbour = pos.relative(side);
-        return level.hasChunkAt(neighbour) && ItemPorts.find(level, neighbour, side.getOpposite()) != null;
+        return level.hasChunkAt(neighbour) && Ports.find(type, level, neighbour, side.getOpposite()) != null;
     }
 
     /** Schaltet die Rolle der Seite weiter (Ausgang, Eingang, Aus) und meldet das Ergebnis in der Aktionsleiste. */

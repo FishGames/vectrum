@@ -101,6 +101,10 @@ dependencies {
         "fabric" -> {
             "modImplementation"("net.fabricmc:fabric-loader:${prop("fabric_loader_version")}")
             "modImplementation"("net.fabricmc.fabric-api:fabric-api:${prop("fabric_api_version")}")
+
+            // Energie: Team Reborn Energy (MIT-Lizenz) wird per Jar-in-Jar mitgeliefert, Fabric hat keine eigene Energie-API.
+            "modImplementation"("teamreborn:energy:${prop("team_reborn_energy_version")}")
+            "include"("teamreborn:energy:${prop("team_reborn_energy_version")}")
         }
 
         "forge" -> {

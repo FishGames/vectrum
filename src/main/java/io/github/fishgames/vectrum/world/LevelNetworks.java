@@ -12,7 +12,8 @@ import io.github.fishgames.vectrum.core.network.NodeInfo;
 import io.github.fishgames.vectrum.core.network.NodeKind;
 import io.github.fishgames.vectrum.core.throughput.ThroughputLimits;
 import io.github.fishgames.vectrum.core.transport.TransportType;
-import io.github.fishgames.vectrum.logistics.ItemTarget;
+import io.github.fishgames.vectrum.logistics.Target;
+import io.github.fishgames.vectrum.logistics.TransportDefaults;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -66,17 +67,15 @@ public final class LevelNetworks extends SavedData {
     private final Map<String, ThroughputLimits> limits = new HashMap<>();
 
     /** Zwischengespeicherte Zielliste. Unvollstaendige Listen (Endpunkte in nicht geladenen Chunks) laufen ab. */
-    private record CachedTargets(List<ItemTarget> targets, long validUntil) {
+    private record CachedTargets(List<Target> targets, long validUntil) {
     }
 
     /** So lange (in Ticks) gilt eine unvollstaendige Zielliste, bevor sie neu berechnet wird. */
     private static final long INCOMPLETE_LIFETIME = 20;
 
-    /** Netznummern gelten nur innerhalb einer Ebene; der Praefix trennt die Ebenen (bisher gibt es nur Items). */
-    private static final String ITEM_KEY_PREFIX = "item:";
-
     private long cacheEpoch = -1;
-    private final Map<String, CachedTargets> itemTargets = new HashMap<>();
+    /** Schluessel: Ebenen-Kennung + Netznummer (Netznummern gelten nur innerhalb einer Ebene). */
+    private final Map<String, CachedTargets> targetCache = new HashMap<>();
 
     private LevelNetworks(String dimension) {
         this.dimension = dimension;
@@ -156,7 +155,7 @@ public final class LevelNetworks extends SavedData {
 
     /** Grundlimit einer Ebene: Einheiten pro Uebergabe und Quellseite, solange kein Upgrade etwas anderes setzt. */
     private static long baseLimit(String layer) {
-        return ConduitBlock.BASE_THROUGHPUT;
+        return TransportDefaults.baseThroughput(layer);
     }
 
     private ThroughputLimits limits(String layer) {
@@ -209,37 +208,37 @@ public final class LevelNetworks extends SavedData {
     // ------------------------------------------------------------------ Ziele
 
     /**
-     * Alle Ziele (Endpunkt-Seiten mit Ausgang) des Netzes, nach Position sortiert. Die Liste wird zwischengespeichert
+     * Alle Ziele (Anschluss-Seiten mit Ausgang) des Netzes, nach Position sortiert. Die Liste wird zwischengespeichert
      * und nur neu berechnet, wenn sich seit dem letzten Aufruf etwas geaendert hat. Endpunkte in nicht geladenen
      * Chunks fehlen; solche unvollstaendigen Listen werden nach einer Sekunde neu berechnet, damit ein spaeter
      * geladener Endpunkt sicher auftaucht.
      */
-    public List<ItemTarget> itemTargets(ServerLevel level, Network network) {
+    public List<Target> targets(ServerLevel level, TransportType type, Network network) {
         if (cacheEpoch != epoch) {
-            itemTargets.clear();
+            targetCache.clear();
             cacheEpoch = epoch;
         }
         long now = level.getGameTime();
-        CachedTargets cached = itemTargets.get(ITEM_KEY_PREFIX + network.id());
+        String key = type.id() + "#" + network.id();
+        CachedTargets cached = targetCache.get(key);
         if (cached != null && now < cached.validUntil()) {
             return cached.targets();
         }
 
         boolean[] complete = {true};
-        List<ItemTarget> targets = buildItemTargets(level, network, complete);
-        itemTargets.put(ITEM_KEY_PREFIX + network.id(), new CachedTargets(targets,
-                complete[0] ? Long.MAX_VALUE : now + INCOMPLETE_LIFETIME));
+        List<Target> targets = buildTargets(level, network, complete);
+        targetCache.put(key, new CachedTargets(targets, complete[0] ? Long.MAX_VALUE : now + INCOMPLETE_LIFETIME));
         return targets;
     }
 
-    private static List<ItemTarget> buildItemTargets(ServerLevel level, Network network, boolean[] complete) {
+    private static List<Target> buildTargets(ServerLevel level, Network network, boolean[] complete) {
         List<BlockPos> endpoints = new ArrayList<>(network.endpointCount());
         for (BlockCoord coord : network.endpointPositions()) {
             endpoints.add(new BlockPos(coord.x(), coord.y(), coord.z()));
         }
         endpoints.sort((a, b) -> Long.compare(a.asLong(), b.asLong()));
 
-        List<ItemTarget> result = new ArrayList<>();
+        List<Target> result = new ArrayList<>();
         for (BlockPos pos : endpoints) {
             if (!level.hasChunkAt(pos)) {
                 complete[0] = false;
@@ -251,7 +250,7 @@ public final class LevelNetworks extends SavedData {
             }
             for (Direction side : Sides.ALL) {
                 if (conduit.connection(state, side) == Connection.OUTPUT) {
-                    result.add(new ItemTarget(pos, side, pos.relative(side)));
+                    result.add(new Target(pos, side, pos.relative(side)));
                 }
             }
         }

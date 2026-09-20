@@ -18,6 +18,8 @@ public final class ModItems {
     public static final Registered<Item> EXAMPLE_ITEM = plainItem("example_item", () -> new Item(new Item.Properties()));
     public static final Registered<Item> EXAMPLE_BLOCK_ITEM = blockItem(ModBlocks.EXAMPLE_BLOCK);
     public static final Registered<Item> ITEM_CABLE = blockItem(ModBlocks.ITEM_CABLE);
+    public static final Registered<Item> FLUID_CABLE = blockItem(ModBlocks.FLUID_CABLE);
+    public static final Registered<Item> ENERGY_CABLE = blockItem(ModBlocks.ENERGY_CABLE);
     public static final Registered<Item> ITEM_ENDPOINT = blockItem(ModBlocks.ITEM_ENDPOINT);
     public static final Registered<Item> WRENCH = plainItem("wrench", () -> new WrenchItem(new Item.Properties().stacksTo(1)));
     public static final Registered<Item> DIAGNOSTIC_TOOL = plainItem("diagnostic_tool",

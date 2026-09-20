@@ -40,6 +40,10 @@ public final class ModLanguageProvider implements DataProvider {
 
         out.accept(Util.makeDescriptionId("block", ModBlocks.ITEM_CABLE.id()),
                 german ? "Item-Kabel" : "Item Cable");
+        out.accept(Util.makeDescriptionId("block", ModBlocks.FLUID_CABLE.id()),
+                german ? "Fluid-Kabel" : "Fluid Cable");
+        out.accept(Util.makeDescriptionId("block", ModBlocks.ENERGY_CABLE.id()),
+                german ? "Energie-Kabel" : "Energy Cable");
         out.accept(Util.makeDescriptionId("block", ModBlocks.ITEM_ENDPOINT.id()),
                 german ? "Item-Endpunkt" : "Item Endpoint");
         out.accept(Util.makeDescriptionId("item", ModItems.WRENCH.id()),
@@ -53,12 +57,17 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("message." + Vectrum.MOD_ID + ".endpoint_link",
                 german ? "Seite %s ist mit einem Kabel verbunden." : "Side %s is connected to a cable.");
         out.accept("message." + Vectrum.MOD_ID + ".network",
-                german ? "Netz #%s: %s Bausteine, %s Eing\u00e4nge, %s Ausg\u00e4nge, Durchsatz %s pro \u00dcbergabe"
-                        : "Network #%s: %s blocks, %s inputs, %s outputs, throughput %s per transfer");
+                german ? "Netz #%s: %s Bausteine, %s Eing\u00e4nge, %s Ausg\u00e4nge, Durchsatz %s %s pro \u00dcbergabe"
+                        : "Network #%s: %s blocks, %s inputs, %s outputs, throughput %s %s per transfer");
         out.accept("message." + Vectrum.MOD_ID + ".no_inventory",
                 german ? "Hier ist kein Inventar angeschlossen." : "No inventory attached here.");
         out.accept("message." + Vectrum.MOD_ID + ".network_none",
                 german ? "Dieser Baustein geh\u00f6rt zu keinem Netz." : "This block is not part of a network.");
+
+        // Einheiten
+        out.accept("unit." + Vectrum.MOD_ID + ".item", german ? "Items" : "items");
+        out.accept("unit." + Vectrum.MOD_ID + ".fluid", "mB");
+        out.accept("unit." + Vectrum.MOD_ID + ".energy", "FE");
 
         // Befehle
         out.accept("command." + Vectrum.MOD_ID + ".throughput.show",

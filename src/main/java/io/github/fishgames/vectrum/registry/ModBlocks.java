@@ -32,6 +32,22 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion()));
 
+    /** Transportkabel fuer Fluide (Stufe 1). */
+    public static final Registered<Block> FLUID_CABLE = block("fluid_cable", () -> new CableBlock(TransportType.FLUID,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLUE)
+                    .strength(0.8F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()));
+
+    /** Transportkabel fuer Energie (Stufe 1). */
+    public static final Registered<Block> ENERGY_CABLE = block("energy_cable", () -> new CableBlock(TransportType.ENERGY,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .strength(0.8F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()));
+
     /** Endpunkt fuer Items: vermittelt zwischen Inventaren und dem Kabelnetz. */
     public static final Registered<Block> ITEM_ENDPOINT = block("item_endpoint", () -> new EndpointBlock(TransportType.ITEM,
             BlockBehaviour.Properties.of()

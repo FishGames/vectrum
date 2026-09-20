@@ -51,8 +51,17 @@ konkreter ist. Stand: 20.09.2026.
 | E19 | **Durchsatzlimit = gespeicherte Zahl pro Anschlussbaustein** (K3, umgesetzt nach E1). Die Tabelle `ThroughputLimits` im Kern hält nur Bausteine mit eigenem Wert; alle anderen haben das Grundlimit (4 Items pro Übergabe und Quellseite). Beim Übergeben genügt ein einziger Nachschlag, nie eine Berechnung über das Netz. Gilt für die Quelle (dort wird entnommen); Ziele bremst nur ihre Kapazität. Ein Wert von 0 hält den Baustein an. Die Werte werden mit der Welt gespeichert (Ebene `limits` in `vectrum_networks.dat`) und beim Abbauen vergessen. | Kabel haben keine Daten (E1), also kann das Limit nur am Anschluss hängen. Die Durchsatz-Upgrades (Etappe 6) tragen denselben Wert ein, dafür ist nichts mehr umzubauen. |
 | E20 | **Verwaltungsbefehl** `/vectrum throughput <pos> [<wert>\|reset]` (nur Operatoren): zeigt, setzt oder löscht das Limit eines Bausteins. Das Ergebnis des Zeigen-Befehls ist der Wert (für `/execute store`). Das Diagnosewerkzeug nennt das Limit des angeklickten Bausteins. | Ohne Upgrades ist das der einzige Weg, das Limit im Spiel zu sehen und auszuprobieren. Bleibt als Verwaltungswerkzeug erhalten. |
 
+## Etappe 4 (Fluide und Energie), von Claude getroffen
+
+| Nr. | Entscheidung | Begründung |
+| --- | --- | --- |
+| E21 | **Ein gemeinsamer Transport für alle Mengen-Typen.** Der Zugang zu Speichern läuft über `Port` (`moveTo(Ziel, Menge)`), je Transporttyp und Loader gibt es eine Umsetzung: Items (Item-Handler bzw. Transfer API), Fluide (Fluid-Handler bzw. Transfer API), Energie (Forge Energy bzw. Team Reborn Energy). `Transport.run` kennt nur noch den Typ des Blocks. Einheiten: Items in Stück, Fluide in mB, Energie in FE (1 E der Team Reborn API = 1 FE). Fabric zählt Fluide in Tropfen, das wird an der Grenze umgerechnet (1 mB = 81 Tropfen). | Genau ein Weg für alle Typen; Redstone und Gas kommen später als weitere Ports bzw. Sonderfall. |
+| E22 | **Getrennte Kabelblöcke pro Typ (Stufe 1):** Item-Kabel, Fluid-Kabel, Energie-Kabel. Kabel verschiedener Typen verbinden sich nicht. Ein Kabel erkennt nur Speicher seines eigenen Typs als Anschluss (ein Fluid-Kabel neben einer Kiste tut nichts). | So verlangt es der Prompt (Stufe 1); Stufe 2 fasst sie später zu einem Block zusammen. |
+| E23 | **Grundlimits pro Übergabe und Quellseite:** Items 4, Fluide 1000 mB (ein Eimer), Energie 2000 FE (200 FE pro Tick). Alle Typen takten alle 10 Ticks. Die Werte stehen in `TransportDefaults` und sind leicht änderbar. | Erste Schätzung für ein ausgewogenes Grundspiel; die Durchsatz-Upgrades (Etappe 6) heben sie an. |
+| E24 | **Energie auf Fabric über Team Reborn Energy 3.0.0** (MIT-Lizenz, geprüft), per Jar-in-Jar mitgeliefert. Fabric hat keine eigene Energie-API. Damit ist der offene Punkt aus E6 erledigt. | Nutzer brauchen dafür keine zusätzliche Mod. |
+| E25 | Kein Fluid- oder Energie-Endpunkt-Block. Kabelenden übernehmen den Anschluss (E16). | Der Endpunkt-Block bekommt später eine andere Aufgabe (E17). |
+
 ## Noch offen
 
-- Lizenz von Team Reborn Energy prüfen (E6).
 - Verfügbarkeit von JEI, EMI und Jade/WTHIT/TOP für alle drei Loader in 1.20.1 prüfen.
 - Ob Mekanism für NeoForge 1.20.1 existiert (Gas-Modul), vor Etappe 11 klären.

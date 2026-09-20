@@ -26,7 +26,7 @@ src/main/java/.../block/                Kabel, Endpunkt (gemeinsame Basis Condui
 src/main/java/.../world/                Netzwerke einer Dimension (Speicherung, Verbindung zum Kern)
 src/main/java/.../logistics/            Transportlogik (wer liefert wohin)
 src/main/java/.../command/              Verwaltungsbefehle (/vectrum ...), loaderunabhängig
-src/main/java/.../transfer/             Zugang zu Inventaren, gemeinsame Schnittstelle (Umsetzung je Loader)
+src/main/java/.../transfer/             Zugang zu Speichern (Items, Fluide, Energie), gemeinsame Schnittstelle (Umsetzung je Loader)
 src/main/java/.../item/                 Werkzeuge (Wrench, Diagnosewerkzeug)
 src/main/resources/assets/vectrum/      Handgeschriebene Modelle und Blockstates von Kabel und Endpunkt, Texturen
 src/main/java/.../platform/fabric/      Fabric-Einstieg + Fabric-Datagen-Einstieg + Inventarzugriff (Transfer API)
@@ -99,6 +99,10 @@ Die Texturen (`src/main/resources/assets/vectrum/textures/`) sind einfache Platz
    die Metadaten-Datei in `platforms/neoforge/resources/` anpassen (ab 1.20.5 heißt sie `neoforge.mods.toml`).
 4. Unterschiede im Code per Stonecutter-Kommentar lösen, z. B. `//? if >=1.21 { ... //?}`.
 5. Mit `Set active project to 1.21.1-...` die neue Version im Editor aktivieren und mit `buildAll` prüfen.
+
+## Mitgelieferte Software
+
+- Fabric-Jar: [Team Reborn Energy](https://github.com/TechReborn/Energy) 3.0.0 (MIT-Lizenz), per Jar-in-Jar für die Energie-Übertragung.
 
 ## Bekannte Lücken
 

@@ -1,5 +1,7 @@
 {
+  "block.vectrum.energy_cable": "Energie-Kabel",
   "block.vectrum.example_block": "Beispielblock",
+  "block.vectrum.fluid_cable": "Fluid-Kabel",
   "block.vectrum.item_cable": "Item-Kabel",
   "block.vectrum.item_endpoint": "Item-Endpunkt",
   "command.vectrum.not_a_network_block": "Bei %s steht kein Kabel oder Endpunkt.",
@@ -18,10 +20,13 @@
   "itemGroup.vectrum.main": "Vectrum",
   "message.vectrum.endpoint_link": "Seite %s ist mit einem Kabel verbunden.",
   "message.vectrum.endpoint_mode": "Seite %s: %s",
-  "message.vectrum.network": "Netz #%s: %s Bausteine, %s Eingänge, %s Ausgänge, Durchsatz %s pro Übergabe",
+  "message.vectrum.network": "Netz #%s: %s Bausteine, %s Eingänge, %s Ausgänge, Durchsatz %s %s pro Übergabe",
   "message.vectrum.network_none": "Dieser Baustein gehört zu keinem Netz.",
   "message.vectrum.no_inventory": "Hier ist kein Inventar angeschlossen.",
   "mode.vectrum.in": "Eingang (entnimmt)",
   "mode.vectrum.off": "Aus",
-  "mode.vectrum.out": "Ausgang (liefert)"
+  "mode.vectrum.out": "Ausgang (liefert)",
+  "unit.vectrum.energy": "FE",
+  "unit.vectrum.fluid": "mB",
+  "unit.vectrum.item": "Items"
 }

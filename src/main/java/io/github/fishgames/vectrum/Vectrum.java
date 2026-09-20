@@ -1,9 +1,12 @@
 package io.github.fishgames.vectrum;
 
 import com.mojang.logging.LogUtils;
+import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.registry.ModBlocks;
 import io.github.fishgames.vectrum.registry.ModCreativeTabs;
 import io.github.fishgames.vectrum.registry.ModItems;
+import io.github.fishgames.vectrum.transfer.Ports;
+import io.github.fishgames.vectrum.transfer.RedstonePorts;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 
@@ -25,6 +28,8 @@ public final class Vectrum {
         ModBlocks.init();
         ModItems.init();
         ModCreativeTabs.init();
+        // Redstone braucht keinen Loader-Zugang (Vanilla-Signale), deshalb steht sein Finder hier.
+        Ports.setFinder(TransportType.REDSTONE, RedstonePorts::find);
 
         LOGGER.info("{} initialisiert (Loader: {})", MOD_NAME, platform());
     }

@@ -17,9 +17,14 @@ import io.github.fishgames.vectrum.core.routing.PortSettingsTable;
 import io.github.fishgames.vectrum.core.routing.ResourceFilter;
 import io.github.fishgames.vectrum.core.routing.RoundRobinPointers;
 import io.github.fishgames.vectrum.core.throughput.ThroughputLimits;
+import io.github.fishgames.vectrum.core.upgrade.UpgradeEffects;
+import io.github.fishgames.vectrum.core.upgrade.UpgradeTable;
+import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
+import io.github.fishgames.vectrum.core.upgrade.Upgrades;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.logistics.Target;
 import io.github.fishgames.vectrum.logistics.TransportDefaults;
+import io.github.fishgames.vectrum.transfer.Ports;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -63,6 +68,9 @@ public final class LevelNetworks extends SavedData {
     private static final String TAG_BLACKLIST = "blacklist";
     private static final String TAG_IDS = "ids";
     private static final String TAG_VALUE = "value";
+    private static final String TAG_UPGRADES = "upgrades";
+    private static final String TAG_COUNTS = "counts";
+    private static final byte UNSET_MODE = -1;
     private static final int ENDPOINT_FLAG = 0x40;
     private static final int MASK_BITS = 0x3F;
 
@@ -78,6 +86,9 @@ public final class LevelNetworks extends SavedData {
     /** Gewählte Rollen der Anschlussseiten, nur für Bausteine, die vom Standard abweichen. Schlüssel: BlockPos.asLong(). */
     private final Map<Long, EndpointMode[]> modes = new HashMap<>();
 
+    /** Aktuelle Redstone-Ausgaenge (nur Werte ungleich 0, nicht gespeichert: sie werden beim Takt neu berechnet). */
+    private final Map<Long, Integer> signalOutputs = new HashMap<>();
+
     /** Durchsatzlimits je Ebene (Schluessel: Ebenen-Kennung). Nur Bausteine mit eigenem Wert stehen darin. */
     private final Map<String, ThroughputLimits> limits = new HashMap<>();
 
@@ -90,6 +101,8 @@ public final class LevelNetworks extends SavedData {
 
     /** Einstellungen der Anschlussseiten (Prioritaet, Verteilmodus, Filter); nur Abweichungen vom Standard. */
     private final PortSettingsTable settings = new PortSettingsTable();
+    /** Upgrades der Bausteine (nur Bausteine mit mindestens einem Upgrade). */
+    private final UpgradeTable upgrades = new UpgradeTable();
     /** Rundlaufzeiger je Quellseite. */
     private final RoundRobinPointers pointers = new RoundRobinPointers();
 
@@ -142,6 +155,12 @@ public final class LevelNetworks extends SavedData {
         changed();
     }
 
+    /** Steht der Knoten schon genau so (Art und Seiten) im Netz des Typs? */
+    public boolean matches(TransportType type, BlockPos pos, NodeKind kind, int sideMask) {
+        NodeInfo info = registry.graph(type.id()).info(coord(pos));
+        return info != null && info.kind() == kind && info.sideMask() == (sideMask & MASK_BITS);
+    }
+
     public boolean isRegistered(TransportType type, BlockPos pos) {
         return registry.graph(type.id()).contains(coord(pos));
     }
@@ -154,10 +173,13 @@ public final class LevelNetworks extends SavedData {
 
     // ------------------------------------------------------------------ Rollen der Anschlussseiten
 
-    /** Rolle der Seite eines Bausteins; ohne eigene Wahl gilt der Standard. */
-    public EndpointMode mode(BlockPos pos, Direction side) {
+    /**
+     * Die vom Spieler gewaehlte Rolle der Seite eines Bausteins oder {@code null}, wenn er nichts gewaehlt hat. Dann
+     * gilt der Standard des Bausteins (siehe {@code ConduitBlock#effectiveMode}).
+     */
+    public EndpointMode storedMode(BlockPos pos, Direction side) {
         EndpointMode[] stored = modes.get(pos.asLong());
-        return stored == null ? EndpointMode.DEFAULT : stored[side.get3DDataValue()];
+        return stored == null ? null : stored[side.get3DDataValue()];
     }
 
     public void setMode(BlockPos pos, Direction side, EndpointMode mode) {
@@ -165,21 +187,38 @@ public final class LevelNetworks extends SavedData {
         EndpointMode[] stored = modes.get(key);
         if (stored == null) {
             stored = new EndpointMode[Sides.ALL.length];
-            java.util.Arrays.fill(stored, EndpointMode.DEFAULT);
             modes.put(key, stored);
         }
         stored[side.get3DDataValue()] = mode;
-        if (isDefault(stored)) {
+        if (isUnset(stored)) {
             modes.remove(key);
         }
         changed();
     }
 
-    /** Vergisst die gewählten Rollen dieses Bausteins (beim Abbauen). */
+    /** Vergisst die gewaehlten Rollen dieses Bausteins (beim Abbauen). */
     public void clearModes(BlockPos pos) {
         if (modes.remove(pos.asLong()) != null) {
             changed();
         }
+    }
+
+    // ------------------------------------------------------------------ Redstone-Ausgaenge
+
+    /** Signalstaerke, die dieser Baustein gerade an seinen Ausgangsseiten abgibt (0 bis 15, fluechtig). */
+    public int signalOutput(BlockPos pos) {
+        return signalOutputs.getOrDefault(pos.asLong(), 0);
+    }
+
+    /** @return {@code true}, wenn sich der Wert geaendert hat */
+    public boolean setSignalOutput(BlockPos pos, int strength) {
+        int before = signalOutput(pos);
+        if (strength <= 0) {
+            signalOutputs.remove(pos.asLong());
+        } else {
+            signalOutputs.put(pos.asLong(), strength);
+        }
+        return before != Math.max(0, strength);
     }
 
     // ------------------------------------------------------------------ Einstellungen der Anschlussseiten (Etappe 5)
@@ -219,6 +258,70 @@ public final class LevelNetworks extends SavedData {
         } else if (removedPointers) {
             setDirty();
         }
+    }
+
+    // ------------------------------------------------------------------ Upgrades (Etappe 6)
+
+    /** Die Upgrades dieses Bausteins. */
+    public Upgrades upgrades(BlockPos pos) {
+        return upgrades.get(coord(pos));
+    }
+
+    /**
+     * Setzt die Upgrades eines Bausteins und rechnet ihre Wirkung einmal aus: Aendert sich die Zahl der
+     * Durchsatz-Upgrades, wird das Durchsatzlimit neu gespeichert (Grundlimit x 4^Anzahl); Filter und Prioritaet
+     * werden freigeschaltet oder gesperrt. Beim Takt wird nur nachgeschlagen (K3).
+     */
+    public void setUpgrades(List<TransportType> types, BlockPos pos, Upgrades value) {
+        Upgrades before = upgrades.get(coord(pos));
+        if (!upgrades.set(coord(pos), value)) {
+            return;
+        }
+        if (before.count(UpgradeType.THROUGHPUT) != value.count(UpgradeType.THROUGHPUT)) {
+            for (TransportType type : types) { // Universalkabel: jeder Typ hat sein eigenes Limit
+                setThroughput(type, pos, UpgradeEffects.throughput(baseLimit(type.id()), value));
+            }
+        }
+        changed(); // Filter und Prioritaet koennen frei- oder gesperrt worden sein: Zielliste neu berechnen
+    }
+
+    /** Entnimmt alle Upgrades eines Bausteins (beim Abbauen, damit sie zurueckgegeben werden koennen). */
+    public Upgrades takeUpgrades(BlockPos pos) {
+        Upgrades taken = upgrades.take(coord(pos));
+        if (!taken.isEmpty()) {
+            changed();
+        }
+        return taken;
+    }
+
+    /** Ticks zwischen zwei Uebergaben dieser Quelle (Grundwert, verkuerzt durch Speed-Upgrades). */
+    public int interval(BlockPos pos) {
+        return UpgradeEffects.interval(ConduitBlock.INTERVAL, upgrades(pos));
+    }
+
+    /** Wie viele Item-Sorten pro Uebergabe an ein Ziel bewegt werden duerfen. */
+    public int maxTypes(BlockPos pos) {
+        return UpgradeEffects.maxTypes(upgrades(pos));
+    }
+
+    /**
+     * Die Einstellungen, die tatsaechlich wirken: Ohne Filter-Upgrade gilt kein Filter, ohne Prioritaets-Upgrade
+     * Prioritaet 0. Die gespeicherten Werte bleiben erhalten und wirken wieder, sobald das Upgrade steckt.
+     */
+    public PortSettings effectiveSettings(BlockPos pos, Direction side) {
+        PortSettings stored = settings(pos, side);
+        if (stored.isDefault()) {
+            return stored;
+        }
+        Upgrades installed = upgrades(pos);
+        PortSettings effective = stored;
+        if (!UpgradeEffects.filterUnlocked(installed)) {
+            effective = effective.withFilter(ResourceFilter.NONE);
+        }
+        if (!UpgradeEffects.priorityUnlocked(installed)) {
+            effective = effective.withPriority(0);
+        }
+        return effective;
     }
 
     // ------------------------------------------------------------------ Wartezeit fuer volle Ziele
@@ -287,9 +390,9 @@ public final class LevelNetworks extends SavedData {
         }
     }
 
-    private static boolean isDefault(EndpointMode[] stored) {
+    private static boolean isUnset(EndpointMode[] stored) {
         for (EndpointMode mode : stored) {
-            if (mode != EndpointMode.DEFAULT) {
+            if (mode != null) {
                 return false;
             }
         }
@@ -324,7 +427,7 @@ public final class LevelNetworks extends SavedData {
         }
 
         boolean[] complete = {true};
-        List<Target> targets = buildTargets(level, network, complete);
+        List<Target> targets = buildTargets(level, type, network, complete);
         targetCache.put(key, new CachedTargets(targets, complete[0] ? Long.MAX_VALUE : now + INCOMPLETE_LIFETIME));
         return targets;
     }
@@ -338,7 +441,7 @@ public final class LevelNetworks extends SavedData {
         }
     }
 
-    private List<Target> buildTargets(ServerLevel level, Network network, boolean[] complete) {
+    private List<Target> buildTargets(ServerLevel level, TransportType type, Network network, boolean[] complete) {
         List<BlockPos> endpoints = new ArrayList<>(network.endpointCount());
         for (BlockCoord coord : network.endpointPositions()) {
             endpoints.add(new BlockPos(coord.x(), coord.y(), coord.z()));
@@ -356,12 +459,18 @@ public final class LevelNetworks extends SavedData {
                 continue;
             }
             for (Direction side : Sides.ALL) {
-                if (conduit.connection(state, side) == Connection.OUTPUT) {
-                    result.add(new Target(pos, side, pos.relative(side), settings(pos, side)));
+                if (conduit.connection(state, side) == Connection.OUTPUT
+                        && (conduit.transportTypes().size() == 1
+                        || hasPort(level, type, pos.relative(side), side.getOpposite()))) {
+                    result.add(new Target(pos, side, pos.relative(side), effectiveSettings(pos, side)));
                 }
             }
         }
         return List.copyOf(result);
+    }
+
+    private static boolean hasPort(ServerLevel level, TransportType type, BlockPos neighbour, Direction neighbourSide) {
+        return level.hasChunkAt(neighbour) && Ports.find(type, level, neighbour, neighbourSide) != null;
     }
 
     /**
@@ -369,7 +478,7 @@ public final class LevelNetworks extends SavedData {
      *
      * @return {@code {Eingaenge, Ausgaenge}}
      */
-    public int[] countPorts(ServerLevel level, Network network) {
+    public int[] countPorts(ServerLevel level, TransportType type, Network network) {
         int sources = 0;
         int targets = 0;
         for (BlockCoord coord : network.endpointPositions()) {
@@ -381,6 +490,11 @@ public final class LevelNetworks extends SavedData {
             if (state.getBlock() instanceof ConduitBlock conduit) {
                 for (Direction side : Sides.ALL) {
                     Connection connection = conduit.connection(state, side);
+                    if (conduit.transportTypes().size() > 1 && connection != Connection.NONE
+                            && connection != Connection.LINK
+                            && !hasPort(level, type, pos.relative(side), side.getOpposite())) {
+                        continue;
+                    }
                     if (connection == Connection.INPUT) {
                         sources++;
                     } else if (connection == Connection.OUTPUT) {
@@ -418,7 +532,8 @@ public final class LevelNetworks extends SavedData {
         for (Map.Entry<Long, EndpointMode[]> entry : modes.entrySet()) {
             byte[] stored = new byte[entry.getValue().length];
             for (int i = 0; i < stored.length; i++) {
-                stored[i] = (byte) entry.getValue()[i].ordinal();
+                EndpointMode mode = entry.getValue()[i];
+                stored[i] = (byte) (mode == null ? UNSET_MODE : mode.ordinal());
             }
             CompoundTag port = new CompoundTag();
             port.putLong(TAG_POS, entry.getKey());
@@ -477,6 +592,15 @@ public final class LevelNetworks extends SavedData {
             savedPointers.add(item);
         }
         tag.put(TAG_POINTERS, savedPointers);
+
+        ListTag savedUpgrades = new ListTag();
+        for (Map.Entry<BlockCoord, Upgrades> entry : upgrades.entries().entrySet()) {
+            CompoundTag item = new CompoundTag();
+            item.putLong(TAG_POS, toPos(entry.getKey()).asLong());
+            item.putIntArray(TAG_COUNTS, entry.getValue().toArray());
+            savedUpgrades.add(item);
+        }
+        tag.put(TAG_UPGRADES, savedUpgrades);
         return tag;
     }
 
@@ -519,9 +643,11 @@ public final class LevelNetworks extends SavedData {
             byte[] stored = port.getByteArray(TAG_MODES);
             EndpointMode[] restored = new EndpointMode[Sides.ALL.length];
             for (int side = 0; side < restored.length; side++) {
-                restored[side] = side < stored.length ? EndpointMode.byOrdinal(stored[side]) : EndpointMode.DEFAULT;
+                // Aeltere Staende speicherten "unberuehrt" als Standard-Rolle; das verhaelt sich unveraendert.
+                restored[side] = side < stored.length && stored[side] != UNSET_MODE
+                        ? EndpointMode.byOrdinal(stored[side]) : null;
             }
-            if (!isDefault(restored)) {
+            if (!isUnset(restored)) {
                 networks.modes.put(port.getLong(TAG_POS), restored);
             }
         }
@@ -561,6 +687,12 @@ public final class LevelNetworks extends SavedData {
             if (key != null) {
                 networks.pointers.set(key, item.getInt(TAG_VALUE));
             }
+        }
+        ListTag savedUpgrades = tag.getList(TAG_UPGRADES, Tag.TAG_COMPOUND);
+        for (int i = 0; i < savedUpgrades.size(); i++) {
+            CompoundTag item = savedUpgrades.getCompound(i);
+            networks.upgrades.set(networks.coord(BlockPos.of(item.getLong(TAG_POS))),
+                    Upgrades.of(item.getIntArray(TAG_COUNTS)));
         }
         Vectrum.LOGGER.debug("Netzwerke von {} geladen: {} Bausteine, {} Anschlusseinstellungen",
                 dimension, total, networks.modes.size());

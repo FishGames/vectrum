@@ -4,7 +4,9 @@
     "vectrum:example_block",
     "vectrum:item_cable",
     "vectrum:fluid_cable",
+    "vectrum:redstone_cable",
     "vectrum:energy_cable",
+    "vectrum:universal_cable",
     "vectrum:item_endpoint"
   ]
 }

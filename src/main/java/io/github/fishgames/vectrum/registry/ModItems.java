@@ -1,6 +1,8 @@
 package io.github.fishgames.vectrum.registry;
 
+import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
 import io.github.fishgames.vectrum.item.DiagnosticItem;
+import io.github.fishgames.vectrum.item.UpgradeItem;
 import io.github.fishgames.vectrum.item.WrenchItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.BlockItem;
@@ -8,6 +10,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -20,12 +24,32 @@ public final class ModItems {
     public static final Registered<Item> ITEM_CABLE = blockItem(ModBlocks.ITEM_CABLE);
     public static final Registered<Item> FLUID_CABLE = blockItem(ModBlocks.FLUID_CABLE);
     public static final Registered<Item> ENERGY_CABLE = blockItem(ModBlocks.ENERGY_CABLE);
+    public static final Registered<Item> REDSTONE_CABLE = blockItem(ModBlocks.REDSTONE_CABLE);
+    public static final Registered<Item> UNIVERSAL_CABLE = blockItem(ModBlocks.UNIVERSAL_CABLE);
     public static final Registered<Item> ITEM_ENDPOINT = blockItem(ModBlocks.ITEM_ENDPOINT);
     public static final Registered<Item> WRENCH = plainItem("wrench", () -> new WrenchItem(new Item.Properties().stacksTo(1)));
     public static final Registered<Item> DIAGNOSTIC_TOOL = plainItem("diagnostic_tool",
             () -> new DiagnosticItem(new Item.Properties().stacksTo(1)));
 
+    private static final Map<UpgradeType, Registered<Item>> UPGRADES = new EnumMap<>(UpgradeType.class);
+
+    static {
+        for (UpgradeType type : UpgradeType.VALUES) {
+            UPGRADES.put(type, plainItem(type.id() + "_upgrade", () -> new UpgradeItem(type, new Item.Properties())));
+        }
+    }
+
     private ModItems() {
+    }
+
+    /** Registrierungsname des Upgrade-Items einer Sorte. */
+    public static net.minecraft.resources.ResourceLocation upgradeId(UpgradeType type) {
+        return io.github.fishgames.vectrum.Vectrum.id(type.id() + "_upgrade");
+    }
+
+    /** Das Item zu einer Upgrade-Sorte. */
+    public static Item upgrade(UpgradeType type) {
+        return UPGRADES.get(type).get();
     }
 
     /** Einfacher Gegenstand mit flachem Item-Modell ("item/generated"). */

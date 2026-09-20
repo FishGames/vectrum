@@ -58,4 +58,23 @@ class ResourceFilterTest {
             // ok
         }
     }
+
+    @Test
+    void restrictedFilterOnlyKeepsEntriesOfTheRelevantType() {
+        ResourceFilter filter = ResourceFilter.NONE.with("minecraft:dirt").with("minecraft:water");
+
+        ResourceFilter itemsOnly = filter.restrictedTo(id -> id.equals("minecraft:dirt"));
+        assertTrue(itemsOnly.matches("minecraft:dirt"));
+        assertFalse(itemsOnly.matches("minecraft:stone"));
+    }
+
+    @Test
+    void filterWithNoRelevantEntriesLetsEverythingPass() {
+        ResourceFilter whitelist = ResourceFilter.NONE.with("minecraft:dirt");
+        ResourceFilter fluidsOnly = whitelist.restrictedTo(id -> id.equals("minecraft:water"));
+
+        assertTrue(fluidsOnly.isEmpty());
+        assertTrue(fluidsOnly.matches("minecraft:lava"));
+        assertTrue(ResourceFilter.NONE.restrictedTo(id -> false).isEmpty());
+    }
 }

@@ -9,6 +9,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
 
 /** {@link ItemPort} auf Basis der Forge-Item-Handler-Capability (gilt auch für NeoForge 1.20.1). */
@@ -20,7 +22,7 @@ final class ForgeItemPort implements ItemPort {
     }
 
     @Override
-    public long moveTo(Port target, long requested, Predicate<String> filter) {
+    public long moveTo(Port target, long requested, Predicate<String> filter, int maxTypes) {
         if (requested <= 0 || !(target instanceof ForgeItemPort other) || other.handler == handler) {
             return 0;
         }
@@ -29,11 +31,15 @@ final class ForgeItemPort implements ItemPort {
         IItemHandler to = other.handler;
 
         int moved = 0;
+        List<ItemStack> movedTypes = new ArrayList<>(); // Sorten, die in dieser Uebergabe schon bewegt wurden
         for (int slot = 0; slot < from.getSlots() && moved < max; slot++) {
             // 1. Probe: Was könnte dieser Slot hergeben?
             ItemStack probe = from.extractItem(slot, max - moved, true);
             if (probe.isEmpty() || (filter != ALL && !filter.test(ResourceIds.of(probe.getItem())))) {
                 continue;
+            }
+            if (movedTypes.size() >= maxTypes && !containsType(movedTypes, probe)) {
+                continue; // Sortenlimit erreicht
             }
             // 2. Probe: Wie viel davon nimmt das Ziel?
             ItemStack rest = ItemHandlerHelper.insertItem(to, probe, true);
@@ -47,7 +53,11 @@ final class ForgeItemPort implements ItemPort {
                 continue;
             }
             ItemStack leftover = ItemHandlerHelper.insertItem(to, taken, false);
-            moved += taken.getCount() - leftover.getCount();
+            int delivered = taken.getCount() - leftover.getCount();
+            moved += delivered;
+            if (delivered > 0 && !containsType(movedTypes, taken)) {
+                movedTypes.add(taken);
+            }
             if (!leftover.isEmpty()) {
                 // Sollte nach der Probe nicht vorkommen. Zur Sicherheit zurück in die Quelle legen.
                 ItemStack lost = ItemHandlerHelper.insertItem(from, leftover, false);
@@ -58,6 +68,15 @@ final class ForgeItemPort implements ItemPort {
             }
         }
         return moved;
+    }
+
+    private static boolean containsType(List<ItemStack> types, ItemStack stack) {
+        for (ItemStack type : types) {
+            if (ItemStack.isSameItemSameTags(type, stack)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

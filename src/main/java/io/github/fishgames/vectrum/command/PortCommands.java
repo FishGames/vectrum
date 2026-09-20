@@ -5,10 +5,14 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import io.github.fishgames.vectrum.block.ConduitBlock;
+import io.github.fishgames.vectrum.block.EndpointMode;
 import io.github.fishgames.vectrum.block.NetworkBlock;
 import io.github.fishgames.vectrum.core.routing.DistributionMode;
 import io.github.fishgames.vectrum.core.routing.PortSettings;
 import io.github.fishgames.vectrum.core.routing.ResourceFilter;
+import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
+import io.github.fishgames.vectrum.registry.ModItems;
 import io.github.fishgames.vectrum.world.LevelNetworks;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -37,6 +41,8 @@ import java.util.function.UnaryOperator;
  *   <li>{@code ... filter add|remove <id>}, {@code filter clear}, {@code filter type whitelist|blacklist}.</li>
  *   <li>{@code ... reset}: alles auf Standard.</li>
  * </ul>
+ * Prioritaet und Filter lassen sich nur setzen, wenn der Baustein das Prioritaets- bzw. Filter-Upgrade hat (siehe
+ * {@link UpgradeCommands}); der Verteilmodus ist frei.
  */
 final class PortCommands {
     private PortCommands() {
@@ -72,6 +78,11 @@ final class PortCommands {
                                                         .executes(context -> setFilterType(context, false)))
                                                 .then(Commands.literal("blacklist")
                                                         .executes(context -> setFilterType(context, true)))))
+                                .then(Commands.literal("role")
+                                        .then(Commands.argument("role", StringArgumentType.word())
+                                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                                        java.util.List.of("in", "out", "off"), builder))
+                                                .executes(PortCommands::setRole)))
                                 .then(Commands.literal("reset")
                                         .executes(PortCommands::reset))));
     }
@@ -120,14 +131,23 @@ final class PortCommands {
                     pos.toShortString(), sideName(side), settings.priority(),
                     Component.translatable("distribution.vectrum." + settings.mode().id()),
                     describeFilter(settings.filter())), false);
+            if (!networks.upgrades(pos).has(UpgradeType.PRIORITY) && settings.priority() != 0
+                    || !networks.upgrades(pos).has(UpgradeType.FILTER) && !settings.filter().isEmpty()) {
+                context.getSource().sendSuccess(() -> Component.translatable("command.vectrum.port.inactive"), false);
+            }
             return settings.priority(); // Ergebnis fuer /execute store
         });
     }
 
     private static int update(CommandContext<CommandSourceStack> context, UnaryOperator<PortSettings> change,
-                              String messageKey, java.util.function.Function<PortSettings, Object> argument)
-            throws CommandSyntaxException {
+                              String messageKey, java.util.function.Function<PortSettings, Object> argument,
+                              UpgradeType required) throws CommandSyntaxException {
         return withPort(context, (networks, pos, side) -> {
+            if (required != null && !networks.upgrades(pos).has(required)) {
+                context.getSource().sendFailure(Component.translatable("command.vectrum.port.locked",
+                        pos.toShortString(), Component.translatable(ModItems.upgrade(required).getDescriptionId())));
+                return 0;
+            }
             PortSettings updated = change.apply(networks.settings(pos, side));
             networks.setSettings(pos, side, updated);
             context.getSource().sendSuccess(() -> Component.translatable(messageKey, pos.toShortString(),
@@ -139,7 +159,7 @@ final class PortCommands {
     private static int setPriority(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         int value = IntegerArgumentType.getInteger(context, "value");
         return update(context, settings -> settings.withPriority(value), "command.vectrum.port.priority",
-                settings -> settings.priority());
+                settings -> settings.priority(), UpgradeType.PRIORITY);
     }
 
     private static int setMode(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -150,7 +170,7 @@ final class PortCommands {
             return 0;
         }
         return update(context, settings -> settings.withMode(mode), "command.vectrum.port.mode",
-                settings -> Component.translatable("distribution.vectrum." + settings.mode().id()));
+                settings -> Component.translatable("distribution.vectrum." + settings.mode().id()), null);
     }
 
     private static int editFilter(CommandContext<CommandSourceStack> context, boolean add)
@@ -163,18 +183,44 @@ final class PortCommands {
         String key = id.toString();
         return update(context,
                 settings -> settings.withFilter(add ? settings.filter().with(key) : settings.filter().without(key)),
-                "command.vectrum.port.filter", settings -> describeFilter(settings.filter()));
+                "command.vectrum.port.filter", settings -> describeFilter(settings.filter()), UpgradeType.FILTER);
     }
 
     private static int clearFilter(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         return update(context, settings -> settings.withFilter(settings.filter().cleared()),
-                "command.vectrum.port.filter", settings -> describeFilter(settings.filter()));
+                "command.vectrum.port.filter", settings -> describeFilter(settings.filter()), UpgradeType.FILTER);
     }
 
     private static int setFilterType(CommandContext<CommandSourceStack> context, boolean blacklist)
             throws CommandSyntaxException {
         return update(context, settings -> settings.withFilter(settings.filter().withBlacklist(blacklist)),
-                "command.vectrum.port.filter", settings -> describeFilter(settings.filter()));
+                "command.vectrum.port.filter", settings -> describeFilter(settings.filter()), UpgradeType.FILTER);
+    }
+
+    /** Setzt die Rolle einer Seite (Eingang, Ausgang, aus), wie der Schluessel es tut. Vor allem fuer Tests und Redstone. */
+    private static int setRole(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        String name = StringArgumentType.getString(context, "role");
+        EndpointMode mode = switch (name) {
+            case "in" -> EndpointMode.IN;
+            case "out" -> EndpointMode.OUT;
+            case "off" -> EndpointMode.OFF;
+            default -> null;
+        };
+        if (mode == null) {
+            context.getSource().sendFailure(Component.literal(name + "?"));
+            return 0;
+        }
+        return withPort(context, (networks, pos, side) -> {
+            if (!(context.getSource().getLevel().getBlockState(pos).getBlock() instanceof ConduitBlock conduit)) {
+                context.getSource().sendFailure(Component.translatable("command.vectrum.not_a_network_block",
+                        pos.toShortString()));
+                return 0;
+            }
+            conduit.setRole(context.getSource().getLevel(), pos, side, mode);
+            context.getSource().sendSuccess(() -> Component.translatable("command.vectrum.port.role",
+                    pos.toShortString(), sideName(side), Component.translatable(conduit.roleKey(mode))), true);
+            return 1;
+        });
     }
 
     private static int reset(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

@@ -2,6 +2,7 @@ package io.github.fishgames.vectrum.datagen;
 
 import com.google.gson.JsonObject;
 import io.github.fishgames.vectrum.Vectrum;
+import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
 import io.github.fishgames.vectrum.registry.ModBlocks;
 import io.github.fishgames.vectrum.registry.ModItems;
 import net.minecraft.Util;
@@ -44,6 +45,26 @@ public final class ModLanguageProvider implements DataProvider {
                 german ? "Fluid-Kabel" : "Fluid Cable");
         out.accept(Util.makeDescriptionId("block", ModBlocks.ENERGY_CABLE.id()),
                 german ? "Energie-Kabel" : "Energy Cable");
+        out.accept(Util.makeDescriptionId("block", ModBlocks.REDSTONE_CABLE.id()),
+                german ? "Redstone-Kabel" : "Redstone Cable");
+        out.accept("message." + Vectrum.MOD_ID + ".upgrade_not_supported",
+                german ? "Dieser Baustein nimmt keine Upgrades." : "This block does not accept upgrades.");
+        out.accept("message." + Vectrum.MOD_ID + ".network_signal",
+                german ? "Redstone-Netz #%s: %s Bausteine, %s Eing\u00e4nge/Ausg\u00e4nge, Signalst\u00e4rke %s"
+                        : "Redstone network #%s: %s blocks, %s inputs/outputs, signal strength %s");
+        out.accept("command." + Vectrum.MOD_ID + ".signal_unsupported",
+                german ? "%s: Redstone-Bausteine haben weder Upgrades noch ein Durchsatzlimit."
+                        : "%s: Redstone blocks have neither upgrades nor a throughput limit.");
+        out.accept("command." + Vectrum.MOD_ID + ".port.role",
+                german ? "%s, Seite %s: Rolle %s" : "%s, side %s: role %s");
+        out.accept(Util.makeDescriptionId("block", ModBlocks.UNIVERSAL_CABLE.id()),
+                german ? "Universalkabel" : "Universal Cable");
+        out.accept("type." + Vectrum.MOD_ID + ".item", german ? "Items" : "Items");
+        out.accept("type." + Vectrum.MOD_ID + ".fluid", german ? "Fluide" : "Fluids");
+        out.accept("type." + Vectrum.MOD_ID + ".energy", german ? "Energie" : "Energy");
+        out.accept("command." + Vectrum.MOD_ID + ".throughput.bad_type",
+                german ? "\"%s\" gibt es bei %s nicht (item, fluid oder energy, je nach Baustein)."
+                        : "\"%s\" is not available at %s (item, fluid or energy, depending on the block).");
         out.accept(Util.makeDescriptionId("block", ModBlocks.ITEM_ENDPOINT.id()),
                 german ? "Item-Endpunkt" : "Item Endpoint");
         out.accept(Util.makeDescriptionId("item", ModItems.WRENCH.id()),
@@ -63,6 +84,43 @@ public final class ModLanguageProvider implements DataProvider {
                 german ? "Hier ist kein Inventar angeschlossen." : "No inventory attached here.");
         out.accept("message." + Vectrum.MOD_ID + ".network_none",
                 german ? "Dieser Baustein geh\u00f6rt zu keinem Netz." : "This block is not part of a network.");
+
+        // Upgrades
+        for (UpgradeType type : UpgradeType.VALUES) {
+            out.accept(Util.makeDescriptionId("item", ModItems.upgradeId(type)), upgradeName(type, german));
+            out.accept(Util.makeDescriptionId("item", ModItems.upgradeId(type)) + ".tooltip",
+                    upgradeTooltip(type, german));
+        }
+        out.accept("item." + Vectrum.MOD_ID + ".upgrade.max",
+                german ? "H\u00f6chstens %s pro Baustein" : "Up to %s per block");
+        out.accept("message." + Vectrum.MOD_ID + ".upgrade_added",
+                german ? "%s eingesetzt (%s von %s)" : "%s installed (%s of %s)");
+        out.accept("message." + Vectrum.MOD_ID + ".upgrade_full",
+                german ? "%s: Es passen nicht mehr als %s hinein." : "%s: at most %s fit in here.");
+        out.accept("message." + Vectrum.MOD_ID + ".upgrade_needs_port",
+                german ? "Upgrades brauchen ein angeschlossenes Inventar." : "Upgrades need a connected inventory.");
+        out.accept("message." + Vectrum.MOD_ID + ".upgrades_removed",
+                german ? "%s Upgrades herausgenommen." : "Removed %s upgrades.");
+        out.accept("message." + Vectrum.MOD_ID + ".upgrades_none",
+                german ? "Hier stecken keine Upgrades." : "There are no upgrades installed here.");
+        out.accept("command." + Vectrum.MOD_ID + ".upgrade.list",
+                german ? "Durchsatz %s, Tempo %s, Sorten %s, Filter %s, Priorit\u00e4t %s"
+                        : "throughput %s, speed %s, types %s, filter %s, priority %s");
+        out.accept("command." + Vectrum.MOD_ID + ".upgrade.show",
+                german ? "Upgrades bei %s: %s" : "Upgrades at %s: %s");
+        out.accept("command." + Vectrum.MOD_ID + ".upgrade.changed",
+                german ? "Bei %s: %s jetzt %s von %s" : "At %s: %s now %s of %s");
+        out.accept("command." + Vectrum.MOD_ID + ".upgrade.cleared",
+                german ? "Alle Upgrades bei %s entfernt" : "Removed all upgrades at %s");
+        out.accept("command." + Vectrum.MOD_ID + ".upgrade.unknown_type",
+                german ? "\"%s\" ist keine Upgrade-Sorte (throughput, speed, types, filter, priority)."
+                        : "\"%s\" is not an upgrade type (throughput, speed, types, filter, priority).");
+        out.accept("command." + Vectrum.MOD_ID + ".port.locked",
+                german ? "Bei %s fehlt das Upgrade \"%s\". Erst einsetzen, dann einstellen."
+                        : "Block at %s needs the \"%s\" upgrade first.");
+        out.accept("command." + Vectrum.MOD_ID + ".port.inactive",
+                german ? "Hinweis: Gespeicherte Priorit\u00e4t oder Filter wirken erst, wenn das passende Upgrade steckt."
+                        : "Note: stored priority or filter only take effect once the matching upgrade is installed.");
 
         // Einheiten
         out.accept("unit." + Vectrum.MOD_ID + ".item", german ? "Items" : "items");
@@ -121,7 +179,32 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("direction." + Vectrum.MOD_ID + ".east", german ? "Ost" : "east");
         out.accept("mode." + Vectrum.MOD_ID + ".off", german ? "Aus" : "Off");
         out.accept("mode." + Vectrum.MOD_ID + ".in", german ? "Eingang (entnimmt)" : "Input (takes items out)");
+        out.accept("mode." + Vectrum.MOD_ID + ".in_signal", german ? "Eingang (liest das Signal)" : "Input (reads the signal)");
+        out.accept("mode." + Vectrum.MOD_ID + ".out_signal", german ? "Ausgang (gibt das Signal ab)" : "Output (emits the signal)");
         out.accept("mode." + Vectrum.MOD_ID + ".out", german ? "Ausgang (liefert)" : "Output (delivers items)");
+    }
+
+    private static String upgradeName(UpgradeType type, boolean german) {
+        return switch (type) {
+            case THROUGHPUT -> german ? "Durchsatz-Upgrade" : "Throughput Upgrade";
+            case SPEED -> german ? "Tempo-Upgrade" : "Speed Upgrade";
+            case TYPES -> german ? "Sorten-Upgrade" : "Types Upgrade";
+            case FILTER -> german ? "Filter-Upgrade" : "Filter Upgrade";
+            case PRIORITY -> german ? "Priorit\u00e4ts-Upgrade" : "Priority Upgrade";
+        };
+    }
+
+    private static String upgradeTooltip(UpgradeType type, boolean german) {
+        return switch (type) {
+            case THROUGHPUT -> german ? "Vervierfacht das Durchsatzlimit pro Upgrade."
+                    : "Multiplies the throughput limit by four per upgrade.";
+            case SPEED -> german ? "Halbiert den Abstand zwischen zwei \u00dcbergaben."
+                    : "Halves the time between two transfers.";
+            case TYPES -> german ? "Erlaubt eine Item-Sorte mehr pro \u00dcbergabe (ohne Upgrade: eine)."
+                    : "Allows one more item type per transfer (one without upgrades).";
+            case FILTER -> german ? "Schaltet den Filter frei." : "Unlocks the filter.";
+            case PRIORITY -> german ? "Schaltet die Priorit\u00e4t frei." : "Unlocks priority.";
+        };
     }
 
     @Override

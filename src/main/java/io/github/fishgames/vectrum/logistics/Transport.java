@@ -9,6 +9,7 @@ import io.github.fishgames.vectrum.core.routing.Router;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.transfer.Port;
 import io.github.fishgames.vectrum.transfer.Ports;
+import io.github.fishgames.vectrum.transfer.ResourceIds;
 import io.github.fishgames.vectrum.world.LevelNetworks;
 import io.github.fishgames.vectrum.world.Sides;
 import net.minecraft.core.BlockPos;
@@ -38,14 +39,26 @@ public final class Transport {
     private Transport() {
     }
 
-    /** Eine Uebergaberunde fuer einen Baustein: fuer jede Quellseite bis zum Durchsatzlimit des Bausteins verteilen. */
+    /**
+     * Eine Uebergaberunde fuer einen Baustein: fuer jeden Typ, den er fuehrt, und jede Quellseite bis zum
+     * Durchsatzlimit des Bausteins verteilen. Einzelkabel fuehren einen Typ, das Universalkabel mehrere; jeder Typ hat
+     * sein eigenes Netz, sein eigenes Limit und seine eigene Zielliste.
+     */
     public static void run(ServerLevel level, BlockPos pos, BlockState state, ConduitBlock block) {
         if (!block.hasSource(state)) {
             return;
         }
-
-        TransportType type = block.transportType();
         LevelNetworks networks = LevelNetworks.get(level);
+        for (TransportType type : block.transportTypes()) {
+            if (type.behavior() != TransportType.Behavior.QUANTITY) {
+                continue; // Signale (Redstone) laufen ueber Signals, nicht ueber Mengenuebergaben
+            }
+            run(level, networks, type, pos, state, block);
+        }
+    }
+
+    private static void run(ServerLevel level, LevelNetworks networks, TransportType type, BlockPos pos,
+                            BlockState state, ConduitBlock block) {
         Network network = networks.networkAt(type, pos);
         if (network == null) {
             return;
@@ -81,8 +94,9 @@ public final class Transport {
     private static void distribute(ServerLevel level, LevelNetworks networks, TransportType type, BlockPos pos,
                                    Direction side, Port source, BlockPos sourcePos, List<Target> targets,
                                    long budget, Map<Target, Port> destinations) {
-        PortSettings own = networks.settings(pos, side);
-        ResourceFilter sourceFilter = own.filter();
+        PortSettings own = networks.effectiveSettings(pos, side);
+        int maxTypes = networks.maxTypes(pos);
+        ResourceFilter sourceFilter = forType(type, own.filter());
         long now = level.getGameTime();
 
         Set<Target> asked = new HashSet<>();
@@ -116,7 +130,7 @@ public final class Transport {
                         return 0;
                     }
                     asked.add(target);
-                    long result = source.moveTo(destination, max, combine(sourceFilter, target.settings().filter()));
+                    long result = source.moveTo(destination, max, combine(sourceFilter, forType(type, target.settings().filter())), maxTypes);
                     if (result > 0) {
                         accepted.add(target);
                     }
@@ -134,6 +148,11 @@ public final class Transport {
                 }
             }
         }
+    }
+
+    /** Nur die Eintraege des Filters, die diesen Typ betreffen (siehe {@link ResourceFilter#restrictedTo}). */
+    private static ResourceFilter forType(TransportType type, ResourceFilter filter) {
+        return filter.isEmpty() ? filter : filter.restrictedTo(id -> ResourceIds.belongsTo(type, id));
     }
 
     /** Beide Filter muessen passen. Sind beide leer, gibt es den schnellen Weg ohne Nachfrage je Ware. */

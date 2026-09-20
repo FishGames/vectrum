@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    {
+      "item": "vectrum:item_cable"
+    },
+    {
+      "item": "vectrum:fluid_cable"
+    },
+    {
+      "item": "vectrum:energy_cable"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    }
+  ],
+  "result": {
+    "count": 2,
+    "item": "vectrum:universal_cable"
+  }
+}

@@ -40,11 +40,28 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion()));
 
+    /** Redstone-Kabel: uebertraegt Signalstaerken (0-15) zwischen Eingaengen und Ausgaengen. */
+    public static final Registered<Block> REDSTONE_CABLE = block("redstone_cable", () -> new CableBlock(TransportType.REDSTONE,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.FIRE)
+                    .strength(0.8F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()));
+
     /** Transportkabel fuer Energie (Stufe 1). */
     public static final Registered<Block> ENERGY_CABLE = block("energy_cable", () -> new CableBlock(TransportType.ENERGY,
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_RED)
                     .strength(0.8F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()));
+
+    /** Universalkabel (Stufe 2): fuehrt Items, Fluide und Energie gleichzeitig, jeder Typ in seinem eigenen Netz. */
+    public static final Registered<Block> UNIVERSAL_CABLE = block("universal_cable", () -> new CableBlock(
+            List.of(TransportType.ITEM, TransportType.FLUID, TransportType.ENERGY),
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .strength(1.0F)
                     .sound(SoundType.METAL)
                     .noOcclusion()));
 

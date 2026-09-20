@@ -26,6 +26,14 @@ public interface Port {
      */
     long moveTo(Port target, long max, Predicate<String> filter);
 
+    /**
+     * Wie {@link #moveTo(Port, long, Predicate)}, bewegt aber höchstens {@code maxTypes} verschiedene Sorten
+     * (nur für Items sinnvoll; Fluide und Energie kennen pro Übergabe nur eine Sorte und ignorieren den Wert).
+     */
+    default long moveTo(Port target, long max, Predicate<String> filter, int maxTypes) {
+        return moveTo(target, max, filter);
+    }
+
     /** Ohne Filter. */
     default long moveTo(Port target, long max) {
         return moveTo(target, max, ALL);

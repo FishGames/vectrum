@@ -2,7 +2,12 @@ package io.github.fishgames.vectrum.block;
 
 import io.github.fishgames.vectrum.core.network.NodeKind;
 import io.github.fishgames.vectrum.core.transport.TransportType;
+import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
+import io.github.fishgames.vectrum.core.upgrade.Upgrades;
+import io.github.fishgames.vectrum.registry.ModItems;
+import io.github.fishgames.vectrum.logistics.Signals;
 import io.github.fishgames.vectrum.logistics.Transport;
+import io.github.fishgames.vectrum.transfer.Port;
 import io.github.fishgames.vectrum.transfer.Ports;
 import io.github.fishgames.vectrum.world.LevelNetworks;
 import io.github.fishgames.vectrum.world.Sides;
@@ -12,6 +17,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -51,6 +57,9 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     /** Ticks zwischen zwei Übergaben einer Quelle. */
     public static final int INTERVAL = 10;
 
+    /** Ticks zwischen zwei Kontrollen eines Redstone-Bausteins (Aenderungen wirken sofort, dies ist nur die Absicherung). */
+    public static final int SIGNAL_INTERVAL = 20;
+
     /** Maße in Pixeln (16 = ein Block), siehe {@link CableShapes#build}. */
     public record ShapeSpec(double coreLo, double coreHi, double armLo, double armHi,
                             double plateLo, double plateHi, double plateDepth) {
@@ -59,15 +68,18 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
         }
     }
 
-    private final TransportType type;
+    private final List<TransportType> types;
+    /** Fuehrt dieser Baustein Redstone-Signale (statt Mengen)? Redstone-Kabel fuehren nur dieses eine Signal. */
+    private final boolean signal;
     private final ShapeSpec selectionSpec;
     private final ShapeSpec collisionSpec;
     private final ConcurrentMap<Integer, VoxelShape> selectionShapes = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, VoxelShape> collisionShapes = new ConcurrentHashMap<>();
 
-    protected ConduitBlock(TransportType type, Properties properties, ShapeSpec selection, ShapeSpec collision) {
+    protected ConduitBlock(List<TransportType> types, Properties properties, ShapeSpec selection, ShapeSpec collision) {
         super(properties);
-        this.type = type;
+        this.types = List.copyOf(types);
+        this.signal = types.size() == 1 && types.get(0).behavior() == TransportType.Behavior.SIGNAL;
         this.selectionSpec = selection;
         this.collisionSpec = collision;
         BlockState state = stateDefinition.any();
@@ -78,8 +90,18 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     }
 
     @Override
-    public TransportType transportType() {
-        return type;
+    public List<TransportType> transportTypes() {
+        return types;
+    }
+
+    /** Signal-Baustein (Redstone)? Er bewegt keine Mengen, hat kein Durchsatzlimit und keine Upgrades. */
+    public boolean isSignalBlock() {
+        return signal;
+    }
+
+    /** Nimmt der Baustein Upgrades an? Nur Mengen-Typen haben etwas zum Verbessern. */
+    public boolean acceptsUpgrades() {
+        return !signal;
     }
 
     /** {@code true}: der Block ist immer ein aktiver Endpunkt, auch ohne angeschlossenes Inventar. */
@@ -115,13 +137,96 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
         return mask;
     }
 
+    /** Hat dieser Baustein eine Seite mit angeschlossenem Inventar (Eingang oder Ausgang)? Nur dann nimmt er Upgrades. */
+    public boolean hasPort(BlockState state) {
+        return portMask(state) != 0;
+    }
+
     public boolean hasSource(BlockState state) {
         return maskOf(state, Connection.INPUT) != 0;
     }
 
-    /** Art des Knotens im Netz: Endpunkt, sobald ein Inventar angeschlossen ist (oder immer, siehe alwaysActive). */
-    public NodeKind nodeKind(BlockState state) {
-        return alwaysActive() || portMask(state) != 0 ? NodeKind.ENDPOINT : NodeKind.CABLE;
+    /** Braucht der Baustein einen regelmaessigen Takt? Mengen-Typen: mit Quellseite; Redstone: mit jedem Anschluss. */
+    private boolean needsTick(BlockState state) {
+        return signal ? hasPort(state) : hasSource(state);
+    }
+
+    /** Ticks bis zum naechsten Takt. Redstone reagiert auf Aenderungen selbst; der Takt ist nur ein Sicherheitsnetz. */
+    private int tickInterval(LevelNetworks networks, BlockPos pos) {
+        return signal ? SIGNAL_INTERVAL : networks.interval(pos);
+    }
+
+    /**
+     * Art des Knotens im Netz des Typs {@code type}: Endpunkt, sobald ein Inventar dieses Typs angeschlossen ist
+     * (oder immer, siehe alwaysActive). Bei Universalkabeln zaehlt nur ein Speicher, der genau diesen Typ bietet;
+     * Nachbarn in nicht geladenen Chunks gelten als moeglich.
+     */
+    public NodeKind nodeKind(Level level, BlockPos pos, BlockState state, TransportType type) {
+        if (alwaysActive()) {
+            return NodeKind.ENDPOINT;
+        }
+        if (types.size() == 1) {
+            return portMask(state) != 0 ? NodeKind.ENDPOINT : NodeKind.CABLE;
+        }
+        for (Direction side : Sides.ALL) {
+            Connection connection = connection(state, side);
+            if (connection != Connection.INPUT && connection != Connection.OUTPUT) {
+                continue;
+            }
+            BlockPos neighbour = pos.relative(side);
+            if (!level.hasChunkAt(neighbour) || Ports.find(type, level, neighbour, side.getOpposite()) != null) {
+                return NodeKind.ENDPOINT;
+            }
+        }
+        return NodeKind.CABLE;
+    }
+
+    /**
+     * Traegt den Baustein in die Netze aller seiner Typen ein (je Typ ein eigener Knoten).
+     *
+     * @param always {@code false}: nur eintragen, wenn sich Art oder Seiten gegenueber dem Netz geaendert haben
+     *               (vermeidet unnoetiges Verwerfen von Zwischenspeichern)
+     */
+    private void syncGraph(ServerLevel level, BlockPos pos, BlockState state, boolean always) {
+        LevelNetworks networks = LevelNetworks.get(level);
+        int links = linkMask(state);
+        for (TransportType type : types) {
+            NodeKind kind = nodeKind(level, pos, state, type);
+            if (always || !networks.matches(type, pos, kind, links)) {
+                networks.put(type, pos, kind, links);
+            }
+        }
+    }
+
+    /** Ein Speicher an der Nachbarposition, der mindestens einen Typ dieses Bausteins bietet, oder {@code null}. */
+    private Port findPort(Level level, BlockPos neighbour, Direction neighbourSide) {
+        for (TransportType type : types) {
+            Port port = Ports.find(type, level, neighbour, neighbourSide);
+            if (port != null) {
+                return port;
+            }
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------------ Rollen
+
+    /**
+     * Standardrolle einer Seite, solange der Spieler nichts gewaehlt hat. Mengen-Typen: Ausgang (so wird nichts
+     * ungewollt aus einer Kiste gezogen). Redstone: Eingang neben einem Block, der Signale abgibt (Hebel, Fackel,
+     * Redstone-Block ...), sonst aus; einen Ausgang stellt der Spieler mit dem Schluessel ein.
+     */
+    public EndpointMode defaultMode(Level level, BlockPos neighbour) {
+        if (signal) {
+            return level.getBlockState(neighbour).isSignalSource() ? EndpointMode.IN : EndpointMode.OFF;
+        }
+        return EndpointMode.DEFAULT;
+    }
+
+    /** Die gewaehlte oder, ohne Wahl, die Standardrolle der Seite. */
+    public EndpointMode effectiveMode(LevelNetworks networks, Level level, BlockPos pos, Direction side) {
+        EndpointMode stored = networks.storedMode(pos, side);
+        return stored != null ? stored : defaultMode(level, pos.relative(side));
     }
 
     // ------------------------------------------------------------------ Zustand berechnen
@@ -146,11 +251,11 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
                 continue;
             }
             Connection connection = Connection.NONE;
-            if (NetworkBlock.connects(level.getBlockState(neighbourPos), type)) {
+            if (NetworkBlock.connectsAny(level.getBlockState(neighbourPos), types)) {
                 connection = Connection.LINK;
             } else if (networks != null) {
-                EndpointMode mode = networks.mode(pos, side);
-                if (mode != EndpointMode.OFF && Ports.find(type, level, neighbourPos, side.getOpposite()) != null) {
+                EndpointMode mode = effectiveMode(networks, level, pos, side);
+                if (mode != EndpointMode.OFF && findPort(level, neighbourPos, side.getOpposite()) != null) {
                     connection = mode == EndpointMode.IN ? Connection.INPUT : Connection.OUTPUT;
                 }
             }
@@ -168,9 +273,16 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
         BlockState updated = computeState(level, pos, state);
         if (updated != state) {
             level.setBlock(pos, updated, Block.UPDATE_ALL);
-        } else if (hasSource(state) && level instanceof ServerLevel server) {
-            // Sicherheitsnetz: Ein verlorener Takt wird bei jeder Aenderung in der Umgebung neu gestartet.
-            server.scheduleTick(pos, this, INTERVAL);
+        } else if (level instanceof ServerLevel server) {
+            LevelNetworks networks = LevelNetworks.get(server);
+            if (signal) {
+                // Ein Nachbar hat sich geaendert: Signalwert des Netzes neu bestimmen.
+                Signals.update(server, networks, pos);
+            }
+            if (needsTick(state)) {
+                // Sicherheitsnetz: Ein verlorener Takt wird bei jeder Aenderung in der Umgebung neu gestartet.
+                server.scheduleTick(pos, this, tickInterval(networks, pos));
+            }
         }
     }
 
@@ -190,10 +302,13 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
         super.onPlace(state, level, pos, oldState, isMoving);
         if (level instanceof ServerLevel server) {
-            LevelNetworks.get(server).put(type, pos, nodeKind(state), linkMask(state));
+            syncGraph(server, pos, state, true);
             // Doppelte Eintraege ignoriert Minecraft selbst: pro Block und Position gibt es hoechstens einen.
-            if (hasSource(state)) {
-                server.scheduleTick(pos, this, INTERVAL);
+            if (signal) {
+                Signals.update(server, LevelNetworks.get(server), pos);
+            }
+            if (needsTick(state)) {
+                server.scheduleTick(pos, this, tickInterval(LevelNetworks.get(server), pos));
             } else if (!oldState.is(this)) {
                 // Neu gesetzt (z. B. per /setblock oder Struktur): einmal die Umgebung pruefen.
                 server.scheduleTick(pos, this, 1);
@@ -206,10 +321,21 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock()) && level instanceof ServerLevel server) {
             LevelNetworks networks = LevelNetworks.get(server);
-            networks.remove(type, pos);
+            for (TransportType type : types) {
+                networks.remove(type, pos);
+                networks.clearThroughput(type, pos);
+            }
             networks.clearModes(pos);
             networks.clearSettings(pos);
-            networks.clearThroughput(type, pos);
+            networks.setSignalOutput(pos, 0);
+            // Upgrades stecken im Block und kommen beim Abbauen vollstaendig zurueck.
+            Upgrades installed = networks.takeUpgrades(pos);
+            for (UpgradeType upgrade : UpgradeType.VALUES) {
+                int count = installed.count(upgrade);
+                if (count > 0) {
+                    Block.popResource(level, pos, new ItemStack(ModItems.upgrade(upgrade), count));
+                }
+            }
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
@@ -227,14 +353,19 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
             return;
         }
         LevelNetworks networks = LevelNetworks.get(level);
-        if (!networks.isRegistered(type, pos)) {
-            networks.put(type, pos, nodeKind(current), linkMask(current));
+        for (TransportType type : types) {
+            if (!networks.isRegistered(type, pos)) {
+                syncGraph(level, pos, current, true);
+                break;
+            }
         }
-        if (!hasSource(current)) {
+        if (!needsTick(current)) {
             return;
         }
-        Transport.run(level, pos, current, this);
-        level.scheduleTick(pos, this, INTERVAL);
+        if (!signal) {
+            Transport.run(level, pos, current, this);
+        }
+        level.scheduleTick(pos, this, tickInterval(networks, pos));
     }
 
     // ------------------------------------------------------------------ Wrench
@@ -269,7 +400,18 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
             return connection(state, side) != Connection.LINK;
         }
         BlockPos neighbour = pos.relative(side);
-        return level.hasChunkAt(neighbour) && Ports.find(type, level, neighbour, side.getOpposite()) != null;
+        return level.hasChunkAt(neighbour) && findPort(level, neighbour, side.getOpposite()) != null;
+    }
+
+    /** Sprachschluessel der Rolle; Redstone-Bausteine sagen "Signal" statt "Ware". */
+    public String roleKey(EndpointMode mode) {
+        return signal && mode != EndpointMode.OFF ? mode.translationKey() + "_signal" : mode.translationKey();
+    }
+
+    /** Setzt die Rolle einer Seite (Wrench und Befehl) und passt den Baustein an. */
+    public void setRole(ServerLevel level, BlockPos pos, Direction side, EndpointMode mode) {
+        LevelNetworks.get(level).setMode(pos, side, mode);
+        refresh(level, pos);
     }
 
     /** Schaltet die Rolle der Seite weiter (Ausgang, Eingang, Aus) und meldet das Ergebnis in der Aktionsleiste. */
@@ -288,11 +430,32 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
             return;
         }
         LevelNetworks networks = LevelNetworks.get(server);
-        EndpointMode next = networks.mode(pos, side).next();
-        networks.setMode(pos, side, next);
-        refresh(level, pos);
+        EndpointMode next = effectiveMode(networks, level, pos, side).next();
+        setRole(server, pos, side, next);
         player.displayClientMessage(Component.translatable("message.vectrum.endpoint_mode",
-                sideName, Component.translatable(next.translationKey())), true);
+                sideName, Component.translatable(roleKey(next))), true);
+    }
+
+    // ------------------------------------------------------------------ Redstone-Ausgabe
+
+    /** Redstone-Kabel geben nur an ihren Ausgangsseiten ein Signal ab (wie ein Redstone-Block, aber ueber das Netz). */
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean isSignalSource(BlockState state) {
+        return signal && maskOf(state, Connection.OUTPUT) != 0;
+    }
+
+    /**
+     * @param direction Richtung vom lesenden Block zu diesem Baustein; die Seite dieses Bausteins, die ihm zugewandt
+     *                  ist, ist also {@code direction.getOpposite()}
+     */
+    @Override
+    @SuppressWarnings("deprecation")
+    public int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
+        if (!signal || !(level instanceof ServerLevel server) || connection(state, direction.getOpposite()) != Connection.OUTPUT) {
+            return 0;
+        }
+        return LevelNetworks.get(server).signalOutput(pos);
     }
 
     // ------------------------------------------------------------------ Form

@@ -3,6 +3,7 @@ package io.github.fishgames.vectrum.core.routing;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 
 /**
  * Filter über Ressourcen-Kennungen (z. B. {@code "minecraft:cobblestone"}). Ein leerer Filter lässt alles durch
@@ -48,6 +49,24 @@ public record ResourceFilter(boolean blacklist, Set<String> ids) {
 
     public ResourceFilter withBlacklist(boolean blacklist) {
         return new ResourceFilter(blacklist, ids);
+    }
+
+    /**
+     * Der Teil dieses Filters, der einen bestimmten Transporttyp betrifft: nur Eintraege, fuer die
+     * {@code relevant} zutrifft. Bleibt keiner uebrig, sagt der Filter nichts ueber diesen Typ und laesst alles
+     * durch. So sperrt ein Positivfilter fuer Items nicht ungewollt alle Fluide, wenn ein Universalkabel beides fuehrt.
+     */
+    public ResourceFilter restrictedTo(Predicate<String> relevant) {
+        if (ids.isEmpty()) {
+            return this;
+        }
+        Set<String> kept = new TreeSet<>();
+        for (String id : ids) {
+            if (relevant.test(id)) {
+                kept.add(id);
+            }
+        }
+        return kept.isEmpty() ? NONE : new ResourceFilter(blacklist, kept);
     }
 
     /** Leert die Liste, behält aber die Art (Positiv- oder Negativliste). */

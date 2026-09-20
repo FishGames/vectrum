@@ -71,6 +71,12 @@ public final class NetworkGraph {
     }
 
     /** Zustand aller Knoten zum Speichern. Wiederherstellen: alle Einträge der Reihe nach mit {@link #add} setzen. */
+    /** Art und freigegebene Seiten des Knotens an dieser Position oder {@code null}, wenn dort keiner steht. */
+    public NodeInfo info(BlockCoord pos) {
+        Node node = nodes.get(pos);
+        return node == null ? null : new NodeInfo(node.pos, node.kind, node.sideMask);
+    }
+
     public List<NodeInfo> snapshot() {
         List<NodeInfo> result = new ArrayList<>(nodes.size());
         for (Node node : nodes.values()) {

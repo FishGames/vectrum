@@ -8,6 +8,8 @@ import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /** {@link ItemPort} auf Basis der Fabric Transfer API. Vanilla-Inventare werden von der API automatisch angepasst. */
@@ -19,15 +21,38 @@ final class FabricItemPort implements ItemPort {
     }
 
     @Override
-    public long moveTo(Port target, long max, Predicate<String> filter) {
+    public long moveTo(Port target, long max, Predicate<String> filter, int maxTypes) {
         if (max <= 0 || !(target instanceof FabricItemPort other) || other.storage == storage) {
             return 0;
         }
-        // StorageUtil.move arbeitet mit einer Transaktion: entweder komplett oder gar nicht, nichts geht verloren.
         Predicate<ItemVariant> allowed = filter == ALL
                 ? variant -> true
                 : variant -> filter.test(ResourceIds.of(variant.getItem()));
-        return StorageUtil.move(storage, other.storage, allowed, max, null);
+        if (maxTypes >= Integer.MAX_VALUE) {
+            // StorageUtil.move arbeitet mit einer Transaktion: entweder komplett oder gar nicht, nichts geht verloren.
+            return StorageUtil.move(storage, other.storage, allowed, max, null);
+        }
+
+        // Mit Sortenlimit: Sorte fuer Sorte bewegen, bis das Limit erreicht ist.
+        Set<ItemVariant> moved = new HashSet<>();
+        Set<ItemVariant> refused = new HashSet<>();
+        long total = 0;
+        while (total < max) {
+            ItemVariant candidate = StorageUtil.findExtractableResource(storage,
+                    variant -> !refused.contains(variant) && allowed.test(variant)
+                            && (moved.contains(variant) || moved.size() < maxTypes), null);
+            if (candidate == null) {
+                break;
+            }
+            long now = StorageUtil.move(storage, other.storage, variant -> variant.equals(candidate), max - total, null);
+            if (now > 0) {
+                total += now;
+                moved.add(candidate);
+            } else {
+                refused.add(candidate);
+            }
+        }
+        return total;
     }
 
     @Override

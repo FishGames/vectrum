@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "pattern": [
+    "RIR"
+  ],
+  "result": {
+    "count": 6,
+    "item": "vectrum:redstone_cable"
+  },
+  "show_notification": true
+}

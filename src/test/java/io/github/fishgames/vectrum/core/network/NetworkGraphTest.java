@@ -428,4 +428,17 @@ class NetworkGraphTest {
             dissolved++;
         }
     }
+
+    @Test
+    void infoReportsKindAndSidesOfANodeOrNullIfMissing() {
+        graph.add(at(0, 0, 0), NodeKind.CABLE, 0b000101);
+
+        NodeInfo info = graph.info(at(0, 0, 0));
+        assertEquals(NodeKind.CABLE, info.kind());
+        assertEquals(0b000101, info.sideMask());
+        assertNull(graph.info(at(5, 5, 5)));
+
+        graph.setKind(at(0, 0, 0), NodeKind.ENDPOINT);
+        assertEquals(NodeKind.ENDPOINT, graph.info(at(0, 0, 0)).kind());
+    }
 }

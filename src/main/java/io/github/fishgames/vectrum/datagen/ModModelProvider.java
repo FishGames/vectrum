@@ -18,8 +18,8 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Schreibt Blockstates sowie Block- und Item-Modelle. Bewusst ohne loaderspezifische
  * Modell-Provider, damit derselbe Code auf Fabric, Forge und NeoForge laeuft.
- * Aktuell: jeder Block ist ein einfacher Wuerfel mit einer Textur ("cube_all"),
- * jedes einfache Item nutzt "item/generated".
+ * Nur fuer Bloecke mit einfachem Wuerfelmodell ("cube_all", siehe ModBlocks.cubes()) und einfache Items
+ * ("item/generated"). Kabel und Endpunkte haben handgeschriebene Modelle unter src/main/resources.
  */
 public final class ModModelProvider implements DataProvider {
     private final PackOutput.PathProvider models;
@@ -34,7 +34,7 @@ public final class ModModelProvider implements DataProvider {
     public CompletableFuture<?> run(CachedOutput cache) {
         List<CompletableFuture<?>> writes = new ArrayList<>();
 
-        for (Registered<Block> block : ModBlocks.all()) {
+        for (Registered<Block> block : ModBlocks.cubes()) {
             String name = block.id().getPath();
 
             // Blockstate -> Blockmodell

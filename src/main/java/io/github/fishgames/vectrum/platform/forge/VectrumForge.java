@@ -3,6 +3,7 @@ package io.github.fishgames.vectrum.platform.forge;
 import io.github.fishgames.vectrum.Vectrum;
 import io.github.fishgames.vectrum.datagen.VectrumDataGen;
 import io.github.fishgames.vectrum.registry.Registration;
+import io.github.fishgames.vectrum.transfer.ItemPorts;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -26,6 +27,7 @@ public final class VectrumForge {
     public VectrumForge() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
+        ItemPorts.setFinder(ForgeItemPorts::find);
         Vectrum.init();
         modBus.addListener(VectrumForge::onRegister);
         modBus.addListener(VectrumForge::onGatherData);
@@ -34,6 +36,7 @@ public final class VectrumForge {
     private static void onRegister(RegisterEvent event) {
         bind(event, Registries.BLOCK);
         bind(event, Registries.ITEM);
+        bind(event, Registries.BLOCK_ENTITY_TYPE);
         bind(event, Registries.CREATIVE_MODE_TAB);
     }
 

@@ -1,5 +1,21 @@
 {
   "block.vectrum.example_block": "Example Block",
+  "block.vectrum.item_cable": "Item Cable",
+  "block.vectrum.item_endpoint": "Item Endpoint",
+  "direction.vectrum.down": "bottom",
+  "direction.vectrum.east": "east",
+  "direction.vectrum.north": "north",
+  "direction.vectrum.south": "south",
+  "direction.vectrum.up": "top",
+  "direction.vectrum.west": "west",
   "item.vectrum.example_item": "Example Item",
-  "itemGroup.vectrum.main": "Vectrum"
+  "item.vectrum.wrench": "Wrench",
+  "itemGroup.vectrum.main": "Vectrum",
+  "message.vectrum.endpoint_link": "Side %s is connected to a cable.",
+  "message.vectrum.endpoint_mode": "Side %s: %s",
+  "message.vectrum.network": "Network #%s: %s blocks, %s endpoints",
+  "message.vectrum.network_none": "This block is not part of a network.",
+  "mode.vectrum.in": "Input (takes items out)",
+  "mode.vectrum.off": "Off",
+  "mode.vectrum.out": "Output (delivers items)"
 }

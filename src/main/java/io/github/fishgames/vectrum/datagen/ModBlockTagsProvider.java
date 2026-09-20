@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.Block;
 
 import java.util.concurrent.CompletableFuture;
 
-/** Alle Bloecke der Mod: mit der Spitzhacke abbaubar, Werkzeugstufe Stein. */
+/** Alle Bloecke der Mod: mit der Spitzhacke abbaubar; Werkzeugstufe Stein nur, wenn der Block sie verlangt. */
 public final class ModBlockTagsProvider extends TagsProvider<Block> {
     public ModBlockTagsProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
         super(output, Registries.BLOCK, registries);
@@ -23,7 +23,9 @@ public final class ModBlockTagsProvider extends TagsProvider<Block> {
         for (Registered<Block> block : ModBlocks.all()) {
             ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, block.id());
             tag(BlockTags.MINEABLE_WITH_PICKAXE).add(key);
-            tag(BlockTags.NEEDS_STONE_TOOL).add(key);
+            if (block.get().defaultBlockState().requiresCorrectToolForDrops()) {
+                tag(BlockTags.NEEDS_STONE_TOOL).add(key);
+            }
         }
     }
 }

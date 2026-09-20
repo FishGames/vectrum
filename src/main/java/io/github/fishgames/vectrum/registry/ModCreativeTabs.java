@@ -10,7 +10,7 @@ public final class ModCreativeTabs {
     public static final Registered<CreativeModeTab> MAIN = Registration.register(Registries.CREATIVE_MODE_TAB, "main",
             () -> tabBuilder()
                     .title(Component.translatable("itemGroup." + Vectrum.MOD_ID + ".main"))
-                    .icon(() -> new ItemStack(ModItems.EXAMPLE_ITEM.get()))
+                    .icon(() -> new ItemStack(ModItems.ITEM_CABLE.get()))
                     .displayItems((parameters, output) -> ModItems.all().forEach(item -> output.accept(item.get())))
                     .build());
 

@@ -1,5 +1,21 @@
 {
   "block.vectrum.example_block": "Beispielblock",
+  "block.vectrum.item_cable": "Item-Kabel",
+  "block.vectrum.item_endpoint": "Item-Endpunkt",
+  "direction.vectrum.down": "unten",
+  "direction.vectrum.east": "Ost",
+  "direction.vectrum.north": "Nord",
+  "direction.vectrum.south": "Süd",
+  "direction.vectrum.up": "oben",
+  "direction.vectrum.west": "West",
   "item.vectrum.example_item": "Beispielgegenstand",
-  "itemGroup.vectrum.main": "Vectrum"
+  "item.vectrum.wrench": "Schraubenschlüssel",
+  "itemGroup.vectrum.main": "Vectrum",
+  "message.vectrum.endpoint_link": "Seite %s ist mit einem Kabel verbunden.",
+  "message.vectrum.endpoint_mode": "Seite %s: %s",
+  "message.vectrum.network": "Netz #%s: %s Bausteine, %s Endpunkte",
+  "message.vectrum.network_none": "Dieser Baustein gehört zu keinem Netz.",
+  "mode.vectrum.in": "Eingang (entnimmt)",
+  "mode.vectrum.off": "Aus",
+  "mode.vectrum.out": "Ausgang (liefert)"
 }

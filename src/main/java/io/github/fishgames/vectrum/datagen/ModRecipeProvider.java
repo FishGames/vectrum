@@ -41,5 +41,31 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .requires(ModBlocks.EXAMPLE_BLOCK.get())
                 .unlockedBy(getHasName(ModBlocks.EXAMPLE_BLOCK.get()), has(ModBlocks.EXAMPLE_BLOCK.get()))
                 .save(writer, Vectrum.id("example_item_from_example_block"));
+
+        // Item-Kabel: 2 Eisen + 1 Kupfer -> 6 Kabel
+        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.ITEM_CABLE.get(), 6)
+                .pattern("ICI")
+                .define('I', Items.IRON_INGOT)
+                .define('C', Items.COPPER_INGOT)
+                .unlockedBy(getHasName(Items.COPPER_INGOT), has(Items.COPPER_INGOT))
+                .save(writer);
+
+        // Item-Endpunkt: Trichter + Item-Kabel + Eisen
+        ShapelessRecipeBuilder.shapeless(RecipeCategory.REDSTONE, ModItems.ITEM_ENDPOINT.get())
+                .requires(Items.HOPPER)
+                .requires(ModItems.ITEM_CABLE.get())
+                .requires(Items.IRON_INGOT)
+                .unlockedBy(getHasName(ModItems.ITEM_CABLE.get()), has(ModItems.ITEM_CABLE.get()))
+                .save(writer);
+
+        // Wrench
+        ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, ModItems.WRENCH.get())
+                .pattern("I I")
+                .pattern(" C ")
+                .pattern(" I ")
+                .define('I', Items.IRON_INGOT)
+                .define('C', Items.COPPER_INGOT)
+                .unlockedBy(getHasName(Items.COPPER_INGOT), has(Items.COPPER_INGOT))
+                .save(writer);
     }
 }

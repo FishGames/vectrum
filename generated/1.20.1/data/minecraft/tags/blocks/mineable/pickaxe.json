@@ -1,5 +1,7 @@
 {
   "values": [
-    "vectrum:example_block"
+    "vectrum:example_block",
+    "vectrum:item_cable",
+    "vectrum:item_endpoint"
   ]
 }

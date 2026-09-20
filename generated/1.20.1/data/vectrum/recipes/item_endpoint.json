@@ -1,0 +1,18 @@
+{
+  "category": "redstone",
+  "ingredients": [
+    {
+      "item": "minecraft:hopper"
+    },
+    {
+      "item": "vectrum:item_cable"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    }
+  ],
+  "result": {
+    "item": "vectrum:item_endpoint"
+  },
+  "type": "minecraft:crafting_shapeless"
+}

@@ -29,6 +29,17 @@ konkreter ist. Stand: 20.09.2026.
 | E8 | **Koordinaten enthalten die Dimension** (`BlockCoord`). Das drahtlose Frequenzregister (Stufe 4) wird später serverweit geführt, alle anderen Netze pro Dimension. | Hält P6 offen, ohne den Kern später umbauen zu müssen. |
 | E9 | **Redstone** wird als Transporttyp mit anderem Verhalten (`SIGNAL`: Wert spiegeln) angelegt, alle anderen Typen als `QUANTITY` (Menge übergeben). | Vermeidet Sonderfallcode im Kern, sobald Redstone dazukommt. |
 
+## Etappe 2 (Item-Kabel und Endpunkte), von Claude getroffen
+
+| Nr. | Entscheidung | Begründung |
+| --- | --- | --- |
+| E10 | **Standard-Rolle einer Endpunkt-Seite ist Ausgang (Ziel).** Das Wrench schaltet die angeklickte Seite weiter: Ausgang, Eingang, Aus, wieder Ausgang. Ein Klick auf einen Arm oder eine Platte zählt für deren Seite. Mit Shift zeigt das Wrench stattdessen das Netz. | Ein neuer Endpunkt zieht so nie ungewollt Ware aus einer Kiste. Beim Platzieren lässt sich die Rolle nicht wählen, weil man zum Platzieren an Kisten ohnehin Shift drücken muss. |
+| E11 | **Netzzugehörigkeit wird mit der Welt gespeichert** (`data/vectrum_networks.dat` je Dimension) und beim Laden über den Kern neu aufgebaut. Kabel haben keinen Blockentity. | Kabel können sich beim Laden eines Chunks nicht selbst melden. Der Neuaufbau kostet nach Messung rund 10 ms für 10.000 Bausteine. |
+| E12 | **Verbindungen stehen im BlockState.** Kabel: 6 Ja/Nein-Werte. Endpunkt: pro Seite kein/Kabel/Eingang/Ausgang. Aktualisiert wird in `neighborChanged`; Nachbarn in nicht geladenen Chunks werden nie angefasst (sonst würden Chunks geladen oder Verbindungen am Chunkrand verloren gehen). | Modell, Form und Netz lesen denselben Zustand. |
+| E13 | **Transport in Etappe 2:** alle 10 Ticks gibt jede Quellseite bis zu 16 Items an die Ziele im Netz ab, der Reihe nach nach Position. Es gibt noch keinen Filter, keine Priorität und keine Modi (Etappe 5) und noch keine Upgrades (Etappe 6). Die Zielliste je Netz wird zwischengespeichert und nur bei Änderungen neu berechnet. | Kleinster Ablauf, der den Kern von Anfang bis Ende belegt. |
+| E14 | **Zugriff auf Inventare über eine eigene Schnittstelle** (`ItemPort`): Forge/NeoForge über die Item-Handler-Capability, Fabric über die Transfer API der Fabric API. Der gemeinsame Code kennt nur `moveTo`. | Der gemeinsame Code bleibt frei von Loader-Klassen. Fluide und Energie folgen später nach demselben Muster. |
+| E15 | Kabel und Endpunkte sind noch nicht wasserlogged. Beide Modelle sind Platzhalter aus Quadern, Texturen sind Platzhalter. | Kommt mit den Modellen und Texturen des Projektinhabers. |
+
 ## Noch offen
 
 - Lizenz von Team Reborn Energy prüfen (E6).

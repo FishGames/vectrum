@@ -29,7 +29,7 @@ public final class ItemTransport {
     private ItemTransport() {
     }
 
-    /** Eine Uebergaberunde fuer einen Baustein: fuer jede Quellseite bis zu {@code BASE_THROUGHPUT} Items verteilen. */
+    /** Eine Uebergaberunde fuer einen Baustein: fuer jede Quellseite bis zum Durchsatzlimit des Bausteins Items verteilen. */
     public static void run(ServerLevel level, BlockPos pos, BlockState state, ConduitBlock block) {
         if (!block.hasSource(state)) {
             return;
@@ -38,6 +38,11 @@ public final class ItemTransport {
         LevelNetworks networks = LevelNetworks.get(level);
         Network network = networks.networkAt(block.transportType(), pos);
         if (network == null) {
+            return;
+        }
+        // Limit des Quellbausteins: ein gespeicherter Wert, hier nur nachgeschlagen (K3).
+        int budget = networks.budget(block.transportType(), pos);
+        if (budget <= 0) {
             return;
         }
         List<ItemTarget> targets = networks.itemTargets(level, network);
@@ -57,7 +62,7 @@ public final class ItemTransport {
             if (source == null) {
                 continue;
             }
-            distribute(level, source, sourcePos, targets, ConduitBlock.BASE_THROUGHPUT);
+            distribute(level, source, sourcePos, targets, budget);
         }
     }
 

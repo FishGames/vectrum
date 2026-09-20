@@ -10,6 +10,7 @@ import io.github.fishgames.vectrum.core.network.NetworkGraph;
 import io.github.fishgames.vectrum.core.network.NetworkRegistry;
 import io.github.fishgames.vectrum.core.network.NodeInfo;
 import io.github.fishgames.vectrum.core.network.NodeKind;
+import io.github.fishgames.vectrum.core.throughput.ThroughputLimits;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.logistics.ItemTarget;
 import net.minecraft.core.BlockPos;
@@ -44,6 +45,8 @@ public final class LevelNetworks extends SavedData {
     private static final String TAG_DATA = "data";
     private static final String TAG_PORTS = "ports";
     private static final String TAG_MODES = "modes";
+    private static final String TAG_LIMITS = "limits";
+    private static final String TAG_VALUES = "values";
     private static final int ENDPOINT_FLAG = 0x40;
     private static final int MASK_BITS = 0x3F;
 
@@ -58,6 +61,9 @@ public final class LevelNetworks extends SavedData {
     private final NetworkRegistry registry = new NetworkRegistry();
     /** Gewählte Rollen der Anschlussseiten, nur für Bausteine, die vom Standard abweichen. Schlüssel: BlockPos.asLong(). */
     private final Map<Long, EndpointMode[]> modes = new HashMap<>();
+
+    /** Durchsatzlimits je Ebene (Schluessel: Ebenen-Kennung). Nur Bausteine mit eigenem Wert stehen darin. */
+    private final Map<String, ThroughputLimits> limits = new HashMap<>();
 
     /** Zwischengespeicherte Zielliste. Unvollstaendige Listen (Endpunkte in nicht geladenen Chunks) laufen ab. */
     private record CachedTargets(List<ItemTarget> targets, long validUntil) {
@@ -143,6 +149,41 @@ public final class LevelNetworks extends SavedData {
     public void clearModes(BlockPos pos) {
         if (modes.remove(pos.asLong()) != null) {
             changed();
+        }
+    }
+
+    // ------------------------------------------------------------------ Durchsatzlimit (K3)
+
+    /** Grundlimit einer Ebene: Einheiten pro Uebergabe und Quellseite, solange kein Upgrade etwas anderes setzt. */
+    private static long baseLimit(String layer) {
+        return ConduitBlock.BASE_THROUGHPUT;
+    }
+
+    private ThroughputLimits limits(String layer) {
+        return limits.computeIfAbsent(layer, id -> new ThroughputLimits(baseLimit(id)));
+    }
+
+    /** Durchsatzlimit des Bausteins (ein einziger Nachschlag, keine Berechnung ueber das Netz). */
+    public long throughput(TransportType type, BlockPos pos) {
+        return limits(type.id()).limitOf(coord(pos));
+    }
+
+    /** Wie {@link #throughput}, fuer fremde Schnittstellen auf {@code int} geklemmt. */
+    public int budget(TransportType type, BlockPos pos) {
+        return limits(type.id()).budgetOf(coord(pos));
+    }
+
+    /** Setzt das Limit eines Bausteins. Das aendert kein Netz und macht keine Zwischenspeicher ungueltig. */
+    public void setThroughput(TransportType type, BlockPos pos, long limit) {
+        if (limits(type.id()).set(coord(pos), limit)) {
+            setDirty();
+        }
+    }
+
+    /** Vergisst das eigene Limit eines Bausteins (beim Abbauen). */
+    public void clearThroughput(TransportType type, BlockPos pos) {
+        if (limits(type.id()).reset(coord(pos))) {
+            setDirty();
         }
     }
 
@@ -279,6 +320,29 @@ public final class LevelNetworks extends SavedData {
             ports.add(port);
         }
         tag.put(TAG_PORTS, ports);
+
+        ListTag saved = new ListTag();
+        for (Map.Entry<String, ThroughputLimits> entry : limits.entrySet()) {
+            Map<BlockCoord, Long> own = entry.getValue().overrides();
+            if (own.isEmpty()) {
+                continue;
+            }
+            long[] positions = new long[own.size()];
+            long[] values = new long[own.size()];
+            int i = 0;
+            for (Map.Entry<BlockCoord, Long> limit : own.entrySet()) {
+                BlockCoord c = limit.getKey();
+                positions[i] = new BlockPos(c.x(), c.y(), c.z()).asLong();
+                values[i] = limit.getValue();
+                i++;
+            }
+            CompoundTag layer = new CompoundTag();
+            layer.putString(TAG_ID, entry.getKey());
+            layer.putLongArray(TAG_POS, positions);
+            layer.putLongArray(TAG_VALUES, values);
+            saved.add(layer);
+        }
+        tag.put(TAG_LIMITS, saved);
         return tag;
     }
 
@@ -312,6 +376,18 @@ public final class LevelNetworks extends SavedData {
             }
             if (!isDefault(restored)) {
                 networks.modes.put(port.getLong(TAG_POS), restored);
+            }
+        }
+        ListTag savedLimits = tag.getList(TAG_LIMITS, Tag.TAG_COMPOUND);
+        for (int i = 0; i < savedLimits.size(); i++) {
+            CompoundTag layer = savedLimits.getCompound(i);
+            ThroughputLimits target = networks.limits(layer.getString(TAG_ID));
+            long[] positions = layer.getLongArray(TAG_POS);
+            long[] values = layer.getLongArray(TAG_VALUES);
+            for (int n = 0; n < Math.min(positions.length, values.length); n++) {
+                if (values[n] >= 0) {
+                    target.set(networks.coord(BlockPos.of(positions[n])), values[n]);
+                }
             }
         }
         Vectrum.LOGGER.debug("Netzwerke von {} geladen: {} Bausteine, {} Anschlusseinstellungen",

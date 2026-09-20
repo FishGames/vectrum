@@ -44,6 +44,13 @@ konkreter ist. Stand: 20.09.2026.
 | E17 | **Der Endpunkt-Block bleibt vorerst erhalten** (immer aktiver, dickerer Knoten) und bekommt später eine andere Aufgabe und einen anderen Namen. | Wunsch des Projektinhabers; entscheiden, sobald die Aufgabe feststeht. |
 | E18 | **Diagnosewerkzeug als eigenes Item** (Rechtsklick auf Kabel oder Endpunkt: Netznummer, Größe, Anzahl Eingänge und Ausgänge). Das Wrench ist nur noch zum Einstellen da. | Wunsch des Projektinhabers; hier wächst später die ausführliche Diagnose (Etappe 12). |
 
+## Etappe 3 (Durchsatzlimit), von Claude getroffen
+
+| Nr. | Entscheidung | Begründung |
+| --- | --- | --- |
+| E19 | **Durchsatzlimit = gespeicherte Zahl pro Anschlussbaustein** (K3, umgesetzt nach E1). Die Tabelle `ThroughputLimits` im Kern hält nur Bausteine mit eigenem Wert; alle anderen haben das Grundlimit (4 Items pro Übergabe und Quellseite). Beim Übergeben genügt ein einziger Nachschlag, nie eine Berechnung über das Netz. Gilt für die Quelle (dort wird entnommen); Ziele bremst nur ihre Kapazität. Ein Wert von 0 hält den Baustein an. Die Werte werden mit der Welt gespeichert (Ebene `limits` in `vectrum_networks.dat`) und beim Abbauen vergessen. | Kabel haben keine Daten (E1), also kann das Limit nur am Anschluss hängen. Die Durchsatz-Upgrades (Etappe 6) tragen denselben Wert ein, dafür ist nichts mehr umzubauen. |
+| E20 | **Verwaltungsbefehl** `/vectrum throughput <pos> [<wert>\|reset]` (nur Operatoren): zeigt, setzt oder löscht das Limit eines Bausteins. Das Ergebnis des Zeigen-Befehls ist der Wert (für `/execute store`). Das Diagnosewerkzeug nennt das Limit des angeklickten Bausteins. | Ohne Upgrades ist das der einzige Weg, das Limit im Spiel zu sehen und auszuprobieren. Bleibt als Verwaltungswerkzeug erhalten. |
+
 ## Noch offen
 
 - Lizenz von Team Reborn Energy prüfen (E6).

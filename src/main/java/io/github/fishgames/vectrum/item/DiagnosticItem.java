@@ -15,7 +15,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Das Diagnosewerkzeug. Rechtsklick auf ein Kabel oder einen Endpunkt zeigt, zu welchem Netz der Baustein gehört und
- * wie viele Eingänge und Ausgänge es hat. Es verändert nichts. Ausführlichere Diagnose (Fluss, Engpässe, Umriss des
+ * wie viele Eingänge und Ausgänge es hat und wie hoch das Durchsatzlimit dieses Bausteins ist. Es verändert nichts. Ausführlichere Diagnose (Fluss, Engpässe, Umriss des
  * Netzes) kommt in Etappe 12 hierher.
  */
 public class DiagnosticItem extends Item {
@@ -40,7 +40,8 @@ public class DiagnosticItem extends Item {
                 } else {
                     int[] ports = networks.countPorts(server, found);
                     message = Component.translatable("message.vectrum.network",
-                            found.id(), found.size(), ports[0], ports[1]);
+                            found.id(), found.size(), ports[0], ports[1],
+                            networks.throughput(network.transportType(), pos));
                 }
                 player.displayClientMessage(message, true);
             }

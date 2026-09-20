@@ -1,6 +1,7 @@
 package io.github.fishgames.vectrum.platform.forge;
 
 import io.github.fishgames.vectrum.Vectrum;
+import io.github.fishgames.vectrum.command.VectrumCommands;
 import io.github.fishgames.vectrum.datagen.VectrumDataGen;
 import io.github.fishgames.vectrum.registry.Registration;
 import io.github.fishgames.vectrum.transfer.ItemPorts;
@@ -10,7 +11,9 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceKey;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.data.event.GatherDataEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -31,6 +34,11 @@ public final class VectrumForge {
         Vectrum.init();
         modBus.addListener(VectrumForge::onRegister);
         modBus.addListener(VectrumForge::onGatherData);
+        MinecraftForge.EVENT_BUS.addListener(VectrumForge::onRegisterCommands);
+    }
+
+    private static void onRegisterCommands(RegisterCommandsEvent event) {
+        VectrumCommands.register(event.getDispatcher());
     }
 
     private static void onRegister(RegisterEvent event) {

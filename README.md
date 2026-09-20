@@ -25,6 +25,7 @@ docs/                                   Konzept, Implementierungs-Prompt, Entsch
 src/main/java/.../block/                Kabel, Endpunkt (gemeinsame Basis ConduitBlock), Verbindungszustände, Formen
 src/main/java/.../world/                Netzwerke einer Dimension (Speicherung, Verbindung zum Kern)
 src/main/java/.../logistics/            Transportlogik (wer liefert wohin)
+src/main/java/.../command/              Verwaltungsbefehle (/vectrum ...), loaderunabhängig
 src/main/java/.../transfer/             Zugang zu Inventaren, gemeinsame Schnittstelle (Umsetzung je Loader)
 src/main/java/.../item/                 Werkzeuge (Wrench, Diagnosewerkzeug)
 src/main/resources/assets/vectrum/      Handgeschriebene Modelle und Blockstates von Kabel und Endpunkt, Texturen
@@ -73,7 +74,7 @@ Mappings herunter, das dauert einige Minuten.
 ## Kern und Tests
 
 Im Paket `core` liegt die Logik, die kein Minecraft braucht: der Netzwerk-Graph (Kabel und Endpunkte, Verschmelzen
-und Teilen von Netzen), die Transportarten und die Hilfsmathe. Weil der Kern ohne Minecraft läuft, lässt er sich
+und Teilen von Netzen), die Transportarten, die Durchsatzlimits und die Hilfsmathe. Weil der Kern ohne Minecraft läuft, lässt er sich
 mit normalen JUnit-Tests prüfen (`src/test/java`), auch mit Zufallstests gegen eine einfache Referenzlösung und
 Leistungsmessungen. Der Test `CoreIsolationTest` schlägt fehl, sobald jemand im Kern Minecraft- oder Loader-Klassen
 importiert. Die Tests laufen mit jedem Loader-Projekt, z. B. `./gradlew :1.20.1-forge:test`.

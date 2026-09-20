@@ -1,9 +1,11 @@
 package io.github.fishgames.vectrum.platform.fabric;
 
 import io.github.fishgames.vectrum.Vectrum;
+import io.github.fishgames.vectrum.command.VectrumCommands;
 import io.github.fishgames.vectrum.registry.Registration;
 import io.github.fishgames.vectrum.transfer.ItemPorts;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 
@@ -17,5 +19,8 @@ public final class VectrumFabric implements ModInitializer {
         Registration.applyTo(Registries.BLOCK, BuiltInRegistries.BLOCK);
         Registration.applyTo(Registries.ITEM, BuiltInRegistries.ITEM);
         Registration.applyTo(Registries.CREATIVE_MODE_TAB, BuiltInRegistries.CREATIVE_MODE_TAB);
+
+        CommandRegistrationCallback.EVENT.register(
+                (dispatcher, registryAccess, environment) -> VectrumCommands.register(dispatcher));
     }
 }

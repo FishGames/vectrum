@@ -50,7 +50,10 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
 
     /** Ticks zwischen zwei Übergaben einer Quelle. */
     public static final int INTERVAL = 10;
-    /** Höchstmenge Items pro Übergabe und Quellseite im Basisbetrieb (spätere Durchsatz-Upgrades erhöhen sie). */
+    /**
+     * Grundlimit: Höchstmenge Items pro Übergabe und Quellseite ohne Upgrades. Der tatsächliche Wert je Baustein steht
+     * in {@link LevelNetworks#throughput} (Durchsatz-Upgrades setzen ihn dort).
+     */
     public static final int BASE_THROUGHPUT = 4;
 
     /** Maße in Pixeln (16 = ein Block), siehe {@link CableShapes#build}. */
@@ -210,6 +213,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
             LevelNetworks networks = LevelNetworks.get(server);
             networks.remove(type, pos);
             networks.clearModes(pos);
+            networks.clearThroughput(type, pos);
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }

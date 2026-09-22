@@ -31,6 +31,7 @@ import java.util.List;
  *   <li>{@code /vectrum throughput <pos> reset}: reset it.</li>
  *   <li>{@code /vectrum throughput <pos> type <item|fluid|energy> ...}: per-type variant.</li>
  *   <li>{@code /vectrum port ...} (see {@link PortCommands}).</li>
+ *   <li>{@code /vectrum diagnose ...} (see {@link DiagnoseCommands}).</li>
  *   <li>{@code /vectrum upgrade ...} (see {@link UpgradeCommands}).</li>
  * </ul>
  */
@@ -58,6 +59,7 @@ public final class VectrumCommands {
                                                 .then(resetNode("type"))
                                                 .then(valueNode("type"))))))
                 .then(PortCommands.node())
+                .then(DiagnoseCommands.node())
                 .then(FrequencyCommands.node())
                 .then(WirelessCommands.node())
                 .then(UpgradeCommands.node()));

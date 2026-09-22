@@ -5,6 +5,8 @@ import io.github.fishgames.vectrum.Vectrum;
 import io.github.fishgames.vectrum.platform.forge.mekanism.MekanismCompat;
 import io.github.fishgames.vectrum.command.VectrumCommands;
 import io.github.fishgames.vectrum.datagen.VectrumDataGen;
+import io.github.fishgames.vectrum.gui.EndpointMenu;
+import io.github.fishgames.vectrum.registry.ModMenus;
 import io.github.fishgames.vectrum.registry.Registration;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.transfer.Ports;
@@ -15,11 +17,13 @@ import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceKey;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.RegisterEvent;
 
@@ -38,10 +42,19 @@ public final class VectrumForge {
         if (ModList.get().isLoaded("mekanism") && MekanismCompat.init()) {
             Modules.setGas(true);
         }
+        ModMenus.setEndpointFactory(() -> IForgeMenuType.create((id, inventory, buffer) -> new EndpointMenu(id, inventory)));
         Vectrum.init();
+        ForgeNet.init();
         modBus.addListener(VectrumForge::onRegister);
         modBus.addListener(VectrumForge::onGatherData);
+        modBus.addListener(VectrumForge::onEnqueueMessages);
         MinecraftForge.EVENT_BUS.addListener(VectrumForge::onRegisterCommands);
+    }
+
+    private static void onEnqueueMessages(InterModEnqueueEvent event) {
+        if (ModList.get().isLoaded("theoneprobe")) {
+            TopCompat.register();
+        }
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -52,6 +65,7 @@ public final class VectrumForge {
         bind(event, Registries.BLOCK);
         bind(event, Registries.ITEM);
         bind(event, Registries.CREATIVE_MODE_TAB);
+        bind(event, Registries.MENU);
     }
 
     private static <T> void bind(RegisterEvent event, ResourceKey<? extends Registry<T>> registry) {

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.registry.ModBlocks;
 import io.github.fishgames.vectrum.registry.ModCreativeTabs;
+import io.github.fishgames.vectrum.registry.ModMenus;
 import io.github.fishgames.vectrum.registry.ModItems;
 import io.github.fishgames.vectrum.transfer.Ports;
 import io.github.fishgames.vectrum.transfer.RedstonePorts;
@@ -23,6 +24,7 @@ public final class Vectrum {
         ModBlocks.init();
         ModItems.init();
         ModCreativeTabs.init();
+        ModMenus.init();
         // Redstone port finder
         Ports.setFinder(TransportType.REDSTONE, RedstonePorts::find);
 

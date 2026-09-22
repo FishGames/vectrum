@@ -1,7 +1,6 @@
 {
   "replace": false,
   "values": [
-    "vectrum:example_block",
     "vectrum:item_cable",
     "vectrum:fluid_cable",
     "vectrum:digital_cable",

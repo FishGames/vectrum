@@ -22,13 +22,6 @@ public final class ModBlocks {
     private static final List<Registered<Block>> ALL = new ArrayList<>();
     private static final List<Registered<Block>> CUBES = new ArrayList<>();
 
-    public static final Registered<Block> EXAMPLE_BLOCK = cubeBlock("example_block", () -> new Block(
-            BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_PURPLE)
-                    .strength(2.0F, 6.0F)
-                    .requiresCorrectToolForDrops()
-                    .sound(SoundType.AMETHYST)));
-
     /** Item cable. */
     public static final Registered<Block> ITEM_CABLE = block("item_cable", () -> new CableBlock(TransportType.ITEM,
             BlockBehaviour.Properties.of()
@@ -54,14 +47,14 @@ public final class ModBlocks {
                     .noOcclusion()));
 
     /** Coder. */
-    public static final Registered<Block> CODER = block("coder", () -> new CoderBlock(
+    public static final Registered<Block> CODER = cubeBlock("coder", () -> new CoderBlock(
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_PURPLE)
                     .strength(1.5F)
                     .sound(SoundType.METAL)));
 
     /** Wireless port. */
-    public static final Registered<Block> WIRELESS_PORT = block("wireless_port", () -> new WirelessBlock(
+    public static final Registered<Block> WIRELESS_PORT = cubeBlock("wireless_port", () -> new WirelessBlock(
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_LIGHT_BLUE)
                     .strength(2.0F)

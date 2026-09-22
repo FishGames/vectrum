@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#all"
+        },
+        "east": {
+          "texture": "#all"
+        },
+        "up": {
+          "texture": "#all"
+        },
+        "west": {
+          "texture": "#all"
+        }
+      },
+      "from": [
+        3,
+        3,
+        0
+      ],
+      "to": [
+        13,
+        13,
+        3
+      ]
+    }
+  ],
+  "textures": {
+    "all": "vectrum:block/universal_cable",
+    "particle": "vectrum:block/universal_cable"
+  }
+}

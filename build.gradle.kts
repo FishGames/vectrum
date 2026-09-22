@@ -64,6 +64,26 @@ repositories {
         name = "ModMaven"
         content { includeGroup("mekanism") }
     }
+    maven("https://api.modrinth.com/maven") { // Jade
+        name = "Modrinth"
+        content { includeGroup("maven.modrinth") }
+    }
+    maven("https://maven.bai.lol") { // WTHIT
+        name = "Bai"
+        content { includeGroup("mcp.mobius.waila") }
+    }
+    maven("https://maven.blamejared.com/") { // JEI
+        name = "BlameJared"
+        content { includeGroup("mezz.jei") }
+    }
+    maven("https://maven.terraformersmc.com/releases/") { // EMI
+        name = "TerraformersMC"
+        content { includeGroup("dev.emi") }
+    }
+    maven("https://maven.k-4u.nl/") { // The One Probe
+        name = "K4U"
+        content { includeGroup("mcjty.theoneprobe") }
+    }
 }
 
 loom {
@@ -97,6 +117,34 @@ fun DependencyHandlerScope.mekanism() {
     "modCompileOnly"("mekanism:Mekanism:$version:api")
     if (project.hasProperty("withMekanism")) {
         "modRuntimeOnly"("mekanism:Mekanism:$version")
+    }
+}
+
+/** Integrations with the full jar at runtime, chosen with -PruntimeMods=jade,wthit,jei,emi,top (dev runs only). */
+val runtimeMods = (optProp("runtimeMods") ?: "").split(',').filter { it.isNotBlank() }
+
+/** Tooltip mods and recipe viewers: compile-only API; full jar at runtime when named in -PruntimeMods. */
+fun DependencyHandlerScope.integrations() {
+    fun add(name: String, compile: List<String>, runtime: List<String>) {
+        compile.forEach { "modCompileOnly"(it) { isTransitive = false } }
+        if (name in runtimeMods) runtime.forEach { "modRuntimeOnly"(it) { isTransitive = false } }
+    }
+    val platform = if (isFabric) "fabric" else "forge"
+    optProp("jade_version")?.let { add("jade", listOf("maven.modrinth:jade:$it"), listOf("maven.modrinth:jade:$it")) }
+    optProp("wthit_version")?.let {
+        val runtime = mutableListOf("mcp.mobius.waila:wthit:$it")
+        optProp("badpackets_version")?.let { bad -> runtime.add("maven.modrinth:badpackets:$bad") } // WTHIT on Fabric needs it
+        add("wthit", listOf("mcp.mobius.waila:wthit-api:$it"), runtime)
+    }
+    optProp("jei_version")?.let {
+        add("jei", listOf("mezz.jei:jei-$mcVersion-common-api:$it", "mezz.jei:jei-$mcVersion-$platform-api:$it"),
+                listOf("mezz.jei:jei-$mcVersion-$platform:$it"))
+    }
+    optProp("emi_version")?.let {
+        add("emi", listOf("dev.emi:emi-$platform:$it:api"), listOf("dev.emi:emi-$platform:$it"))
+    }
+    optProp("top_version")?.let {
+        add("top", listOf("mcjty.theoneprobe:theoneprobe:$it"), listOf("mcjty.theoneprobe:theoneprobe:$it"))
     }
 }
 
@@ -135,6 +183,8 @@ dependencies {
 
         else -> error("Unknown loader: $loader")
     }
+
+    integrations()
 
     // Tests of the Minecraft-free "core" package
     "testImplementation"(platform("org.junit:junit-bom:5.14.4"))

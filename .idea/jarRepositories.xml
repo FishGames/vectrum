@@ -71,5 +71,30 @@
       <option name="name" value="ModMaven" />
       <option name="url" value="https://modmaven.dev/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="Modrinth" />
+      <option name="name" value="Modrinth" />
+      <option name="url" value="https://api.modrinth.com/maven" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="Bai" />
+      <option name="name" value="Bai" />
+      <option name="url" value="https://maven.bai.lol" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="BlameJared" />
+      <option name="name" value="BlameJared" />
+      <option name="url" value="https://maven.blamejared.com/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="TerraformersMC" />
+      <option name="name" value="TerraformersMC" />
+      <option name="url" value="https://maven.terraformersmc.com/releases/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="K4U" />
+      <option name="name" value="K4U" />
+      <option name="url" value="https://maven.k-4u.nl/" />
+    </remote-repository>
   </component>
 </project>

@@ -1,6 +1,7 @@
 package io.github.fishgames.vectrum.block;
 
 import io.github.fishgames.vectrum.core.network.NodeKind;
+import io.github.fishgames.vectrum.gui.EndpointMenu;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
 import io.github.fishgames.vectrum.core.upgrade.Upgrades;
@@ -16,8 +17,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -26,10 +31,12 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -72,15 +79,29 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     private final boolean signal;
     private final ShapeSpec selectionSpec;
     private final ShapeSpec collisionSpec;
+    /** Placement/interaction shape while a matching item is held, or {@code null} for a fixed shape. */
+    private final ShapeSpec expandedSelectionSpec;
     private final ConcurrentMap<Integer, VoxelShape> selectionShapes = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, VoxelShape> expandedSelectionShapes = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, VoxelShape> collisionShapes = new ConcurrentHashMap<>();
 
     protected ConduitBlock(List<TransportType> types, Properties properties, ShapeSpec selection, ShapeSpec collision) {
+        this(types, properties, selection, collision, null);
+    }
+
+    /**
+     * @param expandedSelection placement/interaction shape used while the player holds the wrench, a cable, a coder
+     *                          or a wireless port ({@link #isExpandTrigger}); {@code null} keeps {@code selection}
+     *                          fixed regardless of the held item.
+     */
+    protected ConduitBlock(List<TransportType> types, Properties properties, ShapeSpec selection, ShapeSpec collision,
+                           ShapeSpec expandedSelection) {
         super(properties);
         this.types = List.copyOf(types);
         this.signal = types.size() == 1 && types.get(0).behavior() == TransportType.Behavior.SIGNAL;
         this.selectionSpec = selection;
         this.collisionSpec = collision;
+        this.expandedSelectionSpec = expandedSelection;
         BlockState state = stateDefinition.any();
         for (EnumProperty<Connection> property : SIDES) {
             state = state.setValue(property, Connection.NONE);
@@ -257,7 +278,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
      * Computes the {@link Connection} of every side.
      * <ul>
      *   <li>Neighbour in an unloaded chunk: side keeps its value.</li>
-     *   <li>Neighbour is a network block sharing a type: LINK.</li>
+     *   <li>Neighbour is a network block sharing a type and the side was not manually severed: LINK.</li>
      *   <li>Server only, not portless: role effective for the side; not OFF and port found: INPUT (role IN) or OUTPUT.</li>
      *   <li>Otherwise: NONE.</li>
      * </ul>
@@ -271,7 +292,8 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
                 continue;
             }
             Connection connection = Connection.NONE;
-            if (NetworkBlock.connectsAny(level.getBlockState(neighbourPos), types)) {
+            if (NetworkBlock.connectsAny(level.getBlockState(neighbourPos), types)
+                    && (networks == null || !networks.isSevered(pos, side))) {
                 connection = Connection.LINK;
             } else if (networks != null && !portless()) {
                 EndpointMode mode = effectiveMode(networks, level, pos, side);
@@ -355,7 +377,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
      * Removal (block replaced by another block).
      * <ul>
      *   <li>Removes the node and throughput per type.</li>
-     *   <li>Clears modes, frequency, settings and signal output.</li>
+     *   <li>Clears modes, frequency, severed sides, settings and signal output.</li>
      *   <li>Drops the installed upgrades.</li>
      * </ul>
      */
@@ -370,6 +392,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
             }
             networks.clearModes(pos);
             networks.clearFrequency(pos);
+            networks.clearSevered(pos);
             networks.clearSettings(pos);
             networks.setSignalOutput(pos, 0);
             // Upgrade drops
@@ -428,26 +451,40 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
      * </ul>
      */
     public Direction pickSide(Level level, BlockPos pos, BlockState state, Vec3 hit, Direction clickedFace) {
+        Direction best = guiSide(level, pos, state, hit);
+        return best != null ? best : clickedFace;
+    }
+
+    /** Non-link side with an inventory closest to the hit point, or {@code null} when there is none. */
+    public Direction guiSide(Level level, BlockPos pos, BlockState state, Vec3 hit) {
         double x = hit.x - pos.getX() - 0.5;
         double y = hit.y - pos.getY() - 0.5;
         double z = hit.z - pos.getZ() - 0.5;
 
         Direction best = null;
         double bestScore = Double.NEGATIVE_INFINITY;
-        for (Direction side : Sides.ALL) {
-            if (connection(state, side) == Connection.LINK || !hasInventory(level, pos, state, side)) {
-                continue;
-            }
+        for (Direction side : portSides(level, pos, state)) {
             double score = x * side.getStepX() + y * side.getStepY() + z * side.getStepZ();
             if (score > bestScore) {
                 bestScore = score;
                 best = side;
             }
         }
-        return best != null ? best : clickedFace;
+        return best;
     }
 
-    private boolean hasInventory(Level level, BlockPos pos, BlockState state, Direction side) {
+    /** Non-link sides with an inventory (including switched-off ones), in {@link Sides#ALL} order. */
+    public List<Direction> portSides(Level level, BlockPos pos, BlockState state) {
+        List<Direction> result = new ArrayList<>();
+        for (Direction side : Sides.ALL) {
+            if (connection(state, side) != Connection.LINK && hasInventory(level, pos, state, side)) {
+                result.add(side);
+            }
+        }
+        return result;
+    }
+
+    public boolean hasInventory(Level level, BlockPos pos, BlockState state, Direction side) {
         if (connection(state, side) != Connection.NONE) {
             return connection(state, side) != Connection.LINK;
         }
@@ -471,9 +508,28 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     }
 
     /**
+     * Sets or clears the manually severed flag of a link side. When the neighbour at that side is a matching
+     * {@link NetworkBlock}, the flag is set symmetrically on its opposite-facing side too, so the two blocks agree on
+     * the link. Refreshes both blocks afterwards so the network graph and the rendered state pick up the change.
+     */
+    private void setSevered(ServerLevel level, BlockPos pos, Direction side, boolean severed) {
+        LevelNetworks networks = LevelNetworks.get(level);
+        networks.setSevered(pos, side, severed);
+        BlockPos neighbourPos = pos.relative(side);
+        if (NetworkBlock.connectsAny(level.getBlockState(neighbourPos), types)) {
+            networks.setSevered(neighbourPos, side.getOpposite(), severed);
+        }
+        refresh(level, pos);
+        if (level.getBlockState(neighbourPos).getBlock() instanceof ConduitBlock neighbourConduit) {
+            neighbourConduit.refresh(level, neighbourPos);
+        }
+    }
+
+    /**
      * Wrench click.
      * <ul>
-     *   <li>Link side: sends the link message.</li>
+     *   <li>Link side: severs it from its neighbour so the two networks no longer merge here.</li>
+     *   <li>Previously severed side: reconnects it.</li>
      *   <li>Side without inventory: sends the no-inventory message.</li>
      *   <li>Otherwise: advances the role of the side and sends the role message.</li>
      * </ul>
@@ -484,19 +540,52 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
         }
         BlockState state = level.getBlockState(pos);
         Component sideName = Component.translatable("direction.vectrum." + side.getName());
+        LevelNetworks networks = LevelNetworks.get(server);
         if (connection(state, side) == Connection.LINK) {
-            player.displayClientMessage(Component.translatable("message.vectrum.endpoint_link", sideName), true);
+            setSevered(server, pos, side, true);
+            player.displayClientMessage(Component.translatable("message.vectrum.link_severed", sideName), true);
+            return;
+        }
+        if (networks.isSevered(pos, side)) {
+            setSevered(server, pos, side, false);
+            player.displayClientMessage(Component.translatable("message.vectrum.link_restored", sideName), true);
             return;
         }
         if (!hasInventory(level, pos, state, side)) {
             player.displayClientMessage(Component.translatable("message.vectrum.no_inventory"), true);
             return;
         }
-        LevelNetworks networks = LevelNetworks.get(server);
         EndpointMode next = effectiveMode(networks, level, pos, side).next();
         setRole(server, pos, side, next);
         player.displayClientMessage(Component.translatable("message.vectrum.endpoint_mode",
                 sideName, Component.translatable(roleKey(next))), true);
+    }
+
+    /**
+     * Empty-hand click on the main hand: opens the endpoint screen.
+     * <ul>
+     *   <li>Blocks without screen and clicks with an item: no action, the item handles the click.</li>
+     *   <li>Cables: the side is the inventory side closest to the hit point; without one a message is sent.</li>
+     * </ul>
+     */
+    @Override
+    @SuppressWarnings("deprecation")
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+                                 BlockHitResult hit) {
+        if (EndpointMenu.kindOf(state) == null || hand != InteractionHand.MAIN_HAND
+                || !player.getItemInHand(hand).isEmpty()) {
+            return InteractionResult.PASS;
+        }
+        if (level instanceof ServerLevel server && player instanceof ServerPlayer serverPlayer) {
+            Direction side = this instanceof CoderBlock ? hit.getDirection()
+                    : guiSide(level, pos, state, hit.getLocation());
+            if (side == null) {
+                player.displayClientMessage(Component.translatable("message.vectrum.no_inventory"), true);
+            } else {
+                EndpointMenu.open(serverPlayer, server, pos, side);
+            }
+        }
+        return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
     // Redstone output
@@ -524,10 +613,52 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
 
     // Shape
 
+    /** Items that widen the placement/interaction shape ({@link #isExpandTrigger}); built once, lazily. */
+    private static List<Item> expandTriggerItems;
+
+    private static List<Item> expandTriggerItems() {
+        List<Item> items = expandTriggerItems;
+        if (items == null) {
+            List<Item> built = new ArrayList<>(List.of(ModItems.WRENCH.get(), ModItems.ITEM_CABLE.get(),
+                    ModItems.FLUID_CABLE.get(), ModItems.ENERGY_CABLE.get(), ModItems.REDSTONE_CABLE.get(),
+                    ModItems.UNIVERSAL_CABLE.get(), ModItems.DIGITAL_CABLE.get(), ModItems.CODER.get(),
+                    ModItems.WIRELESS_PORT.get()));
+            if (ModItems.GAS_CABLE != null) {
+                built.add(ModItems.GAS_CABLE.get());
+            }
+            items = List.copyOf(built);
+            expandTriggerItems = items;
+        }
+        return items;
+    }
+
+    /** Whether the clicking entity holds the wrench, a cable, a coder or a wireless port. */
+    private static boolean isExpandTrigger(CollisionContext context) {
+        for (Item item : expandTriggerItems()) {
+            if (context.isHoldingItem(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Placement/interaction shape: decides what the crosshair hits here, so it governs opening the port screen, the
+     * wrench, and targeting through or against this block while placing or breaking something else.
+     * <ul>
+     *   <li>No {@link #expandedSelectionSpec} (universal cable, digital cable, item endpoint): always {@link #selectionSpec}.</li>
+     *   <li>Otherwise: {@link #expandedSelectionSpec} while the wrench, a cable, a coder or a wireless port is held
+     *       ({@link #isExpandTrigger}), so the network stays easy to extend; {@link #selectionSpec} (matching the
+     *       rendered model) the rest of the time, so an empty hand or an unrelated item can click past the cable.</li>
+     * </ul>
+     */
     @Override
     @SuppressWarnings("deprecation")
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         int key = linkMask(state) | (portMask(state) << 6);
+        if (expandedSelectionSpec != null && isExpandTrigger(context)) {
+            return expandedSelectionShapes.computeIfAbsent(key, expandedSelectionSpec::build);
+        }
         return selectionShapes.computeIfAbsent(key, selectionSpec::build);
     }
 

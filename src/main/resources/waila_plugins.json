@@ -1,0 +1,11 @@
+{
+  "vectrum:plugin": {
+    "entrypoints": {
+      "client": "io.github.fishgames.vectrum.compat.wthit.VectrumWthitPlugin"
+    },
+    "side": "client",
+    "required": [
+      "vectrum"
+    ]
+  }
+}

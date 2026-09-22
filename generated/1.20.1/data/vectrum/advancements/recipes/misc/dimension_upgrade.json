@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_copper_ingot": {
+    "has_ender_eye": {
       "conditions": {
         "items": [
           {
             "items": [
-              "minecraft:copper_ingot"
+              "minecraft:ender_eye"
             ]
           }
         ]
@@ -22,7 +22,7 @@
   },
   "requirements": [
     [
-      "has_copper_ingot",
+      "has_ender_eye",
       "has_the_recipe"
     ]
   ],

@@ -13,6 +13,18 @@
     "main": [
       "io.github.fishgames.vectrum.platform.fabric.VectrumFabric"
     ],
+    "client": [
+      "io.github.fishgames.vectrum.platform.fabric.VectrumFabricClient"
+    ],
+    "jade": [
+      "io.github.fishgames.vectrum.compat.jade.VectrumJadePlugin"
+    ],
+    "jei_mod_plugin": [
+      "io.github.fishgames.vectrum.compat.jei.VectrumJeiPlugin"
+    ],
+    "emi": [
+      "io.github.fishgames.vectrum.compat.emi.VectrumEmiPlugin"
+    ],
     "fabric-datagen": [
       "io.github.fishgames.vectrum.platform.fabric.VectrumFabricDataGenerator"
     ]

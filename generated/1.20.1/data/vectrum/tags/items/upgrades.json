@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "vectrum:throughput_upgrade",
+    "vectrum:speed_upgrade",
+    "vectrum:types_upgrade",
+    "vectrum:filter_upgrade",
+    "vectrum:priority_upgrade",
+    "vectrum:dimension_upgrade"
+  ]
+}

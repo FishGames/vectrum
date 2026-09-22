@@ -20,8 +20,6 @@ public final class ModItems {
     private static final List<Registered<Item>> ALL = new ArrayList<>();
     private static final List<Registered<Item>> PLAIN = new ArrayList<>();
 
-    public static final Registered<Item> EXAMPLE_ITEM = plainItem("example_item", () -> new Item(new Item.Properties()));
-    public static final Registered<Item> EXAMPLE_BLOCK_ITEM = blockItem(ModBlocks.EXAMPLE_BLOCK);
     public static final Registered<Item> ITEM_CABLE = blockItem(ModBlocks.ITEM_CABLE);
     public static final Registered<Item> FLUID_CABLE = blockItem(ModBlocks.FLUID_CABLE);
     public static final Registered<Item> ENERGY_CABLE = blockItem(ModBlocks.ENERGY_CABLE);

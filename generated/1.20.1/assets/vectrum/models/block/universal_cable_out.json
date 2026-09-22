@@ -1,0 +1,65 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#all"
+        },
+        "east": {
+          "texture": "#all"
+        },
+        "up": {
+          "texture": "#all"
+        },
+        "west": {
+          "texture": "#all"
+        }
+      },
+      "from": [
+        3,
+        3,
+        0
+      ],
+      "to": [
+        13,
+        13,
+        3
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#port"
+        },
+        "east": {
+          "texture": "#port"
+        },
+        "south": {
+          "texture": "#port"
+        },
+        "up": {
+          "texture": "#port"
+        },
+        "west": {
+          "texture": "#port"
+        }
+      },
+      "from": [
+        2,
+        2,
+        0
+      ],
+      "to": [
+        14,
+        14,
+        1
+      ]
+    }
+  ],
+  "textures": {
+    "all": "vectrum:block/universal_cable",
+    "particle": "vectrum:block/universal_cable",
+    "port": "vectrum:block/item_endpoint_out"
+  }
+}

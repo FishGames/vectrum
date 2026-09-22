@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "vectrum:item_cable",
+    "vectrum:fluid_cable",
+    "vectrum:energy_cable",
+    "vectrum:redstone_cable",
+    "vectrum:universal_cable",
+    "vectrum:digital_cable",
+    {
+      "id": "vectrum:gas_cable",
+      "required": false
+    }
+  ]
+}

@@ -1,8 +1,6 @@
 package io.github.fishgames.vectrum.datagen;
 
-import io.github.fishgames.vectrum.Vectrum;
 import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
-import io.github.fishgames.vectrum.registry.ModBlocks;
 import io.github.fishgames.vectrum.registry.ModItems;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.FinishedRecipe;
@@ -23,28 +21,6 @@ public final class ModRecipeProvider extends RecipeProvider {
 
     @Override
     public void buildRecipes(Consumer<FinishedRecipe> writer) {
-        // Example item
-        ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, ModItems.EXAMPLE_ITEM.get())
-                .requires(Items.DIAMOND)
-                .requires(Items.REDSTONE)
-                .unlockedBy(getHasName(Items.DIAMOND), has(Items.DIAMOND))
-                .save(writer);
-
-        // Example block
-        ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, ModBlocks.EXAMPLE_BLOCK.get())
-                .pattern("###")
-                .pattern("###")
-                .pattern("###")
-                .define('#', ModItems.EXAMPLE_ITEM.get())
-                .unlockedBy(getHasName(ModItems.EXAMPLE_ITEM.get()), has(ModItems.EXAMPLE_ITEM.get()))
-                .save(writer);
-
-        // Example item from example block
-        ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, ModItems.EXAMPLE_ITEM.get(), 9)
-                .requires(ModBlocks.EXAMPLE_BLOCK.get())
-                .unlockedBy(getHasName(ModBlocks.EXAMPLE_BLOCK.get()), has(ModBlocks.EXAMPLE_BLOCK.get()))
-                .save(writer, Vectrum.id("example_item_from_example_block"));
-
         // Item cable
         ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, ModItems.ITEM_CABLE.get(), 6)
                 .pattern("ICI")
@@ -110,7 +86,7 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .save(writer);
 
         // Universal cable
-        ShapelessRecipeBuilder.shapeless(RecipeCategory.REDSTONE, ModItems.UNIVERSAL_CABLE.get(), 2)
+        ShapelessRecipeBuilder.shapeless(RecipeCategory.REDSTONE, ModItems.UNIVERSAL_CABLE.get())
                 .requires(ModItems.ITEM_CABLE.get())
                 .requires(ModItems.FLUID_CABLE.get())
                 .requires(ModItems.ENERGY_CABLE.get())
@@ -148,22 +124,32 @@ public final class ModRecipeProvider extends RecipeProvider {
                 .save(writer);
 
         // Upgrades
-        upgrade(writer, UpgradeType.THROUGHPUT, Items.HOPPER, Items.REDSTONE);
-        upgrade(writer, UpgradeType.SPEED, Items.SUGAR, Items.REDSTONE);
-        upgrade(writer, UpgradeType.TYPES, Items.CHEST, Items.REDSTONE);
-        upgrade(writer, UpgradeType.FILTER, Items.PAPER, Items.REDSTONE);
-        upgrade(writer, UpgradeType.PRIORITY, Items.GOLD_INGOT, Items.REDSTONE);
-        upgrade(writer, UpgradeType.DIMENSION, Items.ENDER_PEARL, Items.REDSTONE);
+        upgrade(writer, UpgradeType.THROUGHPUT, Items.IRON_INGOT, Items.HOPPER);
+        upgrade(writer, UpgradeType.SPEED, Items.COPPER_INGOT, Items.CLOCK);
+        upgrade(writer, UpgradeType.TYPES, Items.IRON_INGOT, Items.CHEST);
+        upgrade(writer, UpgradeType.FILTER, Items.COPPER_INGOT, Items.PAPER);
+        upgrade(writer, UpgradeType.PRIORITY, Items.COPPER_INGOT, Items.GOLD_INGOT);
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, ModItems.upgrade(UpgradeType.DIMENSION))
+                .pattern("DGD")
+                .pattern("GEG")
+                .pattern("DGD")
+                .define('D', Items.DIAMOND)
+                .define('G', Items.GOLD_INGOT)
+                .define('E', Items.ENDER_EYE)
+                .unlockedBy(getHasName(Items.ENDER_EYE), has(Items.ENDER_EYE))
+                .save(writer);
     }
 
-    /** Shapeless upgrade recipe. */
-    private void upgrade(Consumer<FinishedRecipe> writer, UpgradeType type, Item mark, Item dust) {
-        ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, ModItems.upgrade(type))
-                .requires(mark)
-                .requires(dust)
-                .requires(Items.COPPER_INGOT)
-                .requires(Items.IRON_INGOT)
-                .unlockedBy(getHasName(Items.COPPER_INGOT), has(Items.COPPER_INGOT))
+    /** Upgrade ring: metal in the corners, redstone at the sides, the marker item in the centre. */
+    private void upgrade(Consumer<FinishedRecipe> writer, UpgradeType type, Item metal, Item marker) {
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, ModItems.upgrade(type))
+                .pattern("MRM")
+                .pattern("RXR")
+                .pattern("MRM")
+                .define('M', metal)
+                .define('R', Items.REDSTONE)
+                .define('X', marker)
+                .unlockedBy(getHasName(metal), has(metal))
                 .save(writer);
     }
 }

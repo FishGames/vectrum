@@ -9,7 +9,6 @@ import io.github.fishgames.vectrum.core.routing.Router;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.transfer.Port;
 import io.github.fishgames.vectrum.transfer.Ports;
-import io.github.fishgames.vectrum.transfer.ResourceIds;
 import io.github.fishgames.vectrum.world.LevelNetworks;
 import io.github.fishgames.vectrum.world.Sides;
 import net.minecraft.core.BlockPos;
@@ -150,6 +149,10 @@ public final class Transport {
                 });
 
         // 3. hits and misses
+        networks.noteTransfer(pos, side, type, now, budget, moved);
+        for (Target target : accepted) {
+            LevelNetworks.get(target.level()).noteReceived(target.endpoint(), target.side(), type, now);
+        }
         if (moved > 0) {
             for (Target target : asked) {
                 if (accepted.contains(target)) {
@@ -161,9 +164,8 @@ public final class Transport {
         }
     }
 
-    /** Filter entries of this type only ({@link ResourceFilter#restrictedTo}). */
     private static ResourceFilter forType(TransportType type, ResourceFilter filter) {
-        return filter.isEmpty() ? filter : filter.restrictedTo(id -> ResourceIds.belongsTo(type, id));
+        return Filters.forType(type, filter);
     }
 
     /** Combined source and target filter. */

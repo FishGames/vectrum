@@ -69,6 +69,7 @@ public final class LevelNetworks extends SavedData {
     private static final String TAG_UPGRADES = "upgrades";
     private static final String TAG_COUNTS = "counts";
     private static final String TAG_FREQUENCIES = "frequencies";
+    private static final String TAG_SEVERED = "severed";
     private static final byte UNSET_MODE = -1;
     private static final int ENDPOINT_FLAG = 0x40;
     private static final int MASK_BITS = 0x3F;
@@ -83,6 +84,9 @@ public final class LevelNetworks extends SavedData {
 
     /** Coder frequencies (non-zero only). Key: BlockPos.asLong(). */
     private final Map<Long, Integer> frequencies = new HashMap<>();
+
+    /** Manually severed link sides, as a bit mask (non-zero only). Key: BlockPos.asLong(). */
+    private final Map<Long, Integer> severed = new HashMap<>();
 
     /** Current redstone outputs (non-zero only, not persisted). Key: BlockPos.asLong(). */
     private final Map<Long, Integer> signalOutputs = new HashMap<>();
@@ -235,6 +239,37 @@ public final class LevelNetworks extends SavedData {
         }
     }
 
+    // Manually severed link sides
+
+    /** Whether this side was manually severed from its neighbour with the wrench. */
+    public boolean isSevered(BlockPos pos, Direction side) {
+        int mask = severed.getOrDefault(pos.asLong(), 0);
+        return (mask & (1 << side.get3DDataValue())) != 0;
+    }
+
+    public void setSevered(BlockPos pos, Direction side, boolean value) {
+        long key = pos.asLong();
+        int mask = severed.getOrDefault(key, 0);
+        int bit = 1 << side.get3DDataValue();
+        int updated = value ? (mask | bit) : (mask & ~bit);
+        if (updated == mask) {
+            return;
+        }
+        if (updated == 0) {
+            severed.remove(key);
+        } else {
+            severed.put(key, updated);
+        }
+        changed();
+    }
+
+    /** Removes all severed sides of a block. */
+    public void clearSevered(BlockPos pos) {
+        if (severed.remove(pos.asLong()) != null) {
+            changed();
+        }
+    }
+
     // Redstone outputs
 
     /** Current output signal strength of this block (0 to 15). */
@@ -282,6 +317,7 @@ public final class LevelNetworks extends SavedData {
 
     /** Removes settings and round-robin pointers of a block. */
     public void clearSettings(BlockPos pos) {
+        clearFlow(pos);
         BlockCoord coord = coord(pos);
         boolean removedSettings = settings.clear(coord);
         boolean removedPointers = pointers.clear(coord);
@@ -390,6 +426,78 @@ public final class LevelNetworks extends SavedData {
     private static SleepKey sleepKey(BlockPos source, Direction sourceSide, Target target) {
         return new SleepKey(source.asLong(), sourceSide.get3DDataValue(), target.level().dimension().location().hashCode(),
                 target.endpoint().asLong(), target.side().get3DDataValue());
+    }
+
+    // Flow records
+
+    /** Key of a flow record: block, side and type. */
+    private record FlowKey(long pos, int side, String type) {
+    }
+
+    /**
+     * Last transfer of a source side.
+     *
+     * @param tick        game tick of the transfer
+     * @param budget      throughput limit of the transfer
+     * @param moved       units moved
+     * @param rate        units per second over the last full window
+     */
+    public record TransferRecord(long tick, long budget, long moved, long windowStart, long windowMoved, double rate) {
+    }
+
+    /** Length of a rate window in ticks. */
+    private static final long RATE_WINDOW = 100;
+    /** Ticks after which a rate counts as zero. */
+    private static final long RATE_EXPIRY = 200;
+
+    private final Map<FlowKey, TransferRecord> transfers = new HashMap<>();
+    private final Map<FlowKey, Long> receipts = new HashMap<>();
+
+    /** Records a transfer attempt of a source side. */
+    public void noteTransfer(BlockPos pos, Direction side, TransportType type, long now, long budget, long moved) {
+        FlowKey key = new FlowKey(pos.asLong(), side.get3DDataValue(), type.id());
+        TransferRecord before = transfers.get(key);
+        long windowStart = before == null ? now : before.windowStart();
+        long windowMoved = before == null ? 0 : before.windowMoved();
+        double rate = before == null ? 0 : before.rate();
+        if (now - windowStart >= RATE_WINDOW) {
+            rate = windowMoved * 20.0 / (now - windowStart);
+            windowStart = now;
+            windowMoved = 0;
+        }
+        transfers.put(key, new TransferRecord(now, budget, moved, windowStart, windowMoved + moved, rate));
+    }
+
+    /** Last transfer of a source side, or {@code null}. */
+    public TransferRecord lastTransfer(BlockPos pos, Direction side, TransportType type) {
+        return transfers.get(new FlowKey(pos.asLong(), side.get3DDataValue(), type.id()));
+    }
+
+    /** Units per second moved by a source side lately. */
+    public double rate(BlockPos pos, Direction side, TransportType type, long now) {
+        TransferRecord record = lastTransfer(pos, side, type);
+        if (record == null || now - record.tick() > RATE_EXPIRY) {
+            return 0;
+        }
+        long span = Math.max(1, now - record.windowStart());
+        double current = record.windowMoved() * 20.0 / Math.max(span, RATE_WINDOW / 2);
+        return Math.max(record.rate(), current);
+    }
+
+    /** Records that goods arrived at a target side. */
+    public void noteReceived(BlockPos pos, Direction side, TransportType type, long now) {
+        receipts.put(new FlowKey(pos.asLong(), side.get3DDataValue(), type.id()), now);
+    }
+
+    /** Tick of the last delivery to a target side, or -1. */
+    public long lastReceived(BlockPos pos, Direction side, TransportType type) {
+        return receipts.getOrDefault(new FlowKey(pos.asLong(), side.get3DDataValue(), type.id()), -1L);
+    }
+
+    private void clearFlow(BlockPos pos) {
+        long key = pos.asLong();
+        transfers.keySet().removeIf(flow -> flow.pos() == key);
+        receipts.keySet().removeIf(flow -> flow.pos() == key);
     }
 
     // Throughput limit
@@ -623,6 +731,38 @@ public final class LevelNetworks extends SavedData {
         return result;
     }
 
+    /** Networks of {@code type} reachable from {@code network}: the network itself and its coder partners. */
+    public List<Network> coupledNetworks(ServerLevel level, TransportType type, Network network) {
+        List<Network> networks = new ArrayList<>();
+        networks.add(network);
+        if (type.behavior() == TransportType.Behavior.QUANTITY && registry.hasLayer(TransportType.DIGITAL.id())) {
+            networks.addAll(partnerNetworks(level, type, network));
+        }
+        return networks;
+    }
+
+    /** Endpoints of the coupled networks that lie in unloaded chunks. */
+    public int unloadedEndpoints(ServerLevel level, TransportType type, Network network) {
+        int count = 0;
+        for (Network part : coupledNetworks(level, type, network)) {
+            for (BlockCoord coord : part.endpointPositions()) {
+                if (!level.hasChunkAt(toPos(coord))) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    /** Source sides in the coupled networks (loaded chunks only). */
+    public int sourceCount(ServerLevel level, TransportType type, Network network) {
+        int count = 0;
+        for (Network part : coupledNetworks(level, type, network)) {
+            count += countPorts(level, type, part)[0];
+        }
+        return count;
+    }
+
     /** Sorted distinct frequencies of all coders in the digital network of this block. */
     public List<Integer> digitalFrequencies(BlockPos pos) {
         Network digital = registry.networkAt(TransportType.DIGITAL.id(), coord(pos));
@@ -729,6 +869,7 @@ public final class LevelNetworks extends SavedData {
      * <li>{@code pointers}: per port key, side, round-robin value</li>
      * <li>{@code upgrades}: per block, upgrade counts</li>
      * <li>{@code frequencies}: per coder, frequency</li>
+     * <li>{@code severed}: per block, manually severed side mask</li>
      * </ul>
      * Signal outputs, back-off state and caches are not written.
      */
@@ -834,6 +975,15 @@ public final class LevelNetworks extends SavedData {
             savedFrequencies.add(item);
         }
         tag.put(TAG_FREQUENCIES, savedFrequencies);
+
+        ListTag savedSevered = new ListTag();
+        for (Map.Entry<Long, Integer> entry : severed.entrySet()) {
+            CompoundTag item = new CompoundTag();
+            item.putLong(TAG_POS, entry.getKey());
+            item.putInt(TAG_VALUE, entry.getValue());
+            savedSevered.add(item);
+        }
+        tag.put(TAG_SEVERED, savedSevered);
         return tag;
     }
 
@@ -941,6 +1091,14 @@ public final class LevelNetworks extends SavedData {
             CompoundTag item = savedFrequencies.getCompound(i);
             if (item.getInt(TAG_VALUE) > 0) {
                 networks.frequencies.put(item.getLong(TAG_POS), item.getInt(TAG_VALUE));
+            }
+        }
+        ListTag savedSevered = tag.getList(TAG_SEVERED, Tag.TAG_COMPOUND);
+        for (int i = 0; i < savedSevered.size(); i++) {
+            CompoundTag item = savedSevered.getCompound(i);
+            int mask = item.getInt(TAG_VALUE) & MASK_BITS;
+            if (mask != 0) {
+                networks.severed.put(item.getLong(TAG_POS), mask);
             }
         }
         Vectrum.LOGGER.debug("Loaded networks of {}: {} nodes, {} port mode entries",

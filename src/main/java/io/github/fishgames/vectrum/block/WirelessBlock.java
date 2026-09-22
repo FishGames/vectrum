@@ -2,6 +2,7 @@ package io.github.fishgames.vectrum.block;
 
 import io.github.fishgames.vectrum.Modules;
 import io.github.fishgames.vectrum.core.network.NodeKind;
+import io.github.fishgames.vectrum.gui.EndpointMenu;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
 import io.github.fishgames.vectrum.core.upgrade.Upgrades;
@@ -14,12 +15,16 @@ import io.github.fishgames.vectrum.world.WirelessRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 
 import java.util.List;
 
@@ -160,6 +165,20 @@ public class WirelessBlock extends Block implements NetworkBlock {
         if (!level.getBlockTicks().hasScheduledTick(pos, this)) {
             level.scheduleTick(pos, this, ConduitBlock.INTERVAL);
         }
+    }
+
+    /** Empty-hand click on the main hand: opens the wireless screen with the clicked face as the side. */
+    @Override
+    @SuppressWarnings("deprecation")
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+                                 BlockHitResult hit) {
+        if (hand != InteractionHand.MAIN_HAND || !player.getItemInHand(hand).isEmpty()) {
+            return InteractionResult.PASS;
+        }
+        if (level instanceof ServerLevel server && player instanceof ServerPlayer serverPlayer) {
+            EndpointMenu.open(serverPlayer, server, pos, hit.getDirection());
+        }
+        return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
     // Wrench

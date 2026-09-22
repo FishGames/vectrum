@@ -34,10 +34,6 @@ public final class ModLanguageProvider implements DataProvider {
         boolean german = locale.equals("de_de");
 
         out.accept("itemGroup." + Vectrum.MOD_ID + ".main", Vectrum.MOD_NAME);
-        out.accept(Util.makeDescriptionId("item", ModItems.EXAMPLE_ITEM.id()),
-                german ? "Beispielgegenstand" : "Example Item");
-        out.accept(Util.makeDescriptionId("block", ModBlocks.EXAMPLE_BLOCK.id()),
-                german ? "Beispielblock" : "Example Block");
 
         out.accept(Util.makeDescriptionId("block", ModBlocks.ITEM_CABLE.id()),
                 german ? "Item-Kabel" : "Item Cable");
@@ -114,8 +110,11 @@ public final class ModLanguageProvider implements DataProvider {
         // Action bar messages
         out.accept("message." + Vectrum.MOD_ID + ".endpoint_mode",
                 german ? "Seite %s: %s" : "Side %s: %s");
-        out.accept("message." + Vectrum.MOD_ID + ".endpoint_link",
-                german ? "Seite %s ist mit einem Kabel verbunden." : "Side %s is connected to a cable.");
+        out.accept("message." + Vectrum.MOD_ID + ".link_severed",
+                german ? "Seite %s getrennt: die Leitungen laufen jetzt unabhängig nebeneinander."
+                        : "Side %s severed: the lines now run independently next to each other.");
+        out.accept("message." + Vectrum.MOD_ID + ".link_restored",
+                german ? "Seite %s wieder verbunden." : "Side %s reconnected.");
         out.accept("message." + Vectrum.MOD_ID + ".network",
                 german ? "Netz #%s: %s Bausteine, %s Eing\u00e4nge, %s Ausg\u00e4nge, Durchsatz %s %s pro \u00dcbergabe"
                         : "Network #%s: %s blocks, %s inputs, %s outputs, throughput %s %s per transfer");
@@ -228,6 +227,79 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("mode." + Vectrum.MOD_ID + ".in_signal", german ? "Eingang (liest das Signal)" : "Input (reads the signal)");
         out.accept("mode." + Vectrum.MOD_ID + ".out_signal", german ? "Ausgang (gibt das Signal ab)" : "Output (emits the signal)");
         out.accept("mode." + Vectrum.MOD_ID + ".out", german ? "Ausgang (liefert)" : "Output (delivers items)");
+        diagnosis(out, german);
+        gui(out, german);
+    }
+
+    private static void gui(BiConsumer<String, String> out, boolean german) {
+        String prefix = "gui." + Vectrum.MOD_ID + ".";
+        out.accept(prefix + "side", german ? "Seite: %s" : "Side: %s");
+        out.accept(prefix + "probe_side", german ? "Seite %s: %s" : "Side %s: %s");
+        out.accept(prefix + "role.off", german ? "Aus" : "Off");
+        out.accept(prefix + "role.in", german ? "Eingang" : "Input");
+        out.accept(prefix + "role.out", german ? "Ausgang" : "Output");
+        out.accept(prefix + "role", german ? "Rolle: %s" : "Role: %s");
+        out.accept(prefix + "distribution", german ? "Verteilung: %s" : "Distribution: %s");
+        out.accept(prefix + "distribution.sequential", german ? "Der Reihe nach" : "Sequential");
+        out.accept(prefix + "distribution.round_robin", german ? "Abwechselnd" : "Round robin");
+        out.accept(prefix + "distribution.balanced", german ? "Ausgeglichen" : "Balanced");
+        out.accept(prefix + "priority", german ? "Priorit\u00e4t: %s" : "Priority: %s");
+        out.accept(prefix + "filter", german ? "Filter" : "Filter");
+        out.accept(prefix + "whitelist", german ? "Whitelist" : "Whitelist");
+        out.accept(prefix + "blacklist", german ? "Blacklist" : "Blacklist");
+        out.accept(prefix + "filter_count", german ? "%s (%s)" : "%s (%s)");
+        out.accept(prefix + "clear", german ? "Leeren" : "Clear");
+        out.accept(prefix + "frequency", german ? "Frequenz: %s" : "Frequency: %s");
+        out.accept(prefix + "link", german ? "%s: %s" : "%s: %s");
+        out.accept(prefix + "copy", german ? "Kopieren" : "Copy");
+        out.accept(prefix + "paste", german ? "Einf\u00fcgen" : "Paste");
+        out.accept(prefix + "no_upgrades", german ? "Keine Upgrades eingebaut" : "No upgrades installed");
+        out.accept(prefix + "upgrade_count", german ? "%s von %s eingebaut" : "%s of %s installed");
+        out.accept(prefix + "signal", german ? "Signalst\u00e4rke: %s" : "Signal strength: %s");
+        out.accept(prefix + "rate", german ? "%s: %s %s/s" : "%s: %s %s/s");
+        out.accept(prefix + "rate_short", german ? "(%s %s/s)" : "(%s %s/s)");
+        out.accept(prefix + "rate_limit", german ? "%s: %s von %s %s/s" : "%s: %s of %s %s/s");
+        out.accept(prefix + "limit", german ? "Limit: %s pro Transfer, ein Transfer alle %s Ticks" : "Limit: %s per transfer, one transfer every %s ticks");
+        out.accept(prefix + "limit_unlimited", german ? "Kein Limit pro Transfer" : "No limit per transfer");
+        out.accept(prefix + "max_types", german ? "Item-Sorten pro Transfer: %s" : "Item types per transfer: %s");
+        out.accept(prefix + "no_storage", german ? "An dieser Seite h\u00e4ngt kein Lager." : "No storage next to this side.");
+        out.accept(prefix + "coder_hint", german ? "Coder mit gleicher Frequenz in einem digitalen Netz teilen sich ihre Transportnetze." : "Coders with the same frequency in one digital network share their transport networks.");
+        out.accept(prefix + "tip.role", german ? "Klick wechselt: Ausgang, Eingang, Aus." : "Click to cycle: output, input, off.");
+        out.accept(prefix + "tip.distribution", german ? "Klick \u00e4ndert, wie die Ziele bedient werden." : "Click to change how targets are served.");
+        out.accept(prefix + "tip.filter_type", german ? "Klick wechselt zwischen Whitelist und Blacklist." : "Click to switch between whitelist and blacklist.");
+        out.accept(prefix + "tip.clear", german ? "Entfernt alle Filtereintr\u00e4ge." : "Removes all filter entries.");
+        out.accept(prefix + "tip.side", german ? "Wechselt zu einer anderen Seite." : "Switch to another side.");
+        out.accept(prefix + "tip.copy", german ? "Kopiert die Einstellungen dieser Seite." : "Copies the settings of this side.");
+        out.accept(prefix + "link.off", german ? "Aus" : "Off");
+        out.accept(prefix + "link.receive", german ? "Empfangen" : "Receive");
+        out.accept(prefix + "link.send", german ? "Senden" : "Send");
+        out.accept(prefix + "link.both", german ? "Beides" : "Both");
+        out.accept(prefix + "tip.paste", german ? "Wendet die kopierten Einstellungen an." : "Applies the copied settings.");
+        out.accept(prefix + "tip.link", german ? "Klick wechselt: Empfangen, Senden, Beides, Aus." : "Click to cycle: receive, send, both, off.");
+        out.accept(prefix + "tip.filter_slot", german ? "Mit einem Item klicken (Eimer f\u00fcr ein Fluid), um es hinzuzuf\u00fcgen. Mit leerer Hand auf einen Eintrag klicken, um ihn zu entfernen." : "Click with an item (a bucket for a fluid) to add it. Click an entry with an empty hand to remove it.");
+    }
+
+    private static void diagnosis(BiConsumer<String, String> out, boolean german) {
+        String prefix = "diagnosis." + Vectrum.MOD_ID + ".";
+        out.accept(prefix + "flowing", german ? "Es flie\u00dft" : "Flowing");
+        out.accept(prefix + "idle", german ? "Bereit (nichts zu bewegen)" : "Ready (nothing to move)");
+        out.accept(prefix + "no_network", german ? "Kein Netzwerk" : "Not in a network");
+        out.accept(prefix + "side_off", german ? "Seite ist aus" : "Side is off");
+        out.accept(prefix + "no_target", german ? "Kein Ziel" : "No target");
+        out.accept(prefix + "no_source", german ? "Keine Quelle" : "No source");
+        out.accept(prefix + "no_receiver", german ? "Kein Empf\u00e4nger" : "No receiver");
+        out.accept(prefix + "dimension_locked", german
+                ? "Empf\u00e4nger in anderen Dimensionen brauchen das Dimensions-Upgrade an beiden Enden"
+                : "Receivers in other dimensions need the dimension upgrade at both ends");
+        out.accept(prefix + "source_empty", german ? "Quelle ist leer" : "Source is empty");
+        out.accept(prefix + "target_full", german ? "Ziel ist voll" : "Target is full");
+        out.accept(prefix + "filter_blocks_all", german ? "Filter blockiert alles" : "Filter blocks everything");
+        out.accept(prefix + "target_unloaded", german ? "Ziel in nicht geladenem Chunk" : "Target in an unloaded chunk");
+        out.accept(prefix + "limit_reached", german ? "Durchsatzlimit erreicht" : "Throughput limit reached");
+        out.accept("message." + Vectrum.MOD_ID + ".diagnosis_side", german ? "Seite %s (%s):" : "Side %s (%s):");
+        out.accept("message." + Vectrum.MOD_ID + ".diagnosis_none",
+                german ? "An dieser Seite h\u00e4ngt kein Lager." : "No storage is attached to this side.");
+        out.accept("message." + Vectrum.MOD_ID + ".diagnosis_wireless", german ? "Funk-Anschluss:" : "Wireless port:");
     }
 
     private static String upgradeName(UpgradeType type, boolean german) {

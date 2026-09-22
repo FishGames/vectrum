@@ -30,7 +30,8 @@ public final class VectrumDataGen {
             new Entry(false, (output, registries) -> new LootTableProvider(output, Set.of(), List.of(
                     new LootTableProvider.SubProviderEntry(ModBlockLoot::new, LootContextParamSets.BLOCK)))),
             new Entry(false, (output, registries) -> new ModRecipeProvider(output)),
-            new Entry(false, ModBlockTagsProvider::new)
+            new Entry(false, ModBlockTagsProvider::new),
+            new Entry(false, ModItemTagsProvider::new)
     );
 
     private VectrumDataGen() {

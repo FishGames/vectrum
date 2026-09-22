@@ -48,8 +48,13 @@ public final class WirelessRegistry extends SavedData {
     private record CacheKey(int frequency, String type, String dimension, boolean crossDimension) {
     }
 
-    /** Receiving sides of a frequency; {@code complete} is {@code false} when receivers sit in unloaded chunks. */
-    public record Receivers(List<Target> targets, boolean complete) {
+    /**
+     * Receiving sides of a frequency; {@code complete} is {@code false} when receivers sit in unloaded chunks.
+     *
+     * @param unloaded receiving blocks in unloaded chunks
+     * @param locked   receiving blocks excluded by the dimension rule
+     */
+    public record Receivers(List<Target> targets, boolean complete, int unloaded, int locked) {
     }
 
     /** Cached receiver list with validity data. */
@@ -112,6 +117,17 @@ public final class WirelessRegistry extends SavedData {
         }
     }
 
+    /** Blocks of the frequency, other than {@code except}, whose mode for the type sends. */
+    public int senderCount(int frequency, TransportType type, BlockCoord except) {
+        int count = 0;
+        for (BlockCoord member : table.members(frequency)) {
+            if (!member.equals(except) && table.mode(member, type.id()).sends()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     /** Number of blocks on the frequency. */
     public int memberCount(int frequency) {
         return table.members(frequency).size();
@@ -152,6 +168,8 @@ public final class WirelessRegistry extends SavedData {
         }
 
         boolean complete = true;
+        int unloaded = 0;
+        int locked = 0;
         List<Target> result = new ArrayList<>();
         List<BlockCoord> stale = new ArrayList<>();
         for (BlockCoord member : table.receivers(frequency, type.id())) {
@@ -162,6 +180,7 @@ public final class WirelessRegistry extends SavedData {
             BlockPos pos = new BlockPos(member.x(), member.y(), member.z());
             if (!level.hasChunkAt(pos)) {
                 complete = false;
+                unloaded++;
                 continue;
             }
             if (!(level.getBlockState(pos).getBlock() instanceof WirelessBlock)) {
@@ -171,6 +190,7 @@ public final class WirelessRegistry extends SavedData {
             LevelNetworks networks = LevelNetworks.get(level);
             if (!UpgradeEffects.canLink(level.dimension().equals(senderLevel.dimension()), senderUpgrades,
                     networks.upgrades(pos))) {
+                locked++;
                 continue;
             }
             for (Direction side : Sides.ALL) {
@@ -191,7 +211,7 @@ public final class WirelessRegistry extends SavedData {
         if (!stale.isEmpty()) {
             changed();
         }
-        Receivers found = new Receivers(List.copyOf(new LinkedHashSet<>(result)), complete);
+        Receivers found = new Receivers(List.copyOf(new LinkedHashSet<>(result)), complete, unloaded, locked);
         cache.put(key, new Cached(table.version(), LevelNetworks.epoch(),
                 complete ? Long.MAX_VALUE : now + INCOMPLETE_LIFETIME, found));
         return found;

@@ -1,6 +1,7 @@
 package io.github.fishgames.vectrum.item;
 
 import io.github.fishgames.vectrum.block.CoderBlock;
+import io.github.fishgames.vectrum.block.ConduitBlock;
 import io.github.fishgames.vectrum.block.NetworkBlock;
 import io.github.fishgames.vectrum.block.WirelessBlock;
 import io.github.fishgames.vectrum.world.WirelessRegistry;
@@ -9,7 +10,9 @@ import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.logistics.Signals;
 import io.github.fishgames.vectrum.logistics.TransportDefaults;
 import io.github.fishgames.vectrum.world.LevelNetworks;
+import io.github.fishgames.vectrum.world.PortDiagnosis;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
@@ -19,6 +22,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.List;
 
 /**
  * Diagnostic tool. Right click on a cable, endpoint or wireless port shows network id, size, input and output counts
@@ -38,6 +43,8 @@ public class DiagnosticItem extends Item {
 
         if (state.getBlock() instanceof WirelessBlock && level instanceof ServerLevel server) {
             if (!level.isClientSide && player != null) {
+                sendDiagnosis(player, Component.translatable("message.vectrum.diagnosis_wireless"),
+                        PortDiagnosis.ofWireless(server, pos));
                 WirelessRegistry registry = WirelessRegistry.get(server);
                 int frequency = registry.frequency(server, pos);
                 player.displayClientMessage(Component.translatable("message.vectrum.wireless_info", frequency,
@@ -80,10 +87,30 @@ public class DiagnosticItem extends Item {
                     message.append(describe(server, networks, type, pos));
                 }
                 player.displayClientMessage(message, true);
+                if (state.getBlock() instanceof ConduitBlock conduit && !(network instanceof CoderBlock)) {
+                    Direction side = conduit.pickSide(level, pos, state, context.getClickLocation(),
+                            context.getClickedFace());
+                    sendDiagnosis(player, Component.translatable("message.vectrum.diagnosis_side",
+                            Component.translatable("direction.vectrum." + side.getName()),
+                            Component.translatable(conduit.roleKey(conduit.effectiveMode(networks, level, pos, side)))),
+                            PortDiagnosis.ofSide(server, pos, side));
+                }
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
         return InteractionResult.PASS;
+    }
+
+    private static void sendDiagnosis(Player player, Component header, List<PortDiagnosis.Entry> entries) {
+        if (entries.isEmpty()) {
+            player.sendSystemMessage(header.copy().append(" ")
+                    .append(Component.translatable("message.vectrum.diagnosis_none")));
+            return;
+        }
+        player.sendSystemMessage(header);
+        for (PortDiagnosis.Entry entry : entries) {
+            player.sendSystemMessage(Component.literal("  ").append(PortDiagnosis.text(entry)));
+        }
     }
 
     private static String shortName(TransportType type) {

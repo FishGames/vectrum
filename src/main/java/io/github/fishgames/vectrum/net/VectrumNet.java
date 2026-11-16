@@ -1,6 +1,7 @@
 package io.github.fishgames.vectrum.net;
 
 import io.github.fishgames.vectrum.Vectrum;
+import io.github.fishgames.vectrum.core.routing.PortSettings;
 import io.github.fishgames.vectrum.gui.EndpointMenu;
 import io.github.fishgames.vectrum.transfer.ResourceIds;
 import io.github.fishgames.vectrum.core.transport.TransportType;
@@ -26,12 +27,15 @@ import java.util.function.Consumer;
  * Messages between client and server; the loaders provide the transport.
  * <ul>
  *   <li>{@link #FILTER_ID} (client to server): filter entry dropped from a recipe viewer.</li>
+ *   <li>{@link #PORT_NAME} and {@link #PORT_PRIORITY} (client to server): name and priority typed into the screen.</li>
  *   <li>{@link #PROBE} (client to server): block position and hit point of a tooltip mod look.</li>
  *   <li>{@link #PROBE_REPLY} (server to client): position and info lines.</li>
  * </ul>
  */
 public final class VectrumNet {
     public static final ResourceLocation FILTER_ID = Vectrum.id("filter_id");
+    public static final ResourceLocation PORT_NAME = Vectrum.id("port_name");
+    public static final ResourceLocation PORT_PRIORITY = Vectrum.id("port_priority");
     public static final ResourceLocation PROBE = Vectrum.id("probe");
     public static final ResourceLocation PROBE_REPLY = Vectrum.id("probe_reply");
 
@@ -101,6 +105,16 @@ public final class VectrumNet {
         sendToServer(FILTER_ID, payload -> payload.writeUtf(id, MAX_ID_LENGTH));
     }
 
+    /** Sends the name typed into the open endpoint screen. */
+    public static void sendPortName(String name) {
+        sendToServer(PORT_NAME, payload -> payload.writeUtf(name, PortSettings.MAX_NAME_LENGTH));
+    }
+
+    /** Sends the priority typed into the open endpoint screen. */
+    public static void sendPortPriority(int value) {
+        sendToServer(PORT_PRIORITY, payload -> payload.writeInt(value));
+    }
+
     /** Called by the loader on the client thread. */
     public static void receiveOnClient(ResourceLocation id, FriendlyByteBuf payload) {
         clientHandler.accept(id, payload);
@@ -114,6 +128,16 @@ public final class VectrumNet {
             String entry = payload.readUtf(MAX_ID_LENGTH);
             if (player.containerMenu instanceof EndpointMenu menu && isFilterId(entry)) {
                 menu.addFilterId(entry);
+            }
+        } else if (PORT_NAME.equals(id)) {
+            String name = payload.readUtf(PortSettings.MAX_NAME_LENGTH);
+            if (player.containerMenu instanceof EndpointMenu menu) {
+                menu.setName(name);
+            }
+        } else if (PORT_PRIORITY.equals(id)) {
+            int value = payload.readInt();
+            if (player.containerMenu instanceof EndpointMenu menu) {
+                menu.setPriority(value);
             }
         } else if (PROBE.equals(id)) {
             BlockPos pos = payload.readBlockPos();

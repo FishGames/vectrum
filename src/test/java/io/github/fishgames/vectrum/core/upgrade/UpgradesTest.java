@@ -1,5 +1,6 @@
 package io.github.fishgames.vectrum.core.upgrade;
 
+import io.github.fishgames.vectrum.core.config.VectrumConfig;
 import io.github.fishgames.vectrum.core.network.BlockCoord;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +19,7 @@ class UpgradesTest {
         assertTrue(none.isEmpty());
         assertEquals(0, none.total());
         assertEquals(4, UpgradeEffects.throughput(4, none));
-        assertEquals(10, UpgradeEffects.interval(10, none));
+        assertEquals(10, UpgradeEffects.interval(none));
         assertEquals(1, UpgradeEffects.maxTypes(none));
         assertFalse(UpgradeEffects.filterUnlocked(none));
         assertFalse(UpgradeEffects.priorityUnlocked(none));
@@ -59,11 +60,11 @@ class UpgradesTest {
     }
 
     @Test
-    void speedHalvesTheIntervalButNeverBelowOneTick() {
-        assertEquals(5, UpgradeEffects.interval(10, Upgrades.EMPTY.with(UpgradeType.SPEED, 1)));
-        assertEquals(2, UpgradeEffects.interval(10, Upgrades.EMPTY.with(UpgradeType.SPEED, 2)));
-        assertEquals(1, UpgradeEffects.interval(10, Upgrades.EMPTY.with(UpgradeType.SPEED, 3)));
-        assertEquals(1, UpgradeEffects.interval(1, Upgrades.EMPTY.with(UpgradeType.SPEED, 3)));
+    void speedFollowsTheConfiguredTable() {
+        assertEquals(10, UpgradeEffects.interval(Upgrades.EMPTY));
+        assertEquals(5, UpgradeEffects.interval(Upgrades.EMPTY.with(UpgradeType.SPEED, 1)));
+        assertEquals(2, UpgradeEffects.interval(Upgrades.EMPTY.with(UpgradeType.SPEED, 2)));
+        assertEquals(1, UpgradeEffects.interval(Upgrades.EMPTY.with(UpgradeType.SPEED, 3)));
     }
 
     @Test
@@ -76,22 +77,40 @@ class UpgradesTest {
         Upgrades u = Upgrades.EMPTY.with(UpgradeType.SPEED, 2).with(UpgradeType.PRIORITY, 1);
 
         assertEquals(u, Upgrades.of(u.toArray()));
-        assertEquals(UpgradeType.THROUGHPUT.maxCount(), Upgrades.of(new int[]{1000}).count(UpgradeType.THROUGHPUT));
+        assertEquals(VectrumConfig.MAX_UPGRADE_COUNT, Upgrades.of(new int[]{1000}).count(UpgradeType.THROUGHPUT));
         assertEquals(0, Upgrades.of(new int[]{-5, -5}).total());
     }
 
     @Test
-    void tableStoresOnlyBlocksWithUpgradesAndTakesThemBack() {
+    void tableKeepsSetsPerSlotAndTakesThemBack() {
         UpgradeTable table = new UpgradeTable();
-        Upgrades u = Upgrades.EMPTY.with(UpgradeType.FILTER, 1);
+        Upgrades filter = Upgrades.EMPTY.with(UpgradeType.FILTER, 1);
+        Upgrades speed = Upgrades.EMPTY.with(UpgradeType.SPEED, 2);
 
-        assertFalse(table.set(A, Upgrades.EMPTY));
-        assertTrue(table.set(A, u));
-        assertFalse(table.set(A, u));
+        assertFalse(table.set(A, 0, Upgrades.EMPTY));
+        assertTrue(table.set(A, 0, filter));
+        assertFalse(table.set(A, 0, filter));
+        assertTrue(table.set(A, 3, speed));
         assertEquals(1, table.size());
-        assertEquals(u, table.take(A));
+        assertEquals(filter, table.get(A, 0));
+        assertEquals(speed, table.get(A, 3));
+        assertTrue(table.get(A, 1).isEmpty());
+
+        int[] taken = table.take(A);
+        assertEquals(1, taken[UpgradeType.FILTER.ordinal()]);
+        assertEquals(2, taken[UpgradeType.SPEED.ordinal()]);
         assertEquals(0, table.size());
-        assertTrue(table.take(A).isEmpty());
+        assertTrue(table.get(A, 0).isEmpty());
+    }
+
+    @Test
+    void tableDropsBlockWhenLastSetIsCleared() {
+        UpgradeTable table = new UpgradeTable();
+        table.set(A, UpgradeTable.BLOCK, Upgrades.EMPTY.with(UpgradeType.DIMENSION, 1));
+
+        assertEquals(1, table.size());
+        assertTrue(table.set(A, UpgradeTable.BLOCK, Upgrades.EMPTY));
+        assertEquals(0, table.size());
     }
 
     @Test

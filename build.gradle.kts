@@ -68,13 +68,20 @@ repositories {
         name = "Modrinth"
         content { includeGroup("maven.modrinth") }
     }
+    maven("https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/") { // MCLib (GeckoLib dependency)
+        name = "GeckoLib"
+        content { includeGroup("com.eliotlash.mclib") }
+    }
     maven("https://maven.bai.lol") { // WTHIT
         name = "Bai"
         content { includeGroup("mcp.mobius.waila") }
     }
     maven("https://maven.blamejared.com/") { // JEI
         name = "BlameJared"
-        content { includeGroup("mezz.jei") }
+        content {
+            includeGroup("mezz.jei")
+            includeGroup("com.hollingsworth.ars_nouveau")
+        }
     }
     maven("https://maven.terraformersmc.com/releases/") { // EMI
         name = "TerraformersMC"
@@ -117,6 +124,21 @@ fun DependencyHandlerScope.mekanism() {
     "modCompileOnly"("mekanism:Mekanism:$version:api")
     if (project.hasProperty("withMekanism")) {
         "modRuntimeOnly"("mekanism:Mekanism:$version")
+    }
+}
+
+/** Ars Nouveau dependency (source module): compile-only API; full jar with Curios and GeckoLib with -PwithArs. */
+fun DependencyHandlerScope.arsNouveau() {
+    val version = optProp("ars_nouveau_version") ?: return
+    "modCompileOnly"("com.hollingsworth.ars_nouveau:ars_nouveau-$mcVersion:$version") { isTransitive = false }
+    if (project.hasProperty("withArs")) {
+        optProp("ars_nouveau_runtime_version")?.let { "modRuntimeOnly"("maven.modrinth:ars-nouveau:$it") { isTransitive = false } }
+        optProp("curios_version")?.let { "modRuntimeOnly"("maven.modrinth:curios:$it") { isTransitive = false } }
+        optProp("geckolib_version")?.let { "modRuntimeOnly"("maven.modrinth:geckolib:$it") { isTransitive = false } }
+        if (!isFabric) {
+            optProp("mixinextras_version")?.let { "forgeRuntimeLibrary"("io.github.llamalad7:mixinextras-common:$it") }
+            optProp("mclib_version")?.let { "forgeRuntimeLibrary"("com.eliotlash.mclib:mclib:$it") }
+        }
     }
 }
 
@@ -169,6 +191,7 @@ dependencies {
         "forge" -> {
             "forge"("net.minecraftforge:forge:$mcVersion-${prop("forge_version")}")
             mekanism()
+            arsNouveau()
         }
 
         "neoforge" -> {
@@ -178,6 +201,7 @@ dependencies {
             } else {
                 "forge"("net.neoforged:forge:$mcVersion-${prop("neoforge_version")}")
                 mekanism()
+                arsNouveau()
             }
         }
 

@@ -4,16 +4,40 @@
     {
       "faces": {
         "down": {
-          "texture": "#all"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "east": {
-          "texture": "#all"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "up": {
-          "texture": "#all"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "west": {
-          "texture": "#all"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         }
       },
       "from": [
@@ -30,19 +54,58 @@
     {
       "faces": {
         "down": {
-          "texture": "#port"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "east": {
-          "texture": "#port"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "north": {
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "south": {
-          "texture": "#port"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "up": {
-          "texture": "#port"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "west": {
-          "texture": "#port"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         }
       },
       "from": [
@@ -53,13 +116,12 @@
       "to": [
         14,
         14,
-        1
+        2
       ]
     }
   ],
   "textures": {
     "all": "vectrum:block/universal_cable",
-    "particle": "vectrum:block/universal_cable",
-    "port": "vectrum:block/item_endpoint_in"
+    "particle": "vectrum:block/universal_cable"
   }
 }

@@ -8,8 +8,8 @@ import java.util.List;
 public class EndpointBlock extends ConduitBlock {
     public EndpointBlock(TransportType type, Properties properties) {
         super(List.of(type), properties,
-                new ShapeSpec(2, 14, 3, 13, 4, 12, 2),
-                new ShapeSpec(4, 12, 5, 11, 4, 12, 2));
+                new ShapeSpec(2, 14, 3, 13),
+                new ShapeSpec(4, 12, 5, 11));
     }
 
     @Override

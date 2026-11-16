@@ -46,6 +46,17 @@ final class MekanismGasPort implements Port {
         return taken.getAmount() - leftover.getAmount();
     }
 
+    @Override
+    public boolean canGive(Predicate<String> filter) {
+        for (int tank = 0; tank < handler.getTanks(); tank++) {
+            GasStack inTank = handler.getChemicalInTank(tank);
+            if (!inTank.isEmpty() && (filter == ALL || filter.test(inTank.getTypeRegistryName().toString()))) {
+                return true;
+            }
+        }
+        return filter == ALL && !handler.extractChemical(1, Action.SIMULATE).isEmpty();
+    }
+
     private GasStack offer(long max, Predicate<String> filter) {
         if (filter == ALL) {
             return handler.extractChemical(max, Action.SIMULATE);

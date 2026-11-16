@@ -82,8 +82,8 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("message." + Vectrum.MOD_ID + ".upgrade_not_supported",
                 german ? "Dieser Baustein nimmt keine Upgrades." : "This block does not accept upgrades.");
         out.accept("message." + Vectrum.MOD_ID + ".network_signal",
-                german ? "Redstone-Netz #%s: %s Bausteine, %s Eing\u00e4nge/Ausg\u00e4nge, Signalst\u00e4rke %s"
-                        : "Redstone network #%s: %s blocks, %s inputs/outputs, signal strength %s");
+                german ? "Redstone-Netz #%s: %s Bausteine, %s Pull-/Push-Seiten, Signalst\u00e4rke %s"
+                        : "Redstone network #%s: %s blocks, %s pull/push sides, signal strength %s");
         out.accept("command." + Vectrum.MOD_ID + ".signal_unsupported",
                 german ? "%s: Dieser Baustein hat weder Upgrades noch ein Durchsatzlimit."
                         : "%s: This block has neither upgrades nor a throughput limit.");
@@ -97,6 +97,12 @@ public final class ModLanguageProvider implements DataProvider {
         // Gas module (Mekanism)
         out.accept("type." + Vectrum.MOD_ID + ".gas", german ? "Gase" : "Gases");
         out.accept("block." + Vectrum.MOD_ID + ".gas_cable", german ? "Gas-Kabel" : "Gas Cable");
+        // Source module (Ars Nouveau)
+        out.accept("type." + Vectrum.MOD_ID + ".source", "Source");
+        out.accept("block." + Vectrum.MOD_ID + ".source_cable", german ? "Source-Kabel" : "Source Cable");
+        // Heat module (Mekanism)
+        out.accept("type." + Vectrum.MOD_ID + ".heat", german ? "W\u00e4rme" : "Heat");
+        out.accept("block." + Vectrum.MOD_ID + ".heat_cable", german ? "W\u00e4rme-Kabel" : "Heat Cable");
         out.accept("command." + Vectrum.MOD_ID + ".throughput.bad_type",
                 german ? "\"%s\" gibt es bei %s nicht (item, fluid oder energy, je nach Baustein)."
                         : "\"%s\" is not available at %s (item, fluid or energy, depending on the block).");
@@ -116,8 +122,8 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("message." + Vectrum.MOD_ID + ".link_restored",
                 german ? "Seite %s wieder verbunden." : "Side %s reconnected.");
         out.accept("message." + Vectrum.MOD_ID + ".network",
-                german ? "Netz #%s: %s Bausteine, %s Eing\u00e4nge, %s Ausg\u00e4nge, Durchsatz %s %s pro \u00dcbergabe"
-                        : "Network #%s: %s blocks, %s inputs, %s outputs, throughput %s %s per transfer");
+                german ? "Netz #%s: %s Bausteine, %s Pull-Seiten, %s Push-Seiten, Durchsatz %s %s pro \u00dcbergabe"
+                        : "Network #%s: %s blocks, %s pull sides, %s push sides, throughput %s %s per transfer");
         out.accept("message." + Vectrum.MOD_ID + ".no_inventory",
                 german ? "Hier ist kein Inventar angeschlossen." : "No inventory attached here.");
         out.accept("message." + Vectrum.MOD_ID + ".network_none",
@@ -148,6 +154,8 @@ public final class ModLanguageProvider implements DataProvider {
                 german ? "Upgrades bei %s: %s" : "Upgrades at %s: %s");
         out.accept("command." + Vectrum.MOD_ID + ".upgrade.changed",
                 german ? "Bei %s: %s jetzt %s von %s" : "At %s: %s now %s of %s");
+        out.accept("command." + Vectrum.MOD_ID + ".upgrade.side_needed",
+                german ? "Bei %s fehlt die Seite: /vectrum upgrade <pos> <seite> ..." : "Missing side for %s: /vectrum upgrade <pos> <side> ...");
         out.accept("command." + Vectrum.MOD_ID + ".upgrade.cleared",
                 german ? "Alle Upgrades bei %s entfernt" : "Removed all upgrades at %s");
         out.accept("command." + Vectrum.MOD_ID + ".upgrade.unknown_type",
@@ -171,6 +179,8 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("unit." + Vectrum.MOD_ID + ".fluid", "mB");
         out.accept("unit." + Vectrum.MOD_ID + ".energy", "FE");
         out.accept("unit." + Vectrum.MOD_ID + ".gas", "mB");
+        out.accept("unit." + Vectrum.MOD_ID + ".source", "Source");
+        out.accept("unit." + Vectrum.MOD_ID + ".heat", german ? "W\u00e4rme" : "heat");
 
         // Commands
         out.accept("command." + Vectrum.MOD_ID + ".throughput.show",
@@ -223,10 +233,11 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept("direction." + Vectrum.MOD_ID + ".west", german ? "West" : "west");
         out.accept("direction." + Vectrum.MOD_ID + ".east", german ? "Ost" : "east");
         out.accept("mode." + Vectrum.MOD_ID + ".off", german ? "Aus" : "Off");
-        out.accept("mode." + Vectrum.MOD_ID + ".in", german ? "Eingang (entnimmt)" : "Input (takes items out)");
-        out.accept("mode." + Vectrum.MOD_ID + ".in_signal", german ? "Eingang (liest das Signal)" : "Input (reads the signal)");
-        out.accept("mode." + Vectrum.MOD_ID + ".out_signal", german ? "Ausgang (gibt das Signal ab)" : "Output (emits the signal)");
-        out.accept("mode." + Vectrum.MOD_ID + ".out", german ? "Ausgang (liefert)" : "Output (delivers items)");
+        out.accept("mode." + Vectrum.MOD_ID + ".in", german ? "Push (steckt in den Block)" : "Push (puts into the block)");
+        out.accept("mode." + Vectrum.MOD_ID + ".in_signal", german ? "Push (gibt das Signal an den Block)" : "Push (gives the signal to the block)");
+        out.accept("mode." + Vectrum.MOD_ID + ".out_signal", german ? "Pull (liest das Signal vom Block)" : "Pull (reads the signal from the block)");
+        out.accept("mode." + Vectrum.MOD_ID + ".out", german ? "Pull (nimmt aus dem Block)" : "Pull (takes out of the block)");
+        out.accept("mode." + Vectrum.MOD_ID + ".both", german ? "Push & Pull (gibt und nimmt Energie)" : "Push & Pull (gives and takes energy)");
         diagnosis(out, german);
         gui(out, german);
     }
@@ -236,8 +247,9 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept(prefix + "side", german ? "Seite: %s" : "Side: %s");
         out.accept(prefix + "probe_side", german ? "Seite %s: %s" : "Side %s: %s");
         out.accept(prefix + "role.off", german ? "Aus" : "Off");
-        out.accept(prefix + "role.in", german ? "Eingang" : "Input");
-        out.accept(prefix + "role.out", german ? "Ausgang" : "Output");
+        out.accept(prefix + "role.in", "Push");
+        out.accept(prefix + "role.out", "Pull");
+        out.accept(prefix + "role.both", "Push & Pull");
         out.accept(prefix + "role", german ? "Rolle: %s" : "Role: %s");
         out.accept(prefix + "distribution", german ? "Verteilung: %s" : "Distribution: %s");
         out.accept(prefix + "distribution.sequential", german ? "Der Reihe nach" : "Sequential");
@@ -264,7 +276,7 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept(prefix + "max_types", german ? "Item-Sorten pro Transfer: %s" : "Item types per transfer: %s");
         out.accept(prefix + "no_storage", german ? "An dieser Seite h\u00e4ngt kein Lager." : "No storage next to this side.");
         out.accept(prefix + "coder_hint", german ? "Coder mit gleicher Frequenz in einem digitalen Netz teilen sich ihre Transportnetze." : "Coders with the same frequency in one digital network share their transport networks.");
-        out.accept(prefix + "tip.role", german ? "Klick wechselt: Ausgang, Eingang, Aus." : "Click to cycle: output, input, off.");
+        out.accept(prefix + "tip.role", german ? "Klick wechselt: Pull, Push, Aus." : "Click to cycle: pull, push, off.");
         out.accept(prefix + "tip.distribution", german ? "Klick \u00e4ndert, wie die Ziele bedient werden." : "Click to change how targets are served.");
         out.accept(prefix + "tip.filter_type", german ? "Klick wechselt zwischen Whitelist und Blacklist." : "Click to switch between whitelist and blacklist.");
         out.accept(prefix + "tip.clear", german ? "Entfernt alle Filtereintr\u00e4ge." : "Removes all filter entries.");
@@ -276,6 +288,23 @@ public final class ModLanguageProvider implements DataProvider {
         out.accept(prefix + "link.both", german ? "Beides" : "Both");
         out.accept(prefix + "tip.paste", german ? "Wendet die kopierten Einstellungen an." : "Applies the copied settings.");
         out.accept(prefix + "tip.link", german ? "Klick wechselt: Empfangen, Senden, Beides, Aus." : "Click to cycle: receive, send, both, off.");
+        out.accept(prefix + "upgrades", german ? "Upgrades" : "Upgrades");
+        out.accept(prefix + "tip.upgrade_slot", german ? "Gilt nur f\u00fcr diese Anschlussstelle. Maximal %s." : "Applies to this port only. At most %s.");
+        out.accept(prefix + "redstone", german ? "Redstone: %s" : "Redstone: %s");
+        out.accept(prefix + "redstone.ignore", german ? "Ignorieren" : "Ignore");
+        out.accept(prefix + "redstone.high", german ? "Mit Signal" : "With signal");
+        out.accept(prefix + "redstone.low", german ? "Ohne Signal" : "Without signal");
+        out.accept(prefix + "tip.redstone", german ? "Klick wechselt: Ignorieren, mit Signal, ohne Signal. Gilt f\u00fcr diese Anschlussstelle." : "Click to cycle: ignore, with signal, without signal. Applies to this port.");
+        out.accept(prefix + "priority_label", german ? "Priorit\u00e4t" : "Priority");
+        out.accept(prefix + "priority_locked", german ? "Priorit\u00e4t: braucht das Priorit\u00e4ts-Upgrade" : "Priority: needs the priority upgrade");
+        out.accept(prefix + "tip.priority", german ? "Zahl von -9999 bis 9999. Ziele mit h\u00f6herer Zahl werden zuerst bedient." : "A number from -9999 to 9999. Targets with a higher number are served first.");
+        out.accept(prefix + "tip.name", german ? "Name dieser Anschlussstelle. Leer lassen f\u00fcr den Standardnamen." : "Name of this port. Leave empty for the default name.");
+        out.accept(prefix + "tip.role_set", german ? "Pull nimmt aus dem Block, Push gibt in den Block, Aus schaltet die Seite ab." : "Pull takes out of the block, push puts into it, off switches the side off.");
+        out.accept(prefix + "tip.role_set_energy", german ? "Push & Pull gibt und nimmt Energie, Pull nimmt nur, Aus schaltet die Seite ab." : "Push & Pull gives and takes energy, pull only takes, off switches the side off.");
+        out.accept(prefix + "advanced", german ? "Erweiterte Einstellungen" : "Advanced settings");
+        out.accept(prefix + "advanced_empty", german ? "Hier gibt es noch keine Einstellungen." : "There are no settings here yet.");
+        out.accept(prefix + "back", german ? "Zur\u00fcck" : "Back");
+        out.accept(prefix + "network", german ? "Netz: %s Quellen, %s Ziele" : "Network: %s sources, %s targets");
         out.accept(prefix + "tip.filter_slot", german ? "Mit einem Item klicken (Eimer f\u00fcr ein Fluid), um es hinzuzuf\u00fcgen. Mit leerer Hand auf einen Eintrag klicken, um ihn zu entfernen." : "Click with an item (a bucket for a fluid) to add it. Click an entry with an empty hand to remove it.");
     }
 

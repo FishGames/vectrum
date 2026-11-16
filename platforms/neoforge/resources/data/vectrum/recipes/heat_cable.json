@@ -1,0 +1,19 @@
+{
+  "conditions": [
+    { "type": "forge:item_exists", "item": "vectrum:heat_cable" }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": { "item": "minecraft:copper_ingot" },
+    "C": { "item": "vectrum:energy_cable" }
+  },
+  "pattern": [
+    "ICI"
+  ],
+  "result": {
+    "count": 2,
+    "item": "vectrum:heat_cable"
+  },
+  "show_notification": true
+}

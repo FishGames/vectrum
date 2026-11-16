@@ -29,8 +29,8 @@ import java.util.List;
 public class CoderBlock extends ConduitBlock {
     public CoderBlock(Properties properties) {
         super(types(), properties,
-                new ShapeSpec(0, 16, 0, 16, 0, 16, 0),
-                new ShapeSpec(0, 16, 0, 16, 0, 16, 0));
+                new ShapeSpec(0, 16, 0, 16),
+                new ShapeSpec(0, 16, 0, 16));
     }
 
     /** All quantity types plus the digital layer. */

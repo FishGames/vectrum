@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "vectrum:heat_cable",
+      "required": false
+    }
+  ]
+}

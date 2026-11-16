@@ -8,6 +8,7 @@ import io.github.fishgames.vectrum.core.diagnosis.Diagnosis;
 import io.github.fishgames.vectrum.core.diagnosis.FlowReason;
 import io.github.fishgames.vectrum.core.diagnosis.SourceFacts;
 import io.github.fishgames.vectrum.core.diagnosis.TargetFacts;
+import io.github.fishgames.vectrum.core.config.VectrumConfig;
 import io.github.fishgames.vectrum.core.network.Network;
 import io.github.fishgames.vectrum.core.routing.PortSettings;
 import io.github.fishgames.vectrum.core.transport.TransportType;
@@ -35,8 +36,11 @@ import java.util.List;
  * </ul>
  */
 public final class PortDiagnosis {
-    /** Ticks within which a transfer or delivery counts as recent. */
-    private static final long RECENT = 100;
+    /** Ticks within which a transfer or delivery counts as recent, at least 100. */
+    private static long recent() {
+        return Math.max(100, 2L * VectrumConfig.get().idleIntervalMax());
+    }
+
     /** Fill level from which a storage counts as full. */
     private static final double FULL = 0.999;
 
@@ -71,7 +75,7 @@ public final class PortDiagnosis {
      * <ul>
      * <li>1. no storage at the side or a link side: empty list</li>
      * <li>2. role off: {@link FlowReason#SIDE_OFF}</li>
-     * <li>3. role input: {@link Diagnosis#forSource}; role output: {@link Diagnosis#forTarget}</li>
+     * <li>3. role pull: {@link Diagnosis#forSource}; role push: {@link Diagnosis#forTarget}</li>
      * </ul>
      */
     public static List<Entry> ofSide(ServerLevel level, BlockPos pos, Direction side) {
@@ -95,7 +99,9 @@ public final class PortDiagnosis {
             List<FlowReason> reasons;
             if (mode == EndpointMode.OFF) {
                 reasons = List.of(FlowReason.SIDE_OFF);
-            } else if (mode == EndpointMode.IN) {
+            } else if (mode == EndpointMode.SOURCE
+                    || (TransportType.ENERGY.equals(type) && port.canGive(Port.ALL))) {
+                // a push side moves energy both ways: a storage that can give is explained as a source
                 reasons = Diagnosis.forSource(sourceFacts(level, networks, type, pos, side, neighbour, port));
             } else {
                 reasons = Diagnosis.forTarget(targetFacts(level, networks, type, pos, side, port));
@@ -110,11 +116,11 @@ public final class PortDiagnosis {
         Network network = networks.networkAt(type, pos);
         long now = level.getGameTime();
         LevelNetworks.TransferRecord last = networks.lastTransfer(pos, side, type);
-        boolean recent = last != null && now - last.tick() <= RECENT;
+        boolean recent = last != null && now - last.tick() <= recent();
         long moved = recent ? last.moved() : 0;
         long budget = recent ? last.budget() : 0;
         boolean known = TransportType.ITEM.equals(type) || TransportType.FLUID.equals(type)
-                || TransportType.ENERGY.equals(type);
+                || TransportType.ENERGY.equals(type) || TransportType.SOURCE.equals(type);
         boolean empty = known && source.fillLevel() <= 0;
         if (network == null) {
             return new SourceFacts(false, empty, 0, 0, 0, 0, 0, 0, false, moved, budget, recent);
@@ -157,7 +163,7 @@ public final class PortDiagnosis {
                                            BlockPos pos, Direction side, Port own) {
         Network network = networks.networkAt(type, pos);
         long received = networks.lastReceived(pos, side, type);
-        boolean recent = received >= 0 && level.getGameTime() - received <= RECENT;
+        boolean recent = received >= 0 && level.getGameTime() - received <= recent();
         int sources = network == null ? 0 : networks.sourceCount(level, type, network);
         return new TargetFacts(network != null, sources, own.fillLevel() >= FULL, recent);
     }
@@ -193,7 +199,7 @@ public final class PortDiagnosis {
             boolean recent = false;
             for (Direction side : Sides.ALL) {
                 long received = networks.lastReceived(pos, side, type);
-                recent |= received >= 0 && now - received <= RECENT;
+                recent |= received >= 0 && now - received <= recent();
             }
             result.add(new Entry(type, Diagnosis.forTarget(new TargetFacts(true, senders, false, recent))));
         }
@@ -203,13 +209,13 @@ public final class PortDiagnosis {
     private static SourceFacts wirelessSource(ServerLevel level, WirelessRegistry registry, LevelNetworks networks,
                                               TransportType type, BlockPos pos, int frequency, long now) {
         WirelessRegistry.Receivers receivers = registry.receivers(level.getServer(), type, frequency, level,
-                networks.upgrades(pos));
+                networks.blockUpgrades(pos));
         boolean anySource = false;
         boolean allEmpty = true;
         long moved = 0;
         boolean recent = false;
         boolean known = TransportType.ITEM.equals(type) || TransportType.FLUID.equals(type)
-                || TransportType.ENERGY.equals(type);
+                || TransportType.ENERGY.equals(type) || TransportType.SOURCE.equals(type);
         for (Direction side : Sides.ALL) {
             BlockPos neighbour = pos.relative(side);
             if (!level.hasChunkAt(neighbour)) {
@@ -221,7 +227,7 @@ public final class PortDiagnosis {
                 allEmpty &= known && port.fillLevel() <= 0;
             }
             LevelNetworks.TransferRecord last = networks.lastTransfer(pos, side, type);
-            if (last != null && now - last.tick() <= RECENT) {
+            if (last != null && now - last.tick() <= recent()) {
                 recent = true;
                 moved += last.moved();
                 

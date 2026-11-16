@@ -10,6 +10,14 @@
     {
       "id": "vectrum:gas_cable",
       "required": false
+    },
+    {
+      "id": "vectrum:source_cable",
+      "required": false
+    },
+    {
+      "id": "vectrum:heat_cable",
+      "required": false
     }
   ]
 }

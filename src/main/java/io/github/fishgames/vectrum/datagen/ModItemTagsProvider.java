@@ -31,6 +31,8 @@ public final class ModItemTagsProvider extends TagsProvider<Item> {
             tag(CABLES).add(ResourceKey.create(Registries.ITEM, cable.id()));
         }
         tag(CABLES).addOptional(Vectrum.id("gas_cable"));
+        tag(CABLES).addOptional(Vectrum.id("source_cable"));
+        tag(CABLES).addOptional(Vectrum.id("heat_cable"));
         for (UpgradeType type : UpgradeType.VALUES) {
             tag(UPGRADES).add(ResourceKey.create(Registries.ITEM, ModItems.upgradeId(type)));
         }

@@ -1,0 +1,72 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "east": {
+          "rotation": 270,
+          "texture": "#all",
+          "uv": [
+            5.5,
+            0.0,
+            8.0,
+            3.0
+          ]
+        },
+        "north": {
+          "rotation": 270,
+          "texture": "#all",
+          "uv": [
+            5.5,
+            0.0,
+            8.0,
+            3.0
+          ]
+        },
+        "south": {
+          "rotation": 270,
+          "texture": "#all",
+          "uv": [
+            5.5,
+            0.0,
+            8.0,
+            3.0
+          ]
+        },
+        "up": {
+          "texture": "#all",
+          "uv": [
+            3.0,
+            3.0,
+            6.0,
+            6.0
+          ]
+        },
+        "west": {
+          "rotation": 270,
+          "texture": "#all",
+          "uv": [
+            5.5,
+            0.0,
+            8.0,
+            3.0
+          ]
+        }
+      },
+      "from": [
+        5,
+        11,
+        5
+      ],
+      "to": [
+        11,
+        16,
+        11
+      ]
+    }
+  ],
+  "textures": {
+    "all": "vectrum:block/item_cable",
+    "particle": "vectrum:block/item_cable"
+  }
+}

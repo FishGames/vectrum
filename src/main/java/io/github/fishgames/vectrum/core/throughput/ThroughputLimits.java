@@ -67,6 +67,25 @@ public final class ThroughputLimits {
         return before != limit;
     }
 
+    /** Manual limit of the block, or {@code null} when it has none. */
+    public Long overrideOf(BlockCoord pos) {
+        return overrides.get(pos);
+    }
+
+    /**
+     * Stores a manual limit of a block, also when it equals the base limit.
+     *
+     * @return {@code true} when the stored value changed
+     * @throws IllegalArgumentException for a negative value
+     */
+    public boolean put(BlockCoord pos, long limit) {
+        if (limit < 0) {
+            throw new IllegalArgumentException("Limit must not be negative: " + limit);
+        }
+        Long before = overrides.put(pos, limit);
+        return before == null || before != limit;
+    }
+
     /** Resets the block to the base limit. */
     public boolean reset(BlockCoord pos) {
         return overrides.remove(pos) != null;

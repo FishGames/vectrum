@@ -17,10 +17,18 @@ description='''${mod_description}'''
     ordering="NONE"
     side="BOTH"
 
-# Optional dependency: Mekanism (gas module)
+# Optional dependency: Mekanism (gas and heat modules)
 [[dependencies.${mod_id}]]
     modId="mekanism"
     mandatory=false
     versionRange="[10.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Optional dependency: Ars Nouveau (source module)
+[[dependencies.${mod_id}]]
+    modId="ars_nouveau"
+    mandatory=false
+    versionRange="[4.0,)"
     ordering="AFTER"
     side="BOTH"

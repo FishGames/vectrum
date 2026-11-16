@@ -6,6 +6,7 @@ import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
 import io.github.fishgames.vectrum.core.upgrade.Upgrades;
 import io.github.fishgames.vectrum.world.LevelNetworks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
@@ -29,10 +30,6 @@ public class UpgradeItem extends Item {
     public UpgradeItem(UpgradeType type, Properties properties) {
         super(properties);
         this.type = type;
-    }
-
-    public UpgradeType upgradeType() {
-        return type;
     }
 
     @Override
@@ -67,13 +64,15 @@ public class UpgradeItem extends Item {
             return InteractionResult.CONSUME;
         }
         LevelNetworks networks = LevelNetworks.get(server);
-        Upgrades installed = networks.upgrades(pos);
+        // The upgrade goes to the port side the click points at
+        Direction side = conduit.pickSide(level, pos, state, context.getClickLocation(), context.getClickedFace());
+        Upgrades installed = networks.upgrades(pos, side);
         if (installed.freeSlots(type) <= 0) {
             tell(player, Component.translatable("message.vectrum.upgrade_full", name, type.maxCount()));
             return InteractionResult.CONSUME;
         }
         Upgrades updated = installed.with(type, installed.count(type) + 1);
-        networks.setUpgrades(conduit.transportTypes(), pos, updated);
+        networks.setUpgrades(pos, side, updated);
         if (player == null || !player.getAbilities().instabuild) {
             context.getItemInHand().shrink(1);
         }
@@ -91,13 +90,13 @@ public class UpgradeItem extends Item {
             return InteractionResult.CONSUME;
         }
         LevelNetworks networks = LevelNetworks.get(server);
-        Upgrades installed = networks.upgrades(pos);
+        Upgrades installed = networks.blockUpgrades(pos);
         if (player != null && player.isSecondaryUseActive()) {
             if (installed.count(type) == 0) {
                 tell(player, Component.translatable("message.vectrum.upgrades_none"));
                 return InteractionResult.CONSUME;
             }
-            networks.setUpgrades(WirelessBlock.TYPES, pos, installed.with(type, installed.count(type) - 1));
+            networks.setBlockUpgrades(pos, installed.with(type, installed.count(type) - 1));
             ItemStack returned = new ItemStack(this);
             if (!player.getInventory().add(returned) && !returned.isEmpty()) {
                 player.drop(returned, false);
@@ -110,7 +109,7 @@ public class UpgradeItem extends Item {
             return InteractionResult.CONSUME;
         }
         Upgrades updated = installed.with(type, installed.count(type) + 1);
-        networks.setUpgrades(WirelessBlock.TYPES, pos, updated);
+        networks.setBlockUpgrades(pos, updated);
         if (player == null || !player.getAbilities().instabuild) {
             context.getItemInHand().shrink(1);
         }

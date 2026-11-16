@@ -1,5 +1,5 @@
 {
-  "forge:conditions": [
+  "conditions": [
     { "type": "forge:item_exists", "item": "vectrum:gas_cable" }
   ],
   "parent": "minecraft:recipes/root",

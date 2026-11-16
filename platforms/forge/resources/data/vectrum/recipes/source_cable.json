@@ -1,0 +1,19 @@
+{
+  "conditions": [
+    { "type": "forge:item_exists", "item": "vectrum:source_cable" }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "G": { "item": "ars_nouveau:source_gem" },
+    "C": { "item": "vectrum:energy_cable" }
+  },
+  "pattern": [
+    "GCG"
+  ],
+  "result": {
+    "count": 2,
+    "item": "vectrum:source_cable"
+  },
+  "show_notification": true
+}

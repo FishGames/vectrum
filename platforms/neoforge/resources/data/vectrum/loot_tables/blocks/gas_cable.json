@@ -10,8 +10,9 @@
       ],
       "entries": [
         {
-          "type": "minecraft:item",
-          "name": "vectrum:gas_cable"
+          "type": "minecraft:tag",
+          "name": "vectrum:drops/gas_cable",
+          "expand": true
         }
       ],
       "rolls": 1.0

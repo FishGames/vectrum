@@ -72,7 +72,7 @@ final class WirelessCommands {
                 Component.translatable("link.vectrum." + registry.mode(level, pos, TransportType.ITEM).id()),
                 Component.translatable("link.vectrum." + registry.mode(level, pos, TransportType.FLUID).id()),
                 Component.translatable("link.vectrum." + registry.mode(level, pos, TransportType.ENERGY).id()),
-                WirelessBlock.gasSuffix(registry, level, pos)), false);
+                WirelessBlock.moduleSuffix(registry, level, pos)), false);
         return frequency;
     }
 

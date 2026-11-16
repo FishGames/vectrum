@@ -2,6 +2,7 @@ package io.github.fishgames.vectrum.world;
 
 import io.github.fishgames.vectrum.block.ConduitBlock;
 import io.github.fishgames.vectrum.block.EndpointMode;
+import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.gui.EndpointKind;
 import io.github.fishgames.vectrum.gui.EndpointMenu;
 import net.minecraft.ChatFormatting;
@@ -45,7 +46,7 @@ public final class ProbeLines {
         }
         LevelNetworks networks = LevelNetworks.get(level);
         switch (kind) {
-            case CABLE, REDSTONE -> {
+            case CABLE, ENERGY_CABLE, REDSTONE -> {
                 ConduitBlock conduit = (ConduitBlock) state.getBlock();
                 Direction side = conduit.guiSide(level, pos, state, hit);
                 if (side == null) {
@@ -54,13 +55,14 @@ public final class ProbeLines {
                 EndpointMode mode = conduit.effectiveMode(networks, level, pos, side);
                 lines.add(Component.translatable("gui.vectrum.probe_side",
                         Component.translatable("direction.vectrum." + side.getName()),
-                        Component.translatable("gui.vectrum.role." + mode.name().toLowerCase(Locale.ROOT))));
+                        Component.translatable("gui.vectrum.role." + (kind == EndpointKind.ENERGY_CABLE && mode == EndpointMode.TARGET
+                                ? "both" : mode.shortName()))));
                 if (kind == EndpointKind.REDSTONE) {
                     lines.add(Component.translatable("gui.vectrum.signal", networks.signalOutput(pos)));
                 } else {
                     long now = level.getGameTime();
                     for (PortDiagnosis.Entry entry : PortDiagnosis.ofSide(level, pos, side)) {
-                        double rate = mode == EndpointMode.IN ? networks.rate(pos, side, entry.type(), now) : 0;
+                        double rate = mode == EndpointMode.SOURCE || TransportType.ENERGY.equals(entry.type()) ? networks.rate(pos, side, entry.type(), now) : 0;
                         lines.add(line(entry, rate));
                     }
                 }

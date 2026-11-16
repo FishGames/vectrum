@@ -8,10 +8,10 @@ public enum Connection implements StringRepresentable {
     NONE("none"),
     /** Cable or endpoint of the same type (network link). */
     LINK("link"),
-    /** Inventory attached, source side. */
-    INPUT("in"),
-    /** Inventory attached, target side. */
-    OUTPUT("out");
+    /** Inventory attached, source (pull) side: the cable takes from the block; arm with plate (redstone: plain arm). The serialized name is older than the role names. */
+    SOURCE("in"),
+    /** Inventory attached, target (push) side: the cable delivers into the block; plain arm (redstone: arm with plate). */
+    TARGET("out");
 
     private final String name;
 

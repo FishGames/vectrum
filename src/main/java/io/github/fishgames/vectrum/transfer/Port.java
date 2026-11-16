@@ -35,6 +35,14 @@ public interface Port {
         return moveTo(target, max, ALL);
     }
 
+    /**
+     * Whether the port holds something that {@code filter} lets through. {@code false} guarantees that a move with the
+     * same filter transfers nothing; {@code true} promises nothing.
+     */
+    default boolean canGive(Predicate<String> filter) {
+        return true;
+    }
+
     /** Fill level from 0 (empty) to 1 (full); 0 when not determinable. */
     default double fillLevel() {
         return 0;

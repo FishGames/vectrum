@@ -93,6 +93,22 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion())) : null;
 
+    /** Source cable; {@code null} unless {@link Modules#source()}. */
+    public static final Registered<Block> SOURCE_CABLE = Modules.source() ? block("source_cable", () -> new CableBlock(TransportType.SOURCE,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .strength(0.8F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion())) : null;
+
+    /** Heat cable; {@code null} unless {@link Modules#heat()}. */
+    public static final Registered<Block> HEAT_CABLE = Modules.heat() ? block("heat_cable", () -> new CableBlock(TransportType.HEAT,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_ORANGE)
+                    .strength(0.8F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion())) : null;
+
     /** Item endpoint. */
     public static final Registered<Block> ITEM_ENDPOINT = block("item_endpoint", () -> new EndpointBlock(TransportType.ITEM,
             BlockBehaviour.Properties.of()

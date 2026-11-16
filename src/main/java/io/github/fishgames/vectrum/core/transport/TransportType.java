@@ -16,7 +16,7 @@ public record TransportType(String id, Behavior behavior) {
 
     /** Transfer behavior. */
     public enum Behavior {
-        /** Quantity moved from source to target (items, fluids, energy, gases). */
+        /** Quantity moved from source to target (items, fluids, energy, gases, source, heat). */
         QUANTITY,
         /** State value mirrored (redstone signal strength). */
         SIGNAL,
@@ -32,4 +32,8 @@ public record TransportType(String id, Behavior behavior) {
     public static final TransportType DIGITAL = new TransportType("vectrum:digital", Behavior.CONNECTION);
     /** Gas type (Mekanism). */
     public static final TransportType GAS = new TransportType("vectrum:gas", Behavior.QUANTITY);
+    /** Source type (Ars Nouveau). */
+    public static final TransportType SOURCE = new TransportType("vectrum:source", Behavior.QUANTITY);
+    /** Heat type (Mekanism). */
+    public static final TransportType HEAT = new TransportType("vectrum:heat", Behavior.QUANTITY);
 }

@@ -7,6 +7,50 @@ All notable changes to Vectrum. Newest first.
 <!-- TODO(docs): Before the first release, rewrite this section as release notes for 0.1.0 in a few sentences of prose (what the mod does, what is new, known problems) and add the release date. The bullet list below can stay as the detailed part. -->
 
 ### Added
+- Port screen: name of the port (only shown in the screen, not copied by paste), redstone mode per port (ignore, with
+  signal, without signal; not for wireless ports), priority as a typed number, one upgrade slot per upgrade kind,
+  statistics (flow per type, sources and targets of the network), copy, paste and gear icons, and an advanced page
+  that is still empty. Pull, Push and Off are the role buttons.
+- Upgrades belong to a cable side instead of the block: speed, throughput, types, filter and priority apply to that
+  side only. A wireless port keeps one set for the block. Saved upgrades of earlier test worlds are not migrated.
+- Messages from client to server for the port name and priority (all three loaders).
+- Source cable (Ars Nouveau, Forge/NeoForge): moves source between source jars, relays and other source blocks. Type
+  `vectrum:source`, base amount 1000 per transfer (`amount.source`); filter, priority, modes and upgrades work as for
+  the other quantity types. Recipe: source gem, energy cable, source gem in a row (2 cables). Only registered when Ars
+  Nouveau is loaded.
+- Heat cable (Mekanism, Forge/NeoForge): moves heat from the warmer to the cooler block until both reach one
+  temperature. Type `vectrum:heat`, base amount 10000 heat units per transfer (`amount.heat`). Recipe: copper ingot,
+  energy cable, copper ingot in a row (2 cables). Only registered when Mekanism is loaded.
+- The universal cable, the coder and the wireless port carry source and heat when their modules are on; the port
+  screens list the types that are on.
+- Solid colours for the cables without a texture: redstone #f60444, fluid #2b63f1, gas #00b73c, energy #79a787,
+  source #8535b2, universal #443f37, digital #89fffe, heat #e89223.
+- Dev runs: `-PwithArs` adds Ars Nouveau, Curios, GeckoLib, MCLib (`mclib_version`) and MixinExtras (`mixinextras_version`) to the Forge and NeoForge runtime. GeckoLib is chosen by its Modrinth version id because the number 4.8.4 is also the Fabric build.
+- Configuration file `config/vectrum.toml`: amounts per transfer, effect and maximum count of the throughput, speed and
+  item type upgrades (one list each, indexed by the number of installed upgrades), intervals of wireless ports and
+  redstone cables, and the performance entries below. Written with the defaults on the first start; wrong entries are
+  logged and replaced by the defaults.
+- Item cable: where three or more arms in one plane meet at a core (T piece, cross), a box 1 px larger than the cable is
+  drawn around the core, with the texture of the plate front. Other cable types do not have it yet.
+- Item cable texture (test texture `item_cable.png`, 4 animation frames of 32x32 stacked vertically, 20 ticks per
+  frame, colours blended between the frames): the cable is drawn as a picture seen from the front,
+  every face looked at from outside and never mirrored (on the top face north is up, on the bottom face south is up).
+  Arms: the arm to the right of the core shows the pixels [11,0]-[15,5] (5 px along the arm), the arm to the left
+  [0,0]-[4,5]; an arm above the core is the right arm turned 90 degrees counter-clockwise, an arm below the core the left
+  arm turned the same way. Cores: every core face shows one of 16 regions depending on which of its four sides (left,
+  right, up, down, as seen from the front) have an arm: none, one, two (straight or corner), three or all four. Arms
+  pointing towards or away from the viewer are not counted. An arm that is linked or an input shows the picture of a
+  core without arms ([6,6]-[11,11]) on its end face. An output has a port plate (2 px deep, 2 px wider than the cable
+  on every side): front [0,24]-[7,31] seen from outside, side faces [12,24]-[13,31] with x = 13 at the cable core.
+  The back of the plate (towards the core) shows the same picture as the front. An input has no plate.
+- Cable textures are now sized to the cable's real pixel thickness (6x6 for the 6 px cables, 10x10 for the universal
+  cable) instead of a fixed 16x16 canvas, so painted pixels show at native size
+  in-world instead of being squeezed onto a narrower face. The item cable is the exception: it is painted
+  from regions of a single 32x32 texture (see below).
+- Wrench interop (Forge/NeoForge): the wrench declares the common "wrench" tool action, so it now works as a real
+  wrench on other mods' machines that check for it (AE2, Create, EnderIO, Mekanism, ...) just like their own
+  wrenches. The reverse also works: any of their wrenches can operate Vectrum's cables, endpoints and wireless ports
+  the same way Vectrum's own wrench does. Fabric has no equivalent convention and is unaffected.
 - Cable severing: right click a linked cable side with the wrench to sever it from its neighbour, so two lines of the
   same type can run directly next to each other without merging into one network. Right click the same side again to
   reconnect it. Works on every cable and the digital cable; the coder is unaffected (its wrench click sets the
@@ -69,7 +113,58 @@ All notable changes to Vectrum. Newest first.
 - The diagnostic tool shows the throughput limit of the clicked block.
 - Recipe advancements (result of the first real datagen run).
 
+### Fixed
+
+- Digital cable: model and collision are 4 px thick again (E69).
+- Source cable: the creative source jar can fill other jars (it always reports a full jar, so the transfer was counted as nothing, E118).
+- Recipes, recipe advancements and loot tables of the optional cables (gas, heat, source) wrote parse errors to the log
+  on Forge and NeoForge when the other mod was not installed. The condition key is now `conditions`, and the loot
+  tables drop through an item tag whose entry is optional.
+
 ### Changed
+- Port roles are called **Pull** and **Push** (E115): Pull = the cable takes out of the adjacent block (the default),
+  Push = the cable puts into it. The command is `/vectrum port ... role pull|push|off` (was `in|out`); saved worlds
+  keep working as they were. Redstone: a lever is pulled, a lamp pushed.
+- The port plate now marks **Pull** and exists on the fluid, energy, gas, source, heat and universal cable too, in the
+  colour of the cable, 1 px larger than the cable and 2 px deep (E119). Push has no plate (the green plate is gone).
+  The redstone cable keeps its old look for now.
+- Fluid, gas and source cables get the junction box of the item cable, in their own colour (E120).
+- The selection box of cables, endpoints and coders is core plus plain arms; the port plate is no longer part of it (E121).
+- The digital cable's selection box is 4 px and widens to 6 px only while a cable, wrench, coder or wireless port is held (E69).
+- The energy cable (E116): default **push & pull** (gives and takes, as the blocks allow), optional **pull** (only takes)
+  and off. Batteries are balanced to the same fill level (E117).
+- Optional modules are managed by `Modules` (gas, source, heat); `TransportType` has the new types `SOURCE` and `HEAT`,
+  and the configuration file has the entries `amount.source` and `amount.heat`.
+- Performance of large networks:
+  - Sources that hold nothing the filters let through no longer ask any target, and an empty source no longer puts
+    targets to sleep. Sources that moved nothing for 30 ticks wait longer between runs (up to `idle_interval_max`, default 40
+    ticks); goods that arrive in a waiting source are noticed after that time at most.
+  - Target lists, back-offs and flow records are kept per transport type instead of globally; a change in one
+    network no longer rebuilds the caches of every other network and dimension. Wireless ports clear caches in
+    `neighborChanged` only when the sides with a storage changed.
+  - The connections of a cable are checked every `refresh_interval` ticks (default 100) and on every neighbour
+    update, not on every run.
+  - All transfers of a server tick share a time budget (`time_budget_micros`, default 10 ms); work over the limit
+    continues in the next tick. One run of one cable has its own limit (`run_budget_micros`, default 2 ms); a cable
+    with a huge throughput moves the rest later instead of delaying the server tick and the other cables.
+  - Priority groups, filters reduced to a transport type and the values derived from a block's upgrades are computed
+    once and cached; the transfer allocates far less per run.
+  - Blocks start with an offset derived from their position, so sources placed together do not all run in the same
+    tick.
+  - Round-robin pointers no longer cause a rewrite of the save data; removing a block no longer scans all settings.
+  - The Forge item port reads the occupied slots once per round and remembers refused stacks while moving.
+- The throughput limit of a block is derived from its base amount and its throughput upgrades when read; only limits
+  set with `/vectrum throughput` are stored. Worlds from before lose the stored derived values on first load.
+- After a refusal a target waits for the pause given by `target_pause` (default 20, 40, 80, 100 ticks); only targets
+  that refuse goods the source actually holds are put to sleep.
+- The default role of a cable side next to an inventory is now input (was output). A newly placed cable therefore
+  pulls from an adjacent inventory until a side is set to output with the wrench. Sides you already set keep their
+  role. Existing worlds keep their behaviour: on first load, sides of existing cables that never had a role chosen are
+  fixed to output (cables placed afterwards use input). The wrench now cycles input, output, off.
+- Port plates have no hitbox to run into any more: they can only be clicked (wrench, port screen), and only on
+  output sides. Cables are solid on every connected side, including sides with an inventory.
+- Cables no longer have an inner layer and no longer render as cutout; all cable textures are one solid layer
+  (`*_inner.png` of fluid, energy, gas, redstone, universal and digital cable removed).
 - Item, fluid, energy, redstone and gas cables are thinner (6 px instead of 10 px), matching the digital cable. To
   keep them easy to click, the invisible target used for opening the port screen and the wrench widens back to 10 px
   while holding the wrench, a cable, a coder or a wireless port; an empty hand or anything else clicks past the
@@ -88,7 +183,7 @@ All notable changes to Vectrum. Newest first.
 - Redstone cables connect by default to blocks that read redstone signals (lamps, doors, trapdoors, pistons, rails,
   dispensers, hoppers, note blocks, bells, repeaters, comparators, TNT, command blocks); the wrench and
   `/vectrum port <pos> <side> role in|out|off` still override.
-- The role of a cable side is now "not chosen" until the player switches it (quantity types: still output,
+- The role of a cable side is now "not chosen" until the player switches it (quantity types: input,
   redstone: input next to signal sources). Existing worlds keep their roles.
 - Fix: `/vectrum throughput <pos> <value>` did not work (only `... reset <value>`).
 - The diagnostic tool and the wrench know the new blocks (coder, digital cable, wireless port).

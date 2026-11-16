@@ -17,7 +17,9 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
+import io.github.fishgames.vectrum.world.Sides;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
@@ -40,22 +42,29 @@ final class UpgradeCommands {
     }
 
     static LiteralArgumentBuilder<CommandSourceStack> node() {
+        // A cable has upgrades per side: /vectrum upgrade <pos> <side> ...; a wireless port: /vectrum upgrade <pos> ...
         return Commands.literal("upgrade")
-                .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                        .executes(UpgradeCommands::show)
-                        .then(Commands.literal("add")
-                                .then(typeArgument()
-                                        .executes(context -> change(context, 1))
-                                        .then(Commands.argument("count", IntegerArgumentType.integer(1))
-                                                .executes(context -> change(context,
-                                                        IntegerArgumentType.getInteger(context, "count"))))))
-                        .then(Commands.literal("remove")
-                                .then(typeArgument()
-                                        .executes(context -> change(context, -1))
-                                        .then(Commands.argument("count", IntegerArgumentType.integer(1))
-                                                .executes(context -> change(context,
-                                                        -IntegerArgumentType.getInteger(context, "count"))))))
-                        .then(Commands.literal("clear").executes(UpgradeCommands::clear)));
+                .then(actions(Commands.argument("pos", BlockPosArgument.blockPos()))
+                        .then(actions(Commands.argument("side", StringArgumentType.word())
+                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                        Arrays.stream(Sides.ALL).map(Direction::getName), builder)))));
+    }
+
+    private static <B extends com.mojang.brigadier.builder.ArgumentBuilder<CommandSourceStack, B>> B actions(B node) {
+        return node.executes(UpgradeCommands::show)
+                .then(Commands.literal("add")
+                        .then(typeArgument()
+                                .executes(context -> change(context, 1))
+                                .then(Commands.argument("count", IntegerArgumentType.integer(1))
+                                        .executes(context -> change(context,
+                                                IntegerArgumentType.getInteger(context, "count"))))))
+                .then(Commands.literal("remove")
+                        .then(typeArgument()
+                                .executes(context -> change(context, -1))
+                                .then(Commands.argument("count", IntegerArgumentType.integer(1))
+                                        .executes(context -> change(context,
+                                                -IntegerArgumentType.getInteger(context, "count"))))))
+                .then(Commands.literal("clear").executes(UpgradeCommands::clear));
     }
 
     private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> typeArgument() {
@@ -65,7 +74,8 @@ final class UpgradeCommands {
     }
 
     private interface Action {
-        int run(LevelNetworks networks, List<TransportType> types, boolean wireless, BlockPos pos);
+        /** {@code side}: the port side of a cable; {@code null} for a wireless port. */
+        int run(LevelNetworks networks, List<TransportType> types, boolean wireless, BlockPos pos, Direction side);
     }
 
     private static int withBlock(CommandContext<CommandSourceStack> context, Action action)
@@ -75,7 +85,7 @@ final class UpgradeCommands {
         ServerLevel level = source.getLevel();
         BlockState state = level.getBlockState(pos);
         if (state.getBlock() instanceof WirelessBlock) {
-            return action.run(LevelNetworks.get(level), WirelessBlock.TYPES, true, pos);
+            return action.run(LevelNetworks.get(level), WirelessBlock.TYPES, true, pos, null);
         }
         if (!(state.getBlock() instanceof NetworkBlock block)) {
             source.sendFailure(Component.translatable("command.vectrum.not_a_network_block", pos.toShortString()));
@@ -85,7 +95,20 @@ final class UpgradeCommands {
             source.sendFailure(Component.translatable("command.vectrum.signal_unsupported", pos.toShortString()));
             return 0;
         }
-        return action.run(LevelNetworks.get(level), block.transportTypes(), false, pos);
+        Direction side = Direction.byName(sideName(context));
+        if (side == null) {
+            source.sendFailure(Component.translatable("command.vectrum.upgrade.side_needed", pos.toShortString()));
+            return 0;
+        }
+        return action.run(LevelNetworks.get(level), block.transportTypes(), false, pos, side);
+    }
+
+    private static String sideName(CommandContext<CommandSourceStack> context) {
+        try {
+            return StringArgumentType.getString(context, "side");
+        } catch (IllegalArgumentException e) {
+            return "";
+        }
     }
 
     private static Component describe(Upgrades upgrades) {
@@ -96,8 +119,8 @@ final class UpgradeCommands {
     }
 
     private static int show(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        return withBlock(context, (networks, types, wireless, pos) -> {
-            Upgrades upgrades = networks.upgrades(pos);
+        return withBlock(context, (networks, types, wireless, pos, side) -> {
+            Upgrades upgrades = side == null ? networks.blockUpgrades(pos) : networks.upgrades(pos, side);
             context.getSource().sendSuccess(() -> Component.translatable("command.vectrum.upgrade.show",
                     pos.toShortString(), describe(upgrades)), false);
             return upgrades.total();
@@ -111,16 +134,20 @@ final class UpgradeCommands {
             context.getSource().sendFailure(Component.translatable("command.vectrum.upgrade.unknown_type", name));
             return 0;
         }
-        return withBlock(context, (networks, types, wireless, pos) -> {
+        return withBlock(context, (networks, types, wireless, pos, side) -> {
             if (type.wireless() != wireless) {
                 context.getSource().sendFailure(Component.translatable(wireless
                         ? "command.vectrum.upgrade.not_for_wireless" : "command.vectrum.upgrade.wireless_only",
                         pos.toShortString()));
                 return 0;
             }
-            Upgrades before = networks.upgrades(pos);
+            Upgrades before = side == null ? networks.blockUpgrades(pos) : networks.upgrades(pos, side);
             Upgrades after = before.with(type, before.count(type) + delta);
-            networks.setUpgrades(types, pos, after);
+            if (side == null) {
+                networks.setBlockUpgrades(pos, after);
+            } else {
+                networks.setUpgrades(pos, side, after);
+            }
             context.getSource().sendSuccess(() -> Component.translatable("command.vectrum.upgrade.changed",
                     pos.toShortString(), Component.translatable(ModItems.upgrade(type).getDescriptionId()),
                     after.count(type), type.maxCount()), true);
@@ -129,8 +156,12 @@ final class UpgradeCommands {
     }
 
     private static int clear(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        return withBlock(context, (networks, types, wireless, pos) -> {
-            networks.setUpgrades(types, pos, Upgrades.EMPTY);
+        return withBlock(context, (networks, types, wireless, pos, side) -> {
+            if (side == null) {
+                networks.setBlockUpgrades(pos, Upgrades.EMPTY);
+            } else {
+                networks.setUpgrades(pos, side, Upgrades.EMPTY);
+            }
             context.getSource().sendSuccess(() -> Component.translatable("command.vectrum.upgrade.cleared",
                     pos.toShortString()), true);
             return 1;

@@ -1,13 +1,14 @@
 package io.github.fishgames.vectrum.block;
 
+import io.github.fishgames.vectrum.core.config.VectrumConfig;
 import io.github.fishgames.vectrum.core.network.NodeKind;
 import io.github.fishgames.vectrum.gui.EndpointMenu;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.core.upgrade.UpgradeType;
-import io.github.fishgames.vectrum.core.upgrade.Upgrades;
 import io.github.fishgames.vectrum.registry.ModItems;
 import io.github.fishgames.vectrum.logistics.Signals;
 import io.github.fishgames.vectrum.logistics.Transport;
+import io.github.fishgames.vectrum.logistics.WorkBudget;
 import io.github.fishgames.vectrum.transfer.Port;
 import io.github.fishgames.vectrum.transfer.Ports;
 import io.github.fishgames.vectrum.transfer.RedstonePorts;
@@ -35,6 +36,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.ticks.TickPriority;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,17 +62,10 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     /** Side properties in {@link Sides#ALL} order: down, up, north, south, west, east. */
     public static final List<EnumProperty<Connection>> SIDES = List.of(DOWN, UP, NORTH, SOUTH, WEST, EAST);
 
-    /** Ticks between two transfers of a source. */
-    public static final int INTERVAL = 10;
-
-    /** Ticks between two checks of a redstone block. */
-    public static final int SIGNAL_INTERVAL = 20;
-
-    /** Shape measures in pixels (16 = one block), see {@link CableShapes#build}. */
-    public record ShapeSpec(double coreLo, double coreHi, double armLo, double armHi,
-                            double plateLo, double plateHi, double plateDepth) {
-        VoxelShape build(int key) {
-            return CableShapes.build(key & 63, key >> 6, coreLo, coreHi, armLo, armHi, plateLo, plateHi, plateDepth);
+    /** Shape measures in pixels (16 = one block), see {@link CableShapes#build}; port plates are never part of a shape. */
+    public record ShapeSpec(double coreLo, double coreHi, double armLo, double armHi) {
+        VoxelShape build(int armMask) {
+            return CableShapes.build(armMask, coreLo, coreHi, armLo, armHi);
         }
     }
 
@@ -149,7 +144,12 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     }
 
     private int portMask(BlockState state) {
-        return maskOf(state, Connection.INPUT) | maskOf(state, Connection.OUTPUT);
+        return maskOf(state, Connection.SOURCE) | maskOf(state, Connection.TARGET);
+    }
+
+    /** Bit mask of all sides with an arm: links, inputs and outputs. */
+    private int armMask(BlockState state) {
+        return linkMask(state) | portMask(state);
     }
 
     private int maskOf(BlockState state, Connection wanted) {
@@ -168,20 +168,53 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     }
 
     public boolean hasSource(BlockState state) {
-        return maskOf(state, Connection.INPUT) != 0;
+        return maskOf(state, Connection.SOURCE) != 0;
     }
 
-    /** Whether the block ticks: quantity types with a source side, redstone with any port. */
+    /**
+     * Whether the block moves goods from some of its sides: a source (pull) side, or any port side when it carries
+     * energy (a push side also takes energy out of its storage, see {@link #directionless()}).
+     */
+    public boolean hasTransportSide(BlockState state) {
+        return hasSource(state) || (types.contains(TransportType.ENERGY) && hasPort(state));
+    }
+
+    /**
+     * Whether the block is the energy cable: besides off, a side is either push (the default, shown "Push & Pull":
+     * energy flows both ways, the storage decides) or pull (only takes energy out of the storage). On any cable a push
+     * side moves energy both ways.
+     */
+    public boolean directionless() {
+        return types.size() == 1 && TransportType.ENERGY.equals(types.get(0));
+    }
+
+    /** Whether the block ticks: quantity types with a transport side, redstone with any port. */
     private boolean needsTick(BlockState state) {
         if (portless()) {
             return false;
         }
-        return signal ? hasPort(state) : hasSource(state);
+        return signal ? hasPort(state) : hasTransportSide(state);
     }
 
-    /** Ticks until the next tick. */
-    private int tickInterval(LevelNetworks networks, BlockPos pos) {
-        return signal ? SIGNAL_INTERVAL : networks.interval(pos);
+    /** Ticks until the next tick: redstone has its own interval, otherwise the shortest interval of a port side. */
+    private int tickInterval(LevelNetworks networks, BlockPos pos, BlockState state) {
+        if (signal) {
+            return VectrumConfig.get().redstoneInterval();
+        }
+        int shortest = Integer.MAX_VALUE;
+        for (Direction side : Sides.ALL) {
+            Connection connection = connection(state, side);
+            if (connection == Connection.SOURCE || connection == Connection.TARGET) {
+                shortest = Math.min(shortest, networks.interval(pos, side));
+            }
+        }
+        return shortest == Integer.MAX_VALUE ? VectrumConfig.get().transferInterval(0) : shortest;
+    }
+
+    /** Ticks until the first tick of a block that starts ticking: the interval plus the offset of its position. */
+    private int startDelay(LevelNetworks networks, BlockPos pos, BlockState state) {
+        int interval = tickInterval(networks, pos, state);
+        return interval + WorkBudget.phase(pos, interval);
     }
 
     /**
@@ -202,7 +235,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
         }
         for (Direction side : Sides.ALL) {
             Connection connection = connection(state, side);
-            if (connection != Connection.INPUT && connection != Connection.OUTPUT) {
+            if (connection != Connection.SOURCE && connection != Connection.TARGET) {
                 continue;
             }
             BlockPos neighbour = pos.relative(side);
@@ -254,11 +287,11 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
         if (signal) {
             BlockState state = level.getBlockState(neighbour);
             if (state.isSignalSource()) {
-                return EndpointMode.IN;
+                return EndpointMode.SOURCE;
             }
-            return RedstonePorts.processesSignal(state) ? EndpointMode.OUT : EndpointMode.OFF;
+            return RedstonePorts.processesSignal(state) ? EndpointMode.TARGET : EndpointMode.OFF;
         }
-        return EndpointMode.DEFAULT;
+        return directionless() ? EndpointMode.TARGET : EndpointMode.DEFAULT;
     }
 
     /** Chosen role of the side, or the default role. */
@@ -298,7 +331,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
             } else if (networks != null && !portless()) {
                 EndpointMode mode = effectiveMode(networks, level, pos, side);
                 if (mode != EndpointMode.OFF && findPort(level, neighbourPos, side.getOpposite()) != null) {
-                    connection = mode == EndpointMode.IN ? Connection.INPUT : Connection.OUTPUT;
+                    connection = mode == EndpointMode.SOURCE ? Connection.SOURCE : Connection.TARGET;
                 }
             }
             state = state.setValue(SIDES.get(i), connection);
@@ -315,24 +348,58 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
      * </ul>
      */
     public void refresh(Level level, BlockPos pos) {
+        refresh(level, pos, true);
+    }
+
+    /**
+     * Like {@link #refresh(Level, BlockPos)}; {@code external}: caused by a change outside the tick, which ends the
+     * waiting phase of an idle source and counts as the periodic check.
+     */
+    private void refresh(Level level, BlockPos pos, boolean external) {
         BlockState state = level.getBlockState(pos);
         if (state.getBlock() != this) {
             return;
         }
         BlockState updated = computeState(level, pos, state);
+        LevelNetworks networks = level instanceof ServerLevel server ? LevelNetworks.get(server) : null;
+        if (networks != null && external) {
+            networks.wakeIdle(pos);
+            networks.noteRefreshed(pos, level.getGameTime());
+        }
         if (updated != state) {
             level.setBlock(pos, updated, Block.UPDATE_ALL);
-        } else if (level instanceof ServerLevel server) {
-            LevelNetworks networks = LevelNetworks.get(server);
+        } else if (networks != null) {
+            ServerLevel server = (ServerLevel) level;
             if (signal) {
                 // Network signal
                 Signals.update(server, networks, pos);
             }
-            if (needsTick(state)) {
+            if (external && !signal && types.size() > 1) {
+                networks.notePorts(pos, portSignature(level, pos, state));
+            }
+            if (external && needsTick(state)) {
                 // Tick
-                server.scheduleTick(pos, this, tickInterval(networks, pos));
+                server.scheduleTick(pos, this, startDelay(networks, pos, state));
             }
         }
+    }
+
+    /** One bit per type and port side that has a storage of that type. */
+    private int portSignature(Level level, BlockPos pos, BlockState state) {
+        int mask = 0;
+        int bit = 0;
+        for (TransportType type : types) {
+            for (Direction side : Sides.ALL) {
+                Connection connection = connection(state, side);
+                BlockPos neighbour = pos.relative(side);
+                if ((connection == Connection.SOURCE || connection == Connection.TARGET)
+                        && level.hasChunkAt(neighbour) && Ports.find(type, level, neighbour, side.getOpposite()) != null) {
+                    mask |= 1 << bit;
+                }
+                bit++;
+            }
+        }
+        return mask;
     }
 
     @Override
@@ -365,7 +432,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
                 Signals.update(server, LevelNetworks.get(server), pos);
             }
             if (needsTick(state)) {
-                server.scheduleTick(pos, this, tickInterval(LevelNetworks.get(server), pos));
+                server.scheduleTick(pos, this, startDelay(LevelNetworks.get(server), pos, state));
             } else if (!oldState.is(this)) {
                 // Initial check
                 server.scheduleTick(pos, this, 1);
@@ -396,9 +463,9 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
             networks.clearSettings(pos);
             networks.setSignalOutput(pos, 0);
             // Upgrade drops
-            Upgrades installed = networks.takeUpgrades(pos);
+            int[] installed = networks.takeUpgrades(pos);
             for (UpgradeType upgrade : UpgradeType.VALUES) {
-                int count = installed.count(upgrade);
+                int count = installed[upgrade.ordinal()];
                 if (count > 0) {
                     Block.popResource(level, pos, new ItemStack(ModItems.upgrade(upgrade), count));
                 }
@@ -410,35 +477,50 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     /**
      * Tick.
      * <ul>
-     *   <li>1. {@link #refresh}.</li>
-     *   <li>2. Registers the node when a type is not registered in the network.</li>
+     *   <li>1. Waits for the next tick when the work budget of the server tick is spent.</li>
+     *   <li>2. Refreshes the state: on every tick for redstone, otherwise every refresh interval; also registers the
+     *       node when a type is not registered in the network.</li>
      *   <li>3. Stops when the block does not need a tick.</li>
      *   <li>4. Non-signal block: runs the transfer.</li>
-     *   <li>5. Schedules the next tick.</li>
+     *   <li>5. Schedules the next tick: regular interval, longer while the source moves nothing.</li>
      * </ul>
      */
     @Override
     @SuppressWarnings("deprecation")
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        refresh(level, pos);
-        BlockState current = level.getBlockState(pos);
-        if (current.getBlock() != this) {
+        WorkBudget.begin(level.getServer());
+        if (WorkBudget.exhausted()) {
+            level.scheduleTick(pos, this, 1, TickPriority.HIGH);
             return;
         }
         LevelNetworks networks = LevelNetworks.get(level);
-        for (TransportType type : types) {
-            if (!networks.isRegistered(type, pos)) {
-                syncGraph(level, pos, current, true);
-                break;
+        if (signal || networks.refreshDue(pos, level.getGameTime())) {
+            refresh(level, pos, false);
+            BlockState refreshed = level.getBlockState(pos);
+            if (refreshed.getBlock() != this) {
+                return;
+            }
+            for (TransportType type : types) {
+                if (!networks.isRegistered(type, pos)) {
+                    syncGraph(level, pos, refreshed, true);
+                    break;
+                }
             }
         }
-        if (!needsTick(current)) {
+        BlockState current = level.getBlockState(pos);
+        if (current.getBlock() != this || !needsTick(current)) {
             return;
         }
-        if (!signal) {
-            Transport.run(level, pos, current, this);
+        if (signal) {
+            level.scheduleTick(pos, this, tickInterval(networks, pos, current));
+            return;
         }
-        level.scheduleTick(pos, this, tickInterval(networks, pos));
+        long moved = Transport.run(level, networks, pos, current, this);
+        if (moved == 0 && WorkBudget.exhausted()) {
+            level.scheduleTick(pos, this, 1, TickPriority.HIGH);
+            return;
+        }
+        level.scheduleTick(pos, this, networks.nextDelay(pos, moved > 0, tickInterval(networks, pos, current)));
     }
 
     // Wrench
@@ -492,8 +574,23 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
         return level.hasChunkAt(neighbour) && findPort(level, neighbour, side.getOpposite()) != null;
     }
 
-    /** Translation key of the role; signal blocks use the {@code _signal} variant. */
+    /** Role after {@code current} in the wrench cycle; the energy cable runs push and pull, pull only, off. */
+    public EndpointMode nextRole(EndpointMode current) {
+        if (directionless()) {
+            return switch (current) {
+                case TARGET -> EndpointMode.SOURCE;
+                case SOURCE -> EndpointMode.OFF;
+                case OFF -> EndpointMode.TARGET;
+            };
+        }
+        return current.next();
+    }
+
+    /** Translation key of the role; signal blocks use the {@code _signal} variant, the energy cable's push "both". */
     public String roleKey(EndpointMode mode) {
+        if (directionless() && mode == EndpointMode.TARGET) {
+            return "mode.vectrum.both";
+        }
         return signal && mode != EndpointMode.OFF ? mode.translationKey() + "_signal" : mode.translationKey();
     }
 
@@ -555,7 +652,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
             player.displayClientMessage(Component.translatable("message.vectrum.no_inventory"), true);
             return;
         }
-        EndpointMode next = effectiveMode(networks, level, pos, side).next();
+        EndpointMode next = nextRole(effectiveMode(networks, level, pos, side));
         setRole(server, pos, side, next);
         player.displayClientMessage(Component.translatable("message.vectrum.endpoint_mode",
                 sideName, Component.translatable(roleKey(next))), true);
@@ -594,7 +691,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     @Override
     @SuppressWarnings("deprecation")
     public boolean isSignalSource(BlockState state) {
-        return signal && maskOf(state, Connection.OUTPUT) != 0;
+        return signal && maskOf(state, Connection.TARGET) != 0;
     }
 
     /**
@@ -605,7 +702,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     @Override
     @SuppressWarnings("deprecation")
     public int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-        if (!signal || !(level instanceof ServerLevel server) || connection(state, direction.getOpposite()) != Connection.OUTPUT) {
+        if (!signal || !(level instanceof ServerLevel server) || connection(state, direction.getOpposite()) != Connection.TARGET) {
             return 0;
         }
         return LevelNetworks.get(server).signalOutput(pos);
@@ -625,6 +722,12 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
                     ModItems.WIRELESS_PORT.get()));
             if (ModItems.GAS_CABLE != null) {
                 built.add(ModItems.GAS_CABLE.get());
+            }
+            if (ModItems.SOURCE_CABLE != null) {
+                built.add(ModItems.SOURCE_CABLE.get());
+            }
+            if (ModItems.HEAT_CABLE != null) {
+                built.add(ModItems.HEAT_CABLE.get());
             }
             items = List.copyOf(built);
             expandTriggerItems = items;
@@ -646,7 +749,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
      * Placement/interaction shape: decides what the crosshair hits here, so it governs opening the port screen, the
      * wrench, and targeting through or against this block while placing or breaking something else.
      * <ul>
-     *   <li>No {@link #expandedSelectionSpec} (universal cable, digital cable, item endpoint): always {@link #selectionSpec}.</li>
+     *   <li>No {@link #expandedSelectionSpec} (universal cable, item endpoint): always {@link #selectionSpec}.</li>
      *   <li>Otherwise: {@link #expandedSelectionSpec} while the wrench, a cable, a coder or a wireless port is held
      *       ({@link #isExpandTrigger}), so the network stays easy to extend; {@link #selectionSpec} (matching the
      *       rendered model) the rest of the time, so an empty hand or an unrelated item can click past the cable.</li>
@@ -655,7 +758,7 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     @Override
     @SuppressWarnings("deprecation")
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        int key = linkMask(state) | (portMask(state) << 6);
+        int key = armMask(state);
         if (expandedSelectionSpec != null && isExpandTrigger(context)) {
             return expandedSelectionShapes.computeIfAbsent(key, expandedSelectionSpec::build);
         }
@@ -665,7 +768,6 @@ public abstract class ConduitBlock extends Block implements NetworkBlock {
     @Override
     @SuppressWarnings("deprecation")
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        int key = linkMask(state) | (portMask(state) << 6);
-        return collisionShapes.computeIfAbsent(key, collisionSpec::build);
+        return collisionShapes.computeIfAbsent(armMask(state), collisionSpec::build);
     }
 }

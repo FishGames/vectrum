@@ -12,22 +12,18 @@ final class CableShapes {
     }
 
     /**
-     * Core cube plus one arm per link side and one plate per port side.
+     * Core cube plus one arm per side in {@code armMask}.
      *
-     * @param linkMask side bits with a cable/endpoint link (arms)
-     * @param portMask side bits with an attached inventory (plates, {@code plateDepth} thick)
+     * @param armMask side bits with an arm (cable/endpoint link or attached inventory)
      */
-    static VoxelShape build(int linkMask, int portMask,
+    static VoxelShape build(int armMask,
                             double coreLo, double coreHi,
-                            double armLo, double armHi,
-                            double plateLo, double plateHi, double plateDepth) {
+                            double armLo, double armHi) {
         VoxelShape shape = Block.box(coreLo, coreLo, coreLo, coreHi, coreHi, coreHi);
         for (int i = 0; i < Sides.ALL.length; i++) {
             int bit = 1 << i;
-            if ((linkMask & bit) != 0) {
+            if ((armMask & bit) != 0) {
                 shape = Shapes.or(shape, side(Sides.ALL[i], armLo, armHi, coreLo, coreHi));
-            } else if ((portMask & bit) != 0) {
-                shape = Shapes.or(shape, side(Sides.ALL[i], plateLo, plateHi, plateDepth, 16 - plateDepth));
             }
         }
         return shape.optimize();

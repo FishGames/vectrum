@@ -39,6 +39,34 @@ public final class Router {
     }
 
     /**
+     * Groups targets by priority, highest first, keeping the input order inside a group.
+     *
+     * @return one list per priority; the input list itself when all targets share one priority
+     */
+    public static <T> List<List<T>> groupByPriority(List<T> targets, ToIntFunction<T> priority) {
+        if (targets.isEmpty()) {
+            return List.of();
+        }
+        int first = priority.applyAsInt(targets.get(0));
+        boolean uniform = true;
+        for (int i = 1; i < targets.size() && uniform; i++) {
+            uniform = priority.applyAsInt(targets.get(i)) == first;
+        }
+        if (uniform) {
+            return List.of(targets);
+        }
+        TreeMap<Integer, List<T>> groups = new TreeMap<>(Comparator.reverseOrder());
+        for (T target : targets) {
+            groups.computeIfAbsent(priority.applyAsInt(target), key -> new ArrayList<>()).add(target);
+        }
+        List<List<T>> result = new ArrayList<>(groups.size());
+        for (List<T> group : groups.values()) {
+            result.add(List.copyOf(group));
+        }
+        return List.copyOf(result);
+    }
+
+    /**
      * Distributes up to {@code budget} units across the targets.
      *
      * <ul>
@@ -59,15 +87,17 @@ public final class Router {
         if (budget <= 0 || targets.isEmpty()) {
             return 0;
         }
+        return distributeGroups(budget, groupByPriority(targets, priority), fillLevel, mode, pointer, mover);
+    }
 
-        // Priority groups
-        TreeMap<Integer, List<T>> groups = new TreeMap<>(Comparator.reverseOrder());
-        for (T target : targets) {
-            groups.computeIfAbsent(priority.applyAsInt(target), key -> new ArrayList<>()).add(target);
+    /** Like {@link #distribute} for targets already grouped by {@link #groupByPriority}. */
+    public static <T> long distributeGroups(long budget, List<List<T>> groups, ToDoubleFunction<T> fillLevel,
+                                            DistributionMode mode, Pointer pointer, Mover<T> mover) {
+        if (budget <= 0 || groups.isEmpty()) {
+            return 0;
         }
-
         long remaining = budget;
-        for (List<T> group : groups.values()) {
+        for (List<T> group : groups) {
             if (remaining <= 0) {
                 break;
             }

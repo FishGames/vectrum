@@ -38,7 +38,7 @@ import java.util.List;
 public final class VectrumCommands {
     /** Transport types accepted as short names. */
     private static final List<TransportType> KNOWN_TYPES = List.of(TransportType.ITEM, TransportType.FLUID,
-            TransportType.ENERGY, TransportType.REDSTONE, TransportType.GAS);
+            TransportType.ENERGY, TransportType.REDSTONE, TransportType.GAS, TransportType.SOURCE, TransportType.HEAT);
 
     private VectrumCommands() {
     }

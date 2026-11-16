@@ -380,7 +380,8 @@ class NetworkGraphTest {
     @Test
     void builtInTransportTypesHaveTheRightBehaviour() {
         assertEquals(TransportType.Behavior.SIGNAL, TransportType.REDSTONE.behavior());
-        for (TransportType type : List.of(TransportType.ITEM, TransportType.FLUID, TransportType.ENERGY, TransportType.GAS)) {
+        for (TransportType type : List.of(TransportType.ITEM, TransportType.FLUID, TransportType.ENERGY, TransportType.GAS,
+                TransportType.SOURCE, TransportType.HEAT)) {
             assertEquals(TransportType.Behavior.QUANTITY, type.behavior());
         }
     }

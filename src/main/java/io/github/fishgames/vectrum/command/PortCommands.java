@@ -41,7 +41,7 @@ import java.util.function.UnaryOperator;
  *   <li>{@code ... priority <value>}</li>
  *   <li>{@code ... mode sequential|round_robin|balanced}</li>
  *   <li>{@code ... filter add|remove <id>}, {@code filter clear}, {@code filter type whitelist|blacklist}</li>
- *   <li>{@code ... role in|out|off}</li>
+ *   <li>{@code ... role pull|push|off}</li>
  *   <li>{@code ... reset}</li>
  * </ul>
  */
@@ -82,7 +82,7 @@ final class PortCommands {
                                 .then(Commands.literal("role")
                                         .then(Commands.argument("role", StringArgumentType.word())
                                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                                        java.util.List.of("in", "out", "off"), builder))
+                                                        java.util.List.of("pull", "push", "off"), builder))
                                                 .executes(PortCommands::setRole)))
                                 .then(Commands.literal("reset")
                                         .executes(PortCommands::reset))));
@@ -133,8 +133,8 @@ final class PortCommands {
                     Component.translatable("distribution.vectrum." + settings.mode().id()),
                     describeFilter(settings.filter())), false);
             boolean free = context.getSource().getLevel().getBlockState(pos).getBlock() instanceof WirelessBlock;
-            if (!free && (!networks.upgrades(pos).has(UpgradeType.PRIORITY) && settings.priority() != 0
-                    || !networks.upgrades(pos).has(UpgradeType.FILTER) && !settings.filter().isEmpty())) {
+            if (!free && (!networks.upgrades(pos, side).has(UpgradeType.PRIORITY) && settings.priority() != 0
+                    || !networks.upgrades(pos, side).has(UpgradeType.FILTER) && !settings.filter().isEmpty())) {
                 context.getSource().sendSuccess(() -> Component.translatable("command.vectrum.port.inactive"), false);
             }
             return settings.priority();
@@ -145,7 +145,7 @@ final class PortCommands {
                               String messageKey, java.util.function.Function<PortSettings, Object> argument,
                               UpgradeType required) throws CommandSyntaxException {
         return withPort(context, (networks, pos, side) -> {
-            if (required != null && !networks.upgrades(pos).has(required)
+            if (required != null && !networks.upgrades(pos, side).has(required)
                     && !(context.getSource().getLevel().getBlockState(pos).getBlock() instanceof WirelessBlock)) {
                 context.getSource().sendFailure(Component.translatable("command.vectrum.port.locked",
                         pos.toShortString(), Component.translatable(ModItems.upgrade(required).getDescriptionId())));
@@ -201,12 +201,12 @@ final class PortCommands {
                 "command.vectrum.port.filter", settings -> describeFilter(settings.filter()), UpgradeType.FILTER);
     }
 
-    /** Sets the role of a side (in, out, off). */
+    /** Sets the role of a side (pull, push, off). */
     private static int setRole(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         String name = StringArgumentType.getString(context, "role");
         EndpointMode mode = switch (name) {
-            case "in" -> EndpointMode.IN;
-            case "out" -> EndpointMode.OUT;
+            case "push" -> EndpointMode.TARGET;
+            case "pull" -> EndpointMode.SOURCE;
             case "off" -> EndpointMode.OFF;
             default -> null;
         };

@@ -208,4 +208,51 @@ class RouterTest {
             }
         }
     }
+
+    @Test
+    void groupsAreOrderedByPriorityAndKeepTheInputOrder() {
+        Sink a = sink("a", 0, 1), b = sink("b", 2, 1), c = sink("c", 0, 1), d = sink("d", 2, 1);
+
+        List<List<Sink>> groups = Router.groupByPriority(List.of(a, b, c, d), s -> s.priority);
+
+        assertEquals(List.of(List.of(b, d), List.of(a, c)), groups);
+    }
+
+    @Test
+    void equalPrioritiesStayOneGroupAndNoTargetsGiveNoGroups() {
+        List<Sink> sinks = List.of(sink("a", 1, 1), sink("b", 1, 1));
+
+        assertEquals(List.of(sinks), Router.groupByPriority(sinks, s -> s.priority));
+        assertTrue(Router.groupByPriority(List.<Sink>of(), s -> s.priority).isEmpty());
+    }
+
+    @Test
+    void preGroupedDistributionGivesTheSameResultAsDirectDistribution() {
+        Random random = new Random(7);
+        for (int round = 0; round < 300; round++) {
+            List<Sink> direct = new ArrayList<>();
+            List<Sink> grouped = new ArrayList<>();
+            int count = 1 + random.nextInt(6);
+            for (int i = 0; i < count; i++) {
+                long cap = random.nextInt(100);
+                int prio = random.nextInt(3);
+                direct.add(new Sink("s" + i, prio, cap, 0));
+                grouped.add(new Sink("s" + i, prio, cap, 0));
+            }
+            long budget = random.nextInt(200);
+            DistributionMode mode = DistributionMode.values()[random.nextInt(3)];
+            Ptr pointerA = new Ptr(), pointerB = new Ptr();
+            pointerA.value = pointerB.value = random.nextInt(10);
+
+            long first = run(budget, direct, mode, pointerA);
+            long second = Router.distributeGroups(budget, Router.groupByPriority(grouped, s -> s.priority),
+                    Sink::fill, mode, pointerB, Sink::accept);
+
+            assertEquals(first, second);
+            assertEquals(pointerA.value, pointerB.value);
+            for (int i = 0; i < count; i++) {
+                assertEquals(direct.get(i).stored, grouped.get(i).stored);
+            }
+        }
+    }
 }

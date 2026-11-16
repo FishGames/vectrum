@@ -54,6 +54,17 @@ final class ForgeFluidPort implements Port {
         return filled;
     }
 
+    @Override
+    public boolean canGive(Predicate<String> filter) {
+        for (int tank = 0; tank < handler.getTanks(); tank++) {
+            FluidStack inTank = handler.getFluidInTank(tank);
+            if (!inTank.isEmpty() && (filter == ALL || filter.test(ResourceIds.of(inTank.getFluid())))) {
+                return true;
+            }
+        }
+        return filter == ALL && !handler.drain(1, IFluidHandler.FluidAction.SIMULATE).isEmpty();
+    }
+
     /** First fluid in the source tanks that the filter allows (simulated drain). */
     private FluidStack firstAllowed(int limit, Predicate<String> filter) {
         for (int tank = 0; tank < handler.getTanks(); tank++) {

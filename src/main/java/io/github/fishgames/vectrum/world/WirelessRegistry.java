@@ -2,6 +2,7 @@ package io.github.fishgames.vectrum.world;
 
 import io.github.fishgames.vectrum.block.WirelessBlock;
 import io.github.fishgames.vectrum.core.network.BlockCoord;
+import io.github.fishgames.vectrum.core.routing.Router;
 import io.github.fishgames.vectrum.core.transport.TransportType;
 import io.github.fishgames.vectrum.core.upgrade.UpgradeEffects;
 import io.github.fishgames.vectrum.core.upgrade.Upgrades;
@@ -51,14 +52,16 @@ public final class WirelessRegistry extends SavedData {
     /**
      * Receiving sides of a frequency; {@code complete} is {@code false} when receivers sit in unloaded chunks.
      *
+     * @param groups   the targets grouped by priority, highest first
      * @param unloaded receiving blocks in unloaded chunks
      * @param locked   receiving blocks excluded by the dimension rule
      */
-    public record Receivers(List<Target> targets, boolean complete, int unloaded, int locked) {
+    public record Receivers(List<Target> targets, List<List<Target>> groups, boolean complete, int unloaded,
+                            int locked) {
     }
 
     /** Cached receiver list with validity data. */
-    private record Cached(long tableVersion, long epoch, long validUntil, Receivers receivers) {
+    private record Cached(long tableVersion, long stamp, long validUntil, Receivers receivers) {
     }
 
     private final Map<CacheKey, Cached> cache = new HashMap<>();
@@ -135,7 +138,7 @@ public final class WirelessRegistry extends SavedData {
 
     private void changed() {
         setDirty();
-        LevelNetworks.invalidateCaches();
+        LevelNetworks.touchWireless();
     }
 
     // Targets
@@ -145,7 +148,7 @@ public final class WirelessRegistry extends SavedData {
      * receive mode (RECEIVE or BOTH) that has a storage of this type, plus the targets of the cable network attached
      * to that block.
      * <ul>
-     * <li>1. cache hit when table version, epoch and validity match</li>
+     * <li>1. cache hit when table version, stamp and validity match</li>
      * <li>2. per receiver: skip unknown dimension; incomplete on unloaded chunk; queue stale entry when the block
      * is no longer a wireless block; skip when the link is not allowed by the upgrades</li>
      * <li>3. per side with a matching port: add a target with effective settings</li>
@@ -157,12 +160,12 @@ public final class WirelessRegistry extends SavedData {
     public Receivers receivers(MinecraftServer server, TransportType type, int frequency, Level senderLevel,
                                   Upgrades senderUpgrades) {
         long now = server.getTickCount();
-        long epoch = LevelNetworks.epoch();
+        long stamp = LevelNetworks.stamp();
         String senderDimension = senderLevel.dimension().location().toString();
         CacheKey key = new CacheKey(frequency, type.id(), senderDimension,
                 UpgradeEffects.dimensionUnlocked(senderUpgrades));
         Cached cached = cache.get(key);
-        if (cached != null && cached.tableVersion() == table.version() && cached.epoch() == epoch
+        if (cached != null && cached.tableVersion() == table.version() && cached.stamp() == stamp
                 && now < cached.validUntil()) {
             return cached.receivers();
         }
@@ -189,14 +192,14 @@ public final class WirelessRegistry extends SavedData {
             }
             LevelNetworks networks = LevelNetworks.get(level);
             if (!UpgradeEffects.canLink(level.dimension().equals(senderLevel.dimension()), senderUpgrades,
-                    networks.upgrades(pos))) {
+                    networks.blockUpgrades(pos))) {
                 locked++;
                 continue;
             }
             for (Direction side : Sides.ALL) {
                 BlockPos neighbour = pos.relative(side);
                 if (level.hasChunkAt(neighbour) && Ports.find(type, level, neighbour, side.getOpposite()) != null) {
-                    result.add(new Target(level, pos, side, neighbour, networks.effectiveSettings(pos, side, true)));
+                    result.add(Target.of(type, level, pos, side, neighbour, networks.effectiveSettings(pos, side, true)));
                 }
             }
             boolean[] attachedComplete = {true};
@@ -211,8 +214,10 @@ public final class WirelessRegistry extends SavedData {
         if (!stale.isEmpty()) {
             changed();
         }
-        Receivers found = new Receivers(List.copyOf(new LinkedHashSet<>(result)), complete, unloaded, locked);
-        cache.put(key, new Cached(table.version(), LevelNetworks.epoch(),
+        List<Target> distinct = List.copyOf(new LinkedHashSet<>(result));
+        Receivers found = new Receivers(distinct,
+                Router.groupByPriority(distinct, target -> target.settings().priority()), complete, unloaded, locked);
+        cache.put(key, new Cached(table.version(), LevelNetworks.stamp(),
                 complete ? Long.MAX_VALUE : now + INCOMPLETE_LIFETIME, found));
         return found;
     }

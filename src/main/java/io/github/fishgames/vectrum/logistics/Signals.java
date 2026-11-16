@@ -90,7 +90,7 @@ public final class Signals {
         return value;
     }
 
-    /** Input and output side counts of the network: {@code {inputs, outputs}}. */
+    /** Source and target side counts of the network: {@code {sources, targets}}. */
     public static int[] countSides(ServerLevel level, Network network) {
         int[] counts = new int[2];
         for (BlockCoord coord : network.endpointPositions()) {
@@ -102,9 +102,9 @@ public final class Signals {
             if (state.getBlock() instanceof ConduitBlock block && block.isSignalBlock()) {
                 for (Direction side : Sides.ALL) {
                     Connection connection = block.connection(state, side);
-                    if (connection == Connection.INPUT) {
+                    if (connection == Connection.SOURCE) {
                         counts[0]++;
-                    } else if (connection == Connection.OUTPUT) {
+                    } else if (connection == Connection.TARGET) {
                         counts[1]++;
                     }
                 }
@@ -115,18 +115,18 @@ public final class Signals {
 
     private static boolean hasOutput(BlockState state, ConduitBlock block) {
         for (Direction side : Sides.ALL) {
-            if (block.connection(state, side) == Connection.OUTPUT) {
+            if (block.connection(state, side) == Connection.TARGET) {
                 return true;
             }
         }
         return false;
     }
 
-    /** Strongest signal at the input sides of this block. */
+    /** Strongest signal at the source sides of this block. */
     private static int inputOf(ServerLevel level, BlockPos pos, BlockState state, ConduitBlock block) {
         int strongest = 0;
         for (Direction side : Sides.ALL) {
-            if (block.connection(state, side) == Connection.INPUT) {
+            if (block.connection(state, side) == Connection.SOURCE) {
                 BlockPos neighbour = pos.relative(side);
                 if (level.hasChunkAt(neighbour)) {
                     strongest = Math.max(strongest, level.getSignal(neighbour, side));

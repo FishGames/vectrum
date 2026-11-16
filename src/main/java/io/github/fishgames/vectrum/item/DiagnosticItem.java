@@ -52,7 +52,7 @@ public class DiagnosticItem extends Item {
                         Component.translatable("link.vectrum." + registry.mode(server, pos, TransportType.ITEM).id()),
                         Component.translatable("link.vectrum." + registry.mode(server, pos, TransportType.FLUID).id()),
                         Component.translatable("link.vectrum." + registry.mode(server, pos, TransportType.ENERGY).id()),
-                        WirelessBlock.gasSuffix(registry, server, pos)),
+                        WirelessBlock.moduleSuffix(registry, server, pos)),
                         true);
             }
             return InteractionResult.sidedSuccess(level.isClientSide);

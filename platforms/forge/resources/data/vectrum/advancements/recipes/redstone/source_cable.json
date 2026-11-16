@@ -1,0 +1,38 @@
+{
+  "conditions": [
+    { "type": "forge:item_exists", "item": "vectrum:source_cable" }
+  ],
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_energy_cable": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "vectrum:energy_cable"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "vectrum:source_cable"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_energy_cable",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "vectrum:source_cable"
+    ]
+  },
+  "sends_telemetry_event": false
+}

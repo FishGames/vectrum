@@ -7,6 +7,201 @@
     },
     {
       "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/gas_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
         "model": "vectrum:block/gas_cable_arm"
       },
       "when": {

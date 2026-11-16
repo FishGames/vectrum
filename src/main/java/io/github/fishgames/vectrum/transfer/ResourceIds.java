@@ -6,10 +6,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.material.Fluid;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 /** Item and fluid ids as they appear in a filter ({@code namespace:path}). */
 public final class ResourceIds {
+    private static final Map<Item, String> ITEM_IDS = new ConcurrentHashMap<>();
     private static Predicate<String> gasIds = id -> false;
 
     private ResourceIds() {
@@ -38,9 +41,14 @@ public final class ResourceIds {
         gasIds = check;
     }
 
-    /** Id of an item. */
+    /** Id of an item (memoised). */
     public static String of(Item item) {
-        return BuiltInRegistries.ITEM.getKey(item).toString();
+        String id = ITEM_IDS.get(item);
+        if (id == null) {
+            id = BuiltInRegistries.ITEM.getKey(item).toString();
+            ITEM_IDS.put(item, id);
+        }
+        return id;
     }
 
     /** Id of a fluid. */

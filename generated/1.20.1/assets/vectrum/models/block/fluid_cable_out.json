@@ -4,16 +4,40 @@
     {
       "faces": {
         "down": {
-          "texture": "#all"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "east": {
-          "texture": "#all"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "up": {
-          "texture": "#all"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "west": {
-          "texture": "#all"
+          "texture": "#all",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         }
       },
       "from": [
@@ -26,40 +50,10 @@
         11,
         5
       ]
-    },
-    {
-      "faces": {
-        "down": {
-          "texture": "#port"
-        },
-        "east": {
-          "texture": "#port"
-        },
-        "south": {
-          "texture": "#port"
-        },
-        "up": {
-          "texture": "#port"
-        },
-        "west": {
-          "texture": "#port"
-        }
-      },
-      "from": [
-        4,
-        4,
-        0
-      ],
-      "to": [
-        12,
-        12,
-        1
-      ]
     }
   ],
   "textures": {
     "all": "vectrum:block/fluid_cable",
-    "particle": "vectrum:block/fluid_cable",
-    "port": "vectrum:block/item_endpoint_out"
+    "particle": "vectrum:block/fluid_cable"
   }
 }

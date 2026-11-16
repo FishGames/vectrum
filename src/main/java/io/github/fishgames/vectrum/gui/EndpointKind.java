@@ -2,25 +2,16 @@ package io.github.fishgames.vectrum.gui;
 
 /** Kinds of blocks with an endpoint screen. */
 public enum EndpointKind {
-    CABLE(true),
-    REDSTONE(true),
-    WIRELESS(true),
-    CODER(false);
-
-    private final boolean sides;
-
-    EndpointKind(boolean sides) {
-        this.sides = sides;
-    }
-
-    /** Whether the screen shows settings per side. */
-    public boolean hasSides() {
-        return sides;
-    }
+    CABLE,
+    REDSTONE,
+    WIRELESS,
+    CODER,
+    /** Energy cable: like {@link #CABLE}, but its sides only switch on and off (energy flows both ways). */
+    ENERGY_CABLE;
 
     /** Whether the kind has filter and priority settings. */
     public boolean hasFilter() {
-        return this == CABLE || this == WIRELESS;
+        return this == CABLE || this == ENERGY_CABLE || this == WIRELESS;
     }
 
     public static EndpointKind byOrdinal(int ordinal) {

@@ -1,35 +1,27 @@
 package io.github.fishgames.vectrum.core.upgrade;
 
+import io.github.fishgames.vectrum.core.config.VectrumConfig;
 import io.github.fishgames.vectrum.core.util.SaturatedMath;
 
-/** Effects of upgrades: throughput limit, transfer interval, item type count, feature unlocks. */
+/** Effects of upgrades: amount per transfer, transfer interval, item type count, feature unlocks. */
 public final class UpgradeEffects {
-    /** Limit factor per throughput upgrade. */
-    public static final long THROUGHPUT_FACTOR = 4;
-    /** Item types per transfer without upgrades. */
-    public static final int BASE_TYPES = 1;
-
     private UpgradeEffects() {
     }
 
-    /** Throughput limit per transfer: {@code base * 4^count}, saturating at {@link Long#MAX_VALUE}. */
+    /** Amount per transfer: {@code base} times the configured factor, saturating at {@link Long#MAX_VALUE}. */
     public static long throughput(long base, Upgrades upgrades) {
-        long result = base;
-        for (int i = 0; i < upgrades.count(UpgradeType.THROUGHPUT); i++) {
-            result = SaturatedMath.multiplySaturated(result, THROUGHPUT_FACTOR);
-        }
-        return result;
+        return SaturatedMath.multiplySaturated(base,
+                VectrumConfig.get().throughputFactor(upgrades.count(UpgradeType.THROUGHPUT)));
     }
 
-    /** Ticks between transfers: base halved per speed upgrade, at least 1. */
-    public static int interval(int baseTicks, Upgrades upgrades) {
-        int shift = upgrades.count(UpgradeType.SPEED);
-        return Math.max(1, baseTicks >> shift);
+    /** Ticks between transfers from the configured speed table. */
+    public static int interval(Upgrades upgrades) {
+        return VectrumConfig.get().transferInterval(upgrades.count(UpgradeType.SPEED));
     }
 
     /** Item types allowed per transfer to one target. */
     public static int maxTypes(Upgrades upgrades) {
-        return BASE_TYPES + upgrades.count(UpgradeType.TYPES);
+        return VectrumConfig.get().itemTypesPerTransfer(upgrades.count(UpgradeType.TYPES));
     }
 
     public static boolean filterUnlocked(Upgrades upgrades) {

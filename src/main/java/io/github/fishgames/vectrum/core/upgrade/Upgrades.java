@@ -1,8 +1,10 @@
 package io.github.fishgames.vectrum.core.upgrade;
 
+import io.github.fishgames.vectrum.core.config.VectrumConfig;
+
 import java.util.Arrays;
 
-/** Upgrade counts of a block, 0 to {@link UpgradeType#maxCount()} per type. Immutable. */
+/** Upgrade counts of a block. Immutable. */
 public final class Upgrades {
     public static final Upgrades EMPTY = new Upgrades(new int[UpgradeType.VALUES.length]);
 
@@ -12,11 +14,11 @@ public final class Upgrades {
         this.counts = counts;
     }
 
-    /** Builds from stored counts; missing entries are 0, values are clamped to 0..max. */
+    /** Builds from stored counts; missing entries are 0, values are clamped to 0..{@link VectrumConfig#MAX_UPGRADE_COUNT}. */
     public static Upgrades of(int[] stored) {
         int[] counts = new int[UpgradeType.VALUES.length];
         for (int i = 0; i < counts.length && i < stored.length; i++) {
-            counts[i] = Math.max(0, Math.min(stored[i], UpgradeType.VALUES[i].maxCount()));
+            counts[i] = Math.max(0, Math.min(stored[i], VectrumConfig.MAX_UPGRADE_COUNT));
         }
         return isAllZero(counts) ? EMPTY : new Upgrades(counts);
     }
@@ -50,7 +52,7 @@ public final class Upgrades {
 
     /** Remaining slots for the type. */
     public int freeSlots(UpgradeType type) {
-        return type.maxCount() - count(type);
+        return Math.max(0, type.maxCount() - count(type));
     }
 
     /** One count per type in {@link UpgradeType} order. */

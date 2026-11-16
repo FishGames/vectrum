@@ -2,12 +2,1063 @@
   "multipart": [
     {
       "apply": {
-        "model": "vectrum:block/item_cable_core"
+        "model": "vectrum:block/item_cable_core_north_d"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "up": "none",
+        "west": "none"
       }
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_arm"
+        "model": "vectrum:block/item_cable_core_north_l"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_ld"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_lr"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_lrd"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_lru"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_lrud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_lu"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_lud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_none"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_r"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_rd"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_ru"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_rud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_u"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_north_ud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_d"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_l"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_ld"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_lr"
+      },
+      "when": {
+        "down": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_lrd"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_lru"
+      },
+      "when": {
+        "down": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_lrud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_lu"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_lud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_none"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_r"
+      },
+      "when": {
+        "down": "none",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_rd"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_ru"
+      },
+      "when": {
+        "down": "none",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_rud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_u"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_east_ud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_d"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_l"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_ld"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_lr"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_lrd"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_lru"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_lrud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_lu"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_lud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_none"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_r"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_rd"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_ru"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_rud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_u"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_south_ud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_d"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_l"
+      },
+      "when": {
+        "down": "none",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_ld"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_lr"
+      },
+      "when": {
+        "down": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_lrd"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_lru"
+      },
+      "when": {
+        "down": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_lrud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_lu"
+      },
+      "when": {
+        "down": "none",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_lud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_none"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_r"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_rd"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_ru"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_rud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_u"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_west_ud"
+      },
+      "when": {
+        "down": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_d"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_l"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_ld"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_lr"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_lrd"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "none",
+        "south": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_lru"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_lrud"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_lu"
+      },
+      "when": {
+        "east": "none",
+        "north": "link|in|out",
+        "south": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_lud"
+      },
+      "when": {
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_none"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_r"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_rd"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "none",
+        "south": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_ru"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_rud"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_u"
+      },
+      "when": {
+        "east": "none",
+        "north": "link|in|out",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_up_ud"
+      },
+      "when": {
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_d"
+      },
+      "when": {
+        "east": "none",
+        "north": "link|in|out",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_l"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_ld"
+      },
+      "when": {
+        "east": "none",
+        "north": "link|in|out",
+        "south": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_lr"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_lrd"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_lru"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "none",
+        "south": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_lrud"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_lu"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_lud"
+      },
+      "when": {
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_none"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_r"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_rd"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_ru"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "none",
+        "south": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_rud"
+      },
+      "when": {
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_u"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_core_down_ud"
+      },
+      "when": {
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_arm_north"
       },
       "when": {
         "north": "link"
@@ -15,15 +1066,7 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_in"
-      },
-      "when": {
-        "north": "in"
-      }
-    },
-    {
-      "apply": {
-        "model": "vectrum:block/item_cable_out"
+        "model": "vectrum:block/item_cable_out_north"
       },
       "when": {
         "north": "out"
@@ -31,8 +1074,15 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_arm",
-        "y": 90
+        "model": "vectrum:block/item_cable_in_north"
+      },
+      "when": {
+        "north": "in"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_arm_east"
       },
       "when": {
         "east": "link"
@@ -40,17 +1090,7 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_in",
-        "y": 90
-      },
-      "when": {
-        "east": "in"
-      }
-    },
-    {
-      "apply": {
-        "model": "vectrum:block/item_cable_out",
-        "y": 90
+        "model": "vectrum:block/item_cable_out_east"
       },
       "when": {
         "east": "out"
@@ -58,8 +1098,15 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_arm",
-        "y": 180
+        "model": "vectrum:block/item_cable_in_east"
+      },
+      "when": {
+        "east": "in"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_arm_south"
       },
       "when": {
         "south": "link"
@@ -67,17 +1114,7 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_in",
-        "y": 180
-      },
-      "when": {
-        "south": "in"
-      }
-    },
-    {
-      "apply": {
-        "model": "vectrum:block/item_cable_out",
-        "y": 180
+        "model": "vectrum:block/item_cable_out_south"
       },
       "when": {
         "south": "out"
@@ -85,8 +1122,15 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_arm",
-        "y": 270
+        "model": "vectrum:block/item_cable_in_south"
+      },
+      "when": {
+        "south": "in"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_arm_west"
       },
       "when": {
         "west": "link"
@@ -94,17 +1138,7 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_in",
-        "y": 270
-      },
-      "when": {
-        "west": "in"
-      }
-    },
-    {
-      "apply": {
-        "model": "vectrum:block/item_cable_out",
-        "y": 270
+        "model": "vectrum:block/item_cable_out_west"
       },
       "when": {
         "west": "out"
@@ -112,8 +1146,15 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_arm",
-        "x": 270
+        "model": "vectrum:block/item_cable_in_west"
+      },
+      "when": {
+        "west": "in"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_arm_up"
       },
       "when": {
         "up": "link"
@@ -121,17 +1162,7 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_in",
-        "x": 270
-      },
-      "when": {
-        "up": "in"
-      }
-    },
-    {
-      "apply": {
-        "model": "vectrum:block/item_cable_out",
-        "x": 270
+        "model": "vectrum:block/item_cable_out_up"
       },
       "when": {
         "up": "out"
@@ -139,8 +1170,15 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_arm",
-        "x": 90
+        "model": "vectrum:block/item_cable_in_up"
+      },
+      "when": {
+        "up": "in"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_arm_down"
       },
       "when": {
         "down": "link"
@@ -148,8 +1186,15 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_in",
-        "x": 90
+        "model": "vectrum:block/item_cable_out_down"
+      },
+      "when": {
+        "down": "out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_in_down"
       },
       "when": {
         "down": "in"
@@ -157,11 +1202,197 @@
     },
     {
       "apply": {
-        "model": "vectrum:block/item_cable_out",
-        "x": 90
+        "model": "vectrum:block/item_cable_junction"
       },
       "when": {
-        "down": "out"
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "north": "none",
+        "south": "none",
+        "up": "link|in|out",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "link|in|out",
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "link|in|out",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "north": "none",
+        "south": "link|in|out",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "none",
+        "up": "none",
+        "west": "link|in|out"
+      }
+    },
+    {
+      "apply": {
+        "model": "vectrum:block/item_cable_junction"
+      },
+      "when": {
+        "down": "none",
+        "east": "link|in|out",
+        "north": "link|in|out",
+        "south": "link|in|out",
+        "up": "none",
+        "west": "none"
       }
     }
   ]

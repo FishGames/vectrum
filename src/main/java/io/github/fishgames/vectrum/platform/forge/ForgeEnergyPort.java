@@ -1,6 +1,7 @@
 package io.github.fishgames.vectrum.platform.forge;
 
 import io.github.fishgames.vectrum.Vectrum;
+import io.github.fishgames.vectrum.core.util.EnergyBalance;
 import io.github.fishgames.vectrum.core.util.SaturatedMath;
 import io.github.fishgames.vectrum.transfer.Port;
 import net.minecraftforge.energy.IEnergyStorage;
@@ -24,6 +25,16 @@ final class ForgeEnergyPort implements Port {
             return 0;
         }
         int limit = SaturatedMath.clampToNonNegativeInt(max);
+        if (storage.canReceive() && other.storage.canExtract()
+                && storage.getEnergyStored() > 0 && other.storage.getEnergyStored() > 0) {
+            // two-way storages (batteries): move towards equal fill levels instead of back and forth
+            limit = SaturatedMath.clampToNonNegativeInt(EnergyBalance.limit(storage.getEnergyStored(),
+                    storage.getMaxEnergyStored(), other.storage.getEnergyStored(), other.storage.getMaxEnergyStored(),
+                    limit));
+            if (limit <= 0) {
+                return 0;
+            }
+        }
 
         // 1. probe: source offer
         int offered = storage.extractEnergy(limit, true);
@@ -48,6 +59,11 @@ final class ForgeEnergyPort implements Port {
             }
         }
         return received;
+    }
+
+    @Override
+    public boolean canGive(Predicate<String> filter) {
+        return storage.canExtract() && storage.extractEnergy(1, true) > 0;
     }
 
     @Override

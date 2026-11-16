@@ -19,7 +19,7 @@ versions/<mc>-<loader>/       Dependency versions per project (loader, API, Parc
 src/main/java/.../Vectrum.java          shared entry point
 src/main/java/.../registry/             loader-independent registration (blocks, items, creative tab)
 src/main/java/.../datagen/              loader-independent data generation (vanilla classes only)
-src/main/java/.../core/                 network core WITHOUT Minecraft classes (graph, transport types, throughput, routing, math helpers)
+src/main/java/.../core/                 network core WITHOUT Minecraft classes (graph, transport types, throughput, routing, config, math helpers)
 src/test/java/.../core/                 automated tests for the core
 docs/                                   concept, decision log, development notes
 src/main/java/.../block/                cables, endpoint (shared base ConduitBlock), connection states, shapes
@@ -68,6 +68,7 @@ In IntelliJ it can be switched with the Gradle tasks `Set active project to ...`
 | `./gradlew :1.20.1-forge:build` | Build this loader only (jar in `versions/1.20.1-forge/build/libs`) |
 | `./gradlew :1.20.1-forge:test` | Run the automated core tests |
 | `./gradlew :1.20.1-forge:runServer -PwithMekanism` | Forge (or NeoForge) run with the full Mekanism jar added as runtime dependency |
+| `./gradlew :1.20.1-forge:runClient -PwithMekanism -PwithArs` | Forge (or NeoForge) client with Mekanism and Ars Nouveau (with Curios, GeckoLib, MCLib, MixinExtras) as runtime dependencies; both properties can also go into the user-level `gradle.properties` |
 | `./gradlew buildAll` | Build all loaders and versions |
 
 On Windows use `gradlew.bat` instead of `./gradlew`. On first start Loom downloads Minecraft and the mappings,
@@ -76,9 +77,10 @@ which takes a few minutes.
 ## Core and tests
 
 The package `core` holds the logic that needs no Minecraft: the network graph (cables and endpoints, merging and
-splitting of networks), the transport types, the throughput limits, the routing (filter, priority, distribution modes)
-and the math helpers. Because the core runs without Minecraft, it can be checked with plain JUnit tests
-(`src/test/java`), including randomised tests against a simple reference solution and performance measurements.
+splitting of networks), the transport types, the throughput limits, the routing (filter, priority, distribution modes),
+the configuration (`core/config`: the settings and the reader and writer of `vectrum.toml`) and the math helpers.
+Because the core runs without Minecraft, it can be checked with plain JUnit tests (`src/test/java`), including
+randomised tests against a simple reference solution and performance measurements.
 The test `CoreIsolationTest` fails as soon as someone imports Minecraft or loader classes in the core. The tests run
 with every loader project, e.g. `./gradlew :1.20.1-forge:test`.
 

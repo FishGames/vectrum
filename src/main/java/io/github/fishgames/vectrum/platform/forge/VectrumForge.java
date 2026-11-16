@@ -2,6 +2,7 @@ package io.github.fishgames.vectrum.platform.forge;
 
 import io.github.fishgames.vectrum.Modules;
 import io.github.fishgames.vectrum.Vectrum;
+import io.github.fishgames.vectrum.platform.forge.ars.ArsCompat;
 import io.github.fishgames.vectrum.platform.forge.mekanism.MekanismCompat;
 import io.github.fishgames.vectrum.command.VectrumCommands;
 import io.github.fishgames.vectrum.datagen.VectrumDataGen;
@@ -38,9 +39,14 @@ public final class VectrumForge {
         Ports.setFinder(TransportType.ITEM, ForgeItemPorts::find);
         Ports.setFinder(TransportType.FLUID, ForgeFluidPorts::find);
         Ports.setFinder(TransportType.ENERGY, ForgeEnergyPorts::find);
-        // Gas module
-        if (ModList.get().isLoaded("mekanism") && MekanismCompat.init()) {
-            Modules.setGas(true);
+        // Gas and heat modules
+        if (ModList.get().isLoaded("mekanism")) {
+            Modules.setGas(MekanismCompat.initGas());
+            Modules.setHeat(MekanismCompat.initHeat());
+        }
+        // Source module
+        if (ModList.get().isLoaded("ars_nouveau")) {
+            Modules.setSource(ArsCompat.init());
         }
         ModMenus.setEndpointFactory(() -> IForgeMenuType.create((id, inventory, buffer) -> new EndpointMenu(id, inventory)));
         Vectrum.init();
@@ -49,6 +55,7 @@ public final class VectrumForge {
         modBus.addListener(VectrumForge::onGatherData);
         modBus.addListener(VectrumForge::onEnqueueMessages);
         MinecraftForge.EVENT_BUS.addListener(VectrumForge::onRegisterCommands);
+        ForgeWrenchInterop.register();
     }
 
     private static void onEnqueueMessages(InterModEnqueueEvent event) {

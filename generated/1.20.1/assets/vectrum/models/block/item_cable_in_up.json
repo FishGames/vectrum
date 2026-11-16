@@ -1,0 +1,135 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "east": {
+          "rotation": 270,
+          "texture": "#all",
+          "uv": [
+            5.5,
+            0.0,
+            8.0,
+            3.0
+          ]
+        },
+        "north": {
+          "rotation": 270,
+          "texture": "#all",
+          "uv": [
+            5.5,
+            0.0,
+            8.0,
+            3.0
+          ]
+        },
+        "south": {
+          "rotation": 270,
+          "texture": "#all",
+          "uv": [
+            5.5,
+            0.0,
+            8.0,
+            3.0
+          ]
+        },
+        "west": {
+          "rotation": 270,
+          "texture": "#all",
+          "uv": [
+            5.5,
+            0.0,
+            8.0,
+            3.0
+          ]
+        }
+      },
+      "from": [
+        5,
+        11,
+        5
+      ],
+      "to": [
+        11,
+        16,
+        11
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#all",
+          "uv": [
+            0.0,
+            12.0,
+            4.0,
+            16.0
+          ]
+        },
+        "east": {
+          "rotation": 90,
+          "texture": "#all",
+          "uv": [
+            6.0,
+            12.0,
+            7.0,
+            16.0
+          ]
+        },
+        "north": {
+          "rotation": 90,
+          "texture": "#all",
+          "uv": [
+            6.0,
+            12.0,
+            7.0,
+            16.0
+          ]
+        },
+        "south": {
+          "rotation": 90,
+          "texture": "#all",
+          "uv": [
+            6.0,
+            12.0,
+            7.0,
+            16.0
+          ]
+        },
+        "up": {
+          "texture": "#all",
+          "uv": [
+            0.0,
+            12.0,
+            4.0,
+            16.0
+          ]
+        },
+        "west": {
+          "rotation": 90,
+          "texture": "#all",
+          "uv": [
+            6.0,
+            12.0,
+            7.0,
+            16.0
+          ]
+        }
+      },
+      "from": [
+        4,
+        14,
+        4
+      ],
+      "to": [
+        12,
+        16,
+        12
+      ]
+    }
+  ],
+  "textures": {
+    "all": "vectrum:block/item_cable",
+    "particle": "vectrum:block/item_cable"
+  }
+}

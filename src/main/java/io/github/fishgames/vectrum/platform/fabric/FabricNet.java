@@ -12,6 +12,8 @@ final class FabricNet {
 
     static void init() {
         receive(VectrumNet.FILTER_ID);
+        receive(VectrumNet.PORT_NAME);
+        receive(VectrumNet.PORT_PRIORITY);
         receive(VectrumNet.PROBE);
         VectrumNet.setServerSender((player, id, payload) -> ServerPlayNetworking.send(player, id, payload));
     }

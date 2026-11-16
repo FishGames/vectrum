@@ -36,6 +36,17 @@ final class FabricFluidPort implements Port {
     }
 
     @Override
+    public boolean canGive(Predicate<String> filter) {
+        for (StorageView<FluidVariant> view : storage) {
+            if (!view.isResourceBlank() && view.getAmount() > 0
+                    && (filter == ALL || filter.test(ResourceIds.of(view.getResource().getFluid())))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public double fillLevel() {
         long stored = 0;
         long capacity = 0;

@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "vectrum:source_cable",
+      "required": false
+    }
+  ]
+}

@@ -19,6 +19,8 @@ public final class VectrumForgeClient {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         ProbeClient.init();
-        event.enqueueWork(() -> MenuScreens.register(ModMenus.ENDPOINT.get(), EndpointScreen::new));
+        event.enqueueWork(() -> {
+            MenuScreens.register(ModMenus.ENDPOINT.get(), EndpointScreen::new);
+        });
     }
 }

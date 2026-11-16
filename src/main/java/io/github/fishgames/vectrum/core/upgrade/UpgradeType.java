@@ -1,33 +1,29 @@
 package io.github.fishgames.vectrum.core.upgrade;
 
+import io.github.fishgames.vectrum.core.config.VectrumConfig;
+
 import java.util.Locale;
 
 /** Upgrade types with their maximum count per block. */
 public enum UpgradeType {
-    /** Throughput limit times 4 per upgrade. */
-    THROUGHPUT(6),
-    /** Transfer interval halved per upgrade. */
-    SPEED(3),
-    /** One more item type per transfer per upgrade. */
-    TYPES(4),
+    /** Amount per transfer multiplied by the configured factor. */
+    THROUGHPUT(false),
+    /** Interval per transfer taken from the configured table. */
+    SPEED(false),
+    /** More item types per transfer. */
+    TYPES(false),
     /** Unlocks the filter. */
-    FILTER(1),
+    FILTER(false),
     /** Unlocks the priority setting. */
-    PRIORITY(1),
+    PRIORITY(false),
     /** Wireless port only: allows links across dimensions. */
-    DIMENSION(1, true);
+    DIMENSION(true);
 
     public static final UpgradeType[] VALUES = values();
 
-    private final int maxCount;
     private final boolean wireless;
 
-    UpgradeType(int maxCount) {
-        this(maxCount, false);
-    }
-
-    UpgradeType(int maxCount, boolean wireless) {
-        this.maxCount = maxCount;
+    UpgradeType(boolean wireless) {
         this.wireless = wireless;
     }
 
@@ -36,8 +32,15 @@ public enum UpgradeType {
         return wireless;
     }
 
+    /** Maximum number that can be installed. */
     public int maxCount() {
-        return maxCount;
+        VectrumConfig config = VectrumConfig.get();
+        return switch (this) {
+            case THROUGHPUT -> config.maxThroughputUpgrades();
+            case SPEED -> config.maxSpeedUpgrades();
+            case TYPES -> config.maxTypeUpgrades();
+            case FILTER, PRIORITY, DIMENSION -> 1;
+        };
     }
 
     /** Lower-case name. */

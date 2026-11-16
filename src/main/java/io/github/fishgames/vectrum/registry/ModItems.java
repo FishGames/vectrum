@@ -25,6 +25,10 @@ public final class ModItems {
     public static final Registered<Item> ENERGY_CABLE = blockItem(ModBlocks.ENERGY_CABLE);
     /** {@code null} unless the gas module is on. */
     public static final Registered<Item> GAS_CABLE = ModBlocks.GAS_CABLE == null ? null : blockItem(ModBlocks.GAS_CABLE);
+    /** {@code null} unless the source module is on. */
+    public static final Registered<Item> SOURCE_CABLE = ModBlocks.SOURCE_CABLE == null ? null : blockItem(ModBlocks.SOURCE_CABLE);
+    /** {@code null} unless the heat module is on. */
+    public static final Registered<Item> HEAT_CABLE = ModBlocks.HEAT_CABLE == null ? null : blockItem(ModBlocks.HEAT_CABLE);
     public static final Registered<Item> REDSTONE_CABLE = blockItem(ModBlocks.REDSTONE_CABLE);
     public static final Registered<Item> DIGITAL_CABLE = blockItem(ModBlocks.DIGITAL_CABLE);
     public static final Registered<Item> CODER = blockItem(ModBlocks.CODER);
